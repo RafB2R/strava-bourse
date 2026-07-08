@@ -1,0 +1,4 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f7f7f7; }
+button { cursor: pointer; }
+input:focus { outline: none; border-color: #999 !important; }

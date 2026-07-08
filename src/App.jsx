@@ -1,0 +1,106 @@
+import { useState, useEffect } from "react";
+import { supabase } from "./supabase";
+import Landing from "./Landing";
+import Auth from "./components/Auth";
+import Profil from "./components/Profil";
+import Portfolio from "./components/Portfolio";
+import Feed from "./components/Feed";
+import Clubs from "./components/Clubs";
+
+const TABS = [
+  { id: "feed", label: "Fil", icon: "⚡" },
+  { id: "clubs", label: "Clubs", icon: "🏛️" },
+  { id: "portfolio", label: "Portef.", icon: "📊" },
+  { id: "profil", label: "Profil", icon: "👤" },
+];
+
+function getGreeting(name) {
+  const hour = new Date().getHours();
+  const firstName = name?.split(" ")[0] || "";
+  if (hour < 12) return `Bonjour ${firstName} ☀️`;
+  if (hour < 18) return `Bon après-midi ${firstName} 👋`;
+  return `Bonsoir ${firstName} 🌙`;
+}
+
+export default function App() {
+  const [session, setSession] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [tab, setTab] = useState("feed");
+  const [loading, setLoading] = useState(true);
+  const [showAuth, setShowAuth] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) loadProfile(session.user.id);
+      else setLoading(false);
+    });
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) loadProfile(session.user.id);
+      else { setProfile(null); setLoading(false); setShowAuth(false); }
+    });
+  }, []);
+
+  async function loadProfile(userId) {
+    const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
+    setProfile(data);
+    setLoading(false);
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+  }
+
+  if (loading) return (
+    <div style={{ minHeight: "100vh", background: "#111318", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.3)", fontFamily: "system-ui" }}>
+      Chargement…
+    </div>
+  );
+
+  if (!session && !showAuth) return <Landing onStart={() => setShowAuth(true)} />;
+  if (!session && showAuth) return <Auth />;
+
+  return (
+    <div style={{ background: "#111318", minHeight: "100vh", fontFamily: "system-ui, sans-serif" }}>
+      <div style={{ background: "#111318", borderBottom: "0.5px solid rgba(255,255,255,0.06)", position: "sticky", top: 0, zIndex: 10 }}>
+        <div style={{ maxWidth: 620, margin: "0 auto", padding: "14px 1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#fff" }}>ve<span style={{ color: "#9FE1CB" }}>rio</span></div>
+            {profile?.full_name && (
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 1 }}>
+                {getGreeting(profile.full_name)}
+              </div>
+            )}
+          </div>
+          <button onClick={handleLogout} style={{ background: "none", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" }}>
+            Déconnexion
+          </button>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 620, margin: "0 auto", padding: "1.5rem 1rem 6rem" }}>
+        {tab === "feed" && <Feed session={session} />}
+        {tab === "clubs" && <Clubs session={session} />}
+        {tab === "portfolio" && <Portfolio session={session} />}
+        {tab === "profil" && <Profil profile={profile} session={session} />}
+      </div>
+
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111318", borderTop: "0.5px solid rgba(255,255,255,0.08)" }}>
+        <div style={{ maxWidth: 620, margin: "0 auto", display: "flex" }}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{
+              flex: 1, padding: "12px 4px 14px", fontSize: 10, background: "none", border: "none",
+              color: tab === t.id ? "#9FE1CB" : "rgba(255,255,255,0.3)",
+              cursor: "pointer", fontFamily: "inherit", fontWeight: tab === t.id ? 600 : 400,
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+            }}>
+              <span style={{ fontSize: 20 }}>{t.icon}</span>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
