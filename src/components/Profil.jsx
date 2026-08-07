@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import Badges from "./Badges";
 import KYC from "./KYC";
+import ProfilPublicEmbed from "./ProfilPublic";
 
 const STRATEGIES = ["ETF passif", "Stock picking", "Dividendes", "Value investing", "DCA", "Mixte"];
 
@@ -97,6 +98,7 @@ function Avatar({ name, size = 36 }) {
 function StatsSection({ profile, session, friends, perf }) {
   const [friendPerfs, setFriendPerfs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   useEffect(() => { if (friends.length > 0) loadFriendPerfs(); }, [friends]);
 
@@ -110,14 +112,18 @@ function StatsSection({ profile, session, friends, perf }) {
         const totalPct = avecPerf.reduce((s, d) => s + Number(d.percentage), 0);
         if (totalPct > 0) friendPerf = avecPerf.reduce((s, d) => s + Number(d.performance) * Number(d.percentage) / totalPct, 0);
       }
-      return { name: f.friend.full_name, perf: friendPerf, me: false };
+      return { id: f.friend.id, name: f.friend.full_name, perf: friendPerf, me: false };
     }));
     setFriendPerfs(perfs);
     setLoading(false);
   }
 
-  const ranking = [{ name: profile?.full_name, perf, me: true }, ...friendPerfs]
+  const ranking = [{ id: session.user.id, name: profile?.full_name, perf, me: true }, ...friendPerfs]
     .sort((a, b) => (b.perf ?? -Infinity) - (a.perf ?? -Infinity));
+
+  if (selectedUser) {
+    return <ProfilPublicEmbed userId={selectedUser} session={session} onBack={() => setSelectedUser(null)} />;
+  }
 
   return (
     <div style={{ background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "1.25rem", marginBottom: 12 }}>
@@ -125,12 +131,12 @@ function StatsSection({ profile, session, friends, perf }) {
       {loading && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "1rem" }}>Chargement…</div>}
       {!loading && friends.length === 0 && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "1rem 0" }}>Ajoute des amis pour voir le classement 🙂</div>}
       {!loading && ranking.map((f, i) => (
-        <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: i === 0 ? "none" : "0.5px solid rgba(255,255,255,0.06)" }}>
+        <div key={i} onClick={() => !f.me && setSelectedUser(f.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: i === 0 ? "none" : "0.5px solid rgba(255,255,255,0.06)", cursor: f.me ? "default" : "pointer" }}>
           <div style={{ fontSize: 13, color: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "rgba(255,255,255,0.25)", minWidth: 20, fontWeight: 600 }}>{i + 1}</div>
           <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(159,225,203,0.12)", color: "#9FE1CB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>
             {f.name?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)}
           </div>
-          <div style={{ flex: 1, fontSize: 14, color: "#fff" }}>
+          <div style={{ flex: 1, fontSize: 14, color: f.me ? "#fff" : "#9FE1CB" }}>
             {f.name}{f.me && <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}> · moi</span>}
           </div>
           <div style={{ fontSize: 14, fontWeight: 600, color: f.perf === null ? "rgba(255,255,255,0.25)" : f.perf >= 0 ? "#9FE1CB" : "#F08080" }}>
@@ -189,6 +195,7 @@ export default function Profil({ profile: initialProfile, session }) {
   const [stats, setStats] = useState({ positions: 0, perfPonderee: null, types: 0, brokers: 0, totalPct: 0 });
   const [selectedCat, setSelectedCat] = useState(null);
   const [friends, setFriends] = useState([]);
+  const [selectedPublicUser, setSelectedPublicUser] = useState(null);
   const [pending, setPending] = useState([]);
   const [received, setReceived] = useState([]);
   const [myClubs, setMyClubs] = useState(0);
@@ -433,8 +440,8 @@ export default function Profil({ profile: initialProfile, session }) {
               {received.map(f => (
                 <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: "0.5px solid rgba(255,255,255,0.06)" }}>
                   <Avatar name={f.friend.full_name} size={34} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{f.friend.full_name}</div>
+                  <div style={{ flex: 1, cursor: "pointer" }} onClick={() => setSelectedPublicUser(f.friend.id)}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#9FE1CB" }}>{f.friend.full_name}</div>
                     <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>@{f.friend.username}</div>
                   </div>
                   <button style={btnGreen} onClick={() => acceptRequest(f.id)}>✓</button>
@@ -448,10 +455,10 @@ export default function Profil({ profile: initialProfile, session }) {
             <div style={sectionLabel}>Mes amis ({friends.length})</div>
             {friends.length === 0 && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "1rem 0" }}>Aucun ami encore 🙂</div>}
             {friends.map(f => (
-              <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: "0.5px solid rgba(255,255,255,0.06)" }}>
+              <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: "0.5px solid rgba(255,255,255,0.06)", cursor: "pointer" }} onClick={() => setSelectedPublicUser(f.friend.id)}>
                 <Avatar name={f.friend.full_name} size={34} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{f.friend.full_name}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#9FE1CB" }}>{f.friend.full_name}</div>
                   <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>@{f.friend.username}{f.friend.city ? ` · ${f.friend.city}` : ""}</div>
                   {f.friend.strategy && <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 999, background: "rgba(159,225,203,0.1)", color: "#9FE1CB" }}>{f.friend.strategy}</span>}
                 </div>

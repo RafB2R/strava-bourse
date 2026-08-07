@@ -5,16 +5,15 @@ import Auth from "./components/Auth";
 import Profil from "./components/Profil";
 import Portfolio from "./components/Portfolio";
 import Feed from "./components/Feed";
-import Clubs from "./components/Clubs";
-import Classements from "./components/Classements";
-import KYC from "./components/KYC";
+import Explore from "./components/Explore";
 import Notifications from "./components/Notifications";
+import KYC from "./components/KYC";
 
 const TABS = [
-  { id: "feed", label: "Fil", icon: "⚡" },
-  { id: "clubs", label: "Clubs", icon: "🏛️" },
+  { id: "feed", label: "Fil", icon: "🏠" },
+  { id: "explore", label: "Explore", icon: "🔍" },
   { id: "portfolio", label: "Portef.", icon: "📊" },
-  { id: "classements", label: "Top", icon: "🏆" },
+  { id: "profil", label: "Profil", icon: "👤" },
 ];
 
 function getGreeting(name) {
@@ -67,6 +66,7 @@ export default function App() {
 
   return (
     <div style={{ background: "#111318", minHeight: "100vh", fontFamily: "system-ui, sans-serif" }}>
+      {/* Header */}
       <div style={{ background: "#111318", borderBottom: "0.5px solid rgba(255,255,255,0.06)", position: "sticky", top: 0, zIndex: 10 }}>
         <div style={{ maxWidth: 620, margin: "0 auto", padding: "14px 1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
@@ -79,11 +79,8 @@ export default function App() {
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <Notifications session={session} />
-            <button
-              onClick={() => setTab("profil")}
-              style={{ width: 32, height: 32, borderRadius: "50%", background: tab === "profil" ? "rgba(159,225,203,0.2)" : "rgba(255,255,255,0.08)", border: `1.5px solid ${tab === "profil" ? "#9FE1CB" : "transparent"}`, color: "#9FE1CB", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}
-            >
-              {profile?.full_name ? profile.full_name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "👤"}
+            <button onClick={handleLogout} style={{ background: "none", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" }}>
+              Déconnexion
             </button>
           </div>
         </div>
@@ -114,21 +111,15 @@ export default function App() {
         />
       )}
 
+      {/* Contenu */}
       <div style={{ maxWidth: 620, margin: "0 auto", padding: "1.5rem 1rem 6rem" }}>
         {tab === "feed" && <Feed session={session} />}
-        {tab === "clubs" && <Clubs session={session} />}
+        {tab === "explore" && <Explore session={session} />}
         {tab === "portfolio" && <Portfolio session={session} profile={profile} />}
-        {tab === "classements" && <Classements session={session} />}
-        {tab === "profil" && (
-          <div>
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
-              <button onClick={handleLogout} style={{ background: "none", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" }}>Déconnexion</button>
-            </div>
-            <Profil profile={profile} session={session} />
-          </div>
-        )}
+        {tab === "profil" && <Profil profile={profile} session={session} />}
       </div>
 
+      {/* Bottom nav */}
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#111318", borderTop: "0.5px solid rgba(255,255,255,0.08)" }}>
         <div style={{ maxWidth: 620, margin: "0 auto", display: "flex" }}>
           {TABS.map(t => (

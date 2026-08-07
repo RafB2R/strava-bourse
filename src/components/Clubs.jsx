@@ -342,7 +342,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
   );
 }
 
-export default function Clubs({ session }) {
+export default function Clubs({ session, initialClub = null, onBack = null }) {
   const [clubs, setClubs] = useState([]);
   const [myClubs, setMyClubs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -354,7 +354,7 @@ export default function Clubs({ session }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState("explorer");
   const [memberCounts, setMemberCounts] = useState({});
-  const [selectedClub, setSelectedClub] = useState(null);
+  const [selectedClub, setSelectedClub] = useState(initialClub);
   const [form, setForm] = useState({ name: "", description: "", category: "", subcategory: "" });
 
   useEffect(() => { loadClubs(); }, []);
@@ -404,15 +404,17 @@ export default function Clubs({ session }) {
 
   if (selectedClub) {
     return (
+      <div>
       <ClubDetail
         club={selectedClub}
         session={session}
-        onBack={() => setSelectedClub(null)}
+        onBack={() => { setSelectedClub(null); if (onBack) onBack(); }}
         isMember={myClubs.includes(selectedClub.id)}
         onJoin={() => joinClub(selectedClub.id)}
         onLeave={() => leaveClub(selectedClub.id)}
         memberCount={memberCounts[selectedClub.id] || 0}
       />
+      </div>
     );
   }
 
