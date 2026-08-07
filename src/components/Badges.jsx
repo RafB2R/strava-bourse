@@ -40,11 +40,11 @@ const CATS = [
     levels: [
       { medal: "🥉", name: "Premiers pas", desc: "3 positions différentes", target: 3 },
       { medal: "🥈", name: "Équilibré", desc: "5 positions différentes", target: 5 },
-      { medal: "🥇", name: "Bien réparti", desc: "Portefeuille alloué à 100%", target: 100 },
-      { medal: "💎", name: "Allocation parfaite", desc: "Multi-broker + 100% alloué", target: 3 },
+      { medal: "🥇", name: "Bien réparti", desc: "8 positions différentes", target: 8 },
+      { medal: "💎", name: "Portefeuille complet", desc: "10 positions ou plus", target: 10 },
     ],
-    getValue: (d) => d.totalPct === 100 ? d.brokers : d.positions,
-    unit: "",
+    getValue: (d) => d.positions,
+    unit: "positions",
   },
   {
     id: "climber", icon: "🏔️", name: "Climber", desc: "La progression, pas le montant.",
@@ -70,13 +70,13 @@ const CATS = [
   },
 ];
 
-const HIDDEN_BADGES = [
-  { id: "night_owl", icon: "🌙", name: "Night Owl", desc: "Premier investissement ajouté après minuit", unlocked: false },
-  { id: "birthday", icon: "🎂", name: "Birthday Investor", desc: "Position ajoutée le jour de ton anniversaire", unlocked: false },
-  { id: "xmas", icon: "🎄", name: "Christmas Investor", desc: "Investi le 25 décembre", unlocked: false },
-  { id: "never_panic", icon: "🧘", name: "Never Panic", desc: "Traverser un bear market sans toucher son allocation — bientôt disponible", unlocked: false, soon: true },
-  { id: "diamond_hands", icon: "💎", name: "Diamond Hands", desc: "Garder une position plus de 10 ans — bientôt disponible", unlocked: false, soon: true },
-  { id: "monday", icon: "📆", name: "Monday Investor", desc: "Investir chaque premier lundi du mois — bientôt disponible", unlocked: false, soon: true },
+const HIDDEN_BADGES_DEF = [
+  { id: "night_owl", icon: "🌙", name: "Night Owl", desc: "Premier investissement de nuit", soon: true },
+  { id: "birthday", icon: "🎂", name: "Birthday Investor", desc: "Investi le jour de ton anniversaire" },
+  { id: "xmas", icon: "🎄", name: "Christmas Investor", desc: "Investi le 25 décembre", soon: true },
+  { id: "never_panic", icon: "🧘", name: "Never Panic", desc: "Traverser un bear market sans toucher son allocation", soon: true },
+  { id: "diamond_hands", icon: "💎", name: "Diamond Hands", desc: "Garder une position plus de 10 ans", soon: true },
+  { id: "monday", icon: "📆", name: "Monday Investor", desc: "Investir chaque premier lundi du mois pendant un an", soon: true },
 ];
 
 const IDENTITIES = [
@@ -112,6 +112,7 @@ function getProgress(cat, val) {
 export default function Badges({ session, profile }) {
   const [data, setData] = useState({ perf: null, types: 0, positions: 0, clubs: 0, years: null, brokers: 0, totalPct: 0 });
   const [flipped, setFlipped] = useState({});
+  const [unlockedBadgeIds, setUnlockedBadgeIds] = useState([]);
   const [activeTab, setActiveTab] = useState("trophees");
 
   useEffect(() => { loadData(); }, []);
@@ -119,6 +120,24 @@ export default function Badges({ session, profile }) {
   async function loadData() {
     const { data: entries } = await supabase.from("portfolio_entries").select("performance, percentage, type, broker").eq("user_id", session.user.id);
     const { count: clubCount } = await supabase.from("club_members").select("*", { count: "exact", head: true }).eq("user_id", session.user.id);
+
+    // Charger badges débloqués
+    const { data: unlockedBadges } = await supabase.from("user_badges").select("badge_id, unlocked_at").eq("user_id", session.user.id);
+    const unlockedIds = (unlockedBadges || []).map(b => b.badge_id);
+
+    // Vérifier Birthday
+    if (profile?.date_naissance && !unlockedIds.includes("birthday")) {
+      const today = new Date();
+      const birth = new Date(profile.date_naissance);
+      if (today.getDate() === birth.getDate() && today.getMonth() === birth.getMonth()) {
+        await supabase.from("user_badges").insert({ user_id: session.user.id, badge_id: "birthday" });
+        unlockedIds.push("birthday");
+        await supabase.from("activities").insert({ user_id: session.user.id, type: "badge", data: { badge_id: "birthday", badge_name: "Birthday Investor", badge_medal: "🎂" } });
+      }
+    }
+
+
+
 
     let perf = null, types = 0, positions = 0, brokers = 0, totalPct = 0;
 
@@ -133,7 +152,75 @@ export default function Badges({ session, profile }) {
     }
 
     const years = profile?.investing_since ? new Date().getFullYear() - Number(profile.investing_since) : null;
-    setData({ perf, types, positions, clubs: clubCount || 0, years, brokers, totalPct });
+
+    // Calculer streak réel depuis les activités
+    const { data: acts } = await supabase
+      .from("activities")
+      .select("created_at")
+      .eq("user_id", session.user.id)
+      .in("type", ["new_position", "renforcement", "rebalancement"])
+      .order("created_at", { ascending: false });
+
+    let streakMois = 0;
+    if (acts && acts.length > 0) {
+      const moisInvestis = new Set(acts.map(a => {
+        const d = new Date(a.created_at);
+        return `${d.getFullYear()}-${d.getMonth()}`;
+      }));
+      const now = new Date();
+      let current = new Date(now.getFullYear(), now.getMonth(), 1);
+      while (true) {
+        const key = `${current.getFullYear()}-${current.getMonth()}`;
+        if (moisInvestis.has(key)) { streakMois++; current.setMonth(current.getMonth() - 1); }
+        else break;
+      }
+    }
+
+    setData({ perf, types, positions, clubs: clubCount || 0, years, brokers, totalPct, dcaMonths: streakMois });
+
+    // Synchroniser les badges débloqués en base
+    const vals = {
+      milestones: years,
+      builder: positions,
+      explorer: types,
+      climber: perf,
+      diversification: positions,
+      community: clubCount || 0,
+      dca: streakMois,
+    };
+    const CATS_SYNC = [
+      { id: "milestones", levels: [{ target: 1, medal: "🥉" }, { target: 5, medal: "🥈" }, { target: 10, medal: "🥇" }, { target: 25, medal: "💎" }] },
+      { id: "builder", levels: [{ target: 1, medal: "🥉" }, { target: 10, medal: "🥈" }, { target: 50, medal: "🥇" }, { target: 100, medal: "💎" }] },
+      { id: "explorer", levels: [{ target: 1, medal: "🥉" }, { target: 3, medal: "🥈" }, { target: 5, medal: "🥇" }, { target: 8, medal: "💎" }] },
+      { id: "climber", levels: [{ target: 10, medal: "🥉" }, { target: 50, medal: "🥈" }, { target: 100, medal: "🥇" }, { target: 1000, medal: "💎" }] },
+      { id: "diversification", levels: [{ target: 3, medal: "🥉" }, { target: 5, medal: "🥈" }, { target: 8, medal: "🥇" }, { target: 10, medal: "💎" }] },
+      { id: "community", levels: [{ target: 1, medal: "🥉" }, { target: 3, medal: "🥈" }, { target: 5, medal: "🥇" }, { target: 10, medal: "💎" }] },
+      { id: "dca", levels: [{ target: 3, medal: "🥉" }, { target: 12, medal: "🥈" }, { target: 36, medal: "🥇" }, { target: 120, medal: "💎" }] },
+    ];
+
+    const toSync = [];
+    for (const cat of CATS_SYNC) {
+      const val = vals[cat.id];
+      if (val === null || val === undefined) continue;
+      for (const level of cat.levels) {
+        if (val >= level.target) {
+          const badgeId = `${cat.id}_${level.medal}`;
+          if (!unlockedIds.includes(badgeId)) toSync.push({ user_id: session.user.id, badge_id: badgeId });
+        }
+      }
+    }
+    if (toSync.length > 0) {
+      await supabase.from("user_badges").upsert(toSync, { onConflict: "user_id,badge_id" });
+      toSync.forEach(b => unlockedIds.push(b.badge_id));
+      // Notifier pour chaque nouveau badge
+      const notifBadges = toSync.map(b => ({
+        user_id: session.user.id,
+        type: "badge_unlocked",
+        data: { badge_id: b.badge_id, badge_name: b.badge_id.split("_")[0], badge_medal: b.badge_id.split("_")[1] }
+      }));
+      if (notifBadges.length > 0) await supabase.from("notifications").insert(notifBadges);
+    }
+    setUnlockedBadgeIds([...unlockedIds]);
   }
 
   function toggle(id) { setFlipped(p => ({ ...p, [id]: !p[id] })); }
@@ -248,17 +335,21 @@ export default function Badges({ session, profile }) {
             Ces badges se débloquent dans des moments inattendus. Tu ne sais pas quand — jusqu'à ce que ça arrive.
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
-            {HIDDEN_BADGES.map(b => (
-              <div key={b.id} style={{ background: "rgba(255,255,255,0.04)", border: `0.5px solid ${b.unlocked ? "rgba(159,225,203,0.3)" : "rgba(255,255,255,0.06)"}`, borderRadius: 14, padding: "14px 10px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, opacity: b.unlocked ? 1 : b.soon ? 0.3 : 0.5 }}>
-                <div style={{ width: 44, height: 44, borderRadius: "50%", background: b.unlocked ? "rgba(159,225,203,0.1)" : "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: b.unlocked ? 22 : 20 }}>
-                  {b.unlocked ? b.icon : "🔮"}
+            {HIDDEN_BADGES_DEF.map(b => {
+              const isUnlocked = unlockedBadgeIds.includes(b.id);
+              const isSoon = b.soon && !isUnlocked;
+              return (
+                <div key={b.id} style={{ background: "rgba(255,255,255,0.04)", border: `0.5px solid ${isUnlocked ? "rgba(159,225,203,0.3)" : "rgba(255,255,255,0.06)"}`, borderRadius: 14, padding: "14px 10px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, opacity: isUnlocked ? 1 : isSoon ? 0.3 : 0.5 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: isUnlocked ? "rgba(159,225,203,0.1)" : "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
+                    {isUnlocked ? b.icon : "🔮"}
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: isUnlocked ? "#9FE1CB" : "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 1.3 }}>
+                    {isUnlocked ? b.name : isSoon ? "Bientôt" : "???"}
+                  </div>
+                  {isUnlocked && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textAlign: "center" }}>{b.desc}</div>}
                 </div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: b.unlocked ? "#9FE1CB" : "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 1.3 }}>
-                  {b.unlocked ? b.name : b.soon ? "Bientôt" : "???"}
-                </div>
-                {b.unlocked && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textAlign: "center" }}>{b.desc}</div>}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

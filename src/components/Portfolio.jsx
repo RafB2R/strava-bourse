@@ -39,25 +39,57 @@ async function fetchPrixViaISIN(isin) {
   } catch (e) { return null; }
 }
 
-function MiniChart({ perfGlobale }) {
+function MiniChart({ perfGlobale, investingSince }) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
   const [period, setPeriod] = useState("1M");
   const isUp = perfGlobale === null || perfGlobale >= 0;
+
+  // Années depuis le début
+  const yearsInvesting = investingSince ? new Date().getFullYear() - Number(investingSince) : 7;
+
+  // Périodes disponibles selon l'ancienneté
+  const allPeriods = [
+    { id: "1J", label: "1J" },
+    { id: "1M", label: "1M" },
+    { id: "3M", label: "3M" },
+    { id: "6M", label: "6M" },
+    { id: "YTD", label: "YTD" },
+    { id: "1A", label: "1A" },
+    { id: "5A", label: "5A", minYears: 5 },
+    { id: "DEBUT", label: "Début" },
+  ];
+  const periods = allPeriods.filter(p => !p.minYears || yearsInvesting >= p.minYears);
+
   const datasets = {
-    "1J": [23800,23850,23780,23900,24100,24050,24200,24350,24580],
-    "1S": [23200,23400,23600,23500,23800,24000,24300,24580],
-    "1M": [21400,21800,22200,22600,23100,23500,23900,24200,24580],
-    "1A": [18500,19200,20100,21000,21800,22500,23200,23800,24580],
-    "ALL": [12000,14500,17000,19500,21000,22500,23500,24580],
+    "1J": [7200,7220,7180,7250,7300,7280,7350,7400,7475],
+    "1M": [6800,6900,7000,7050,7100,7200,7300,7400,7475],
+    "3M": [6200,6400,6600,6700,6900,7100,7300,7475],
+    "6M": [5800,6000,6200,6500,6700,7000,7200,7475],
+    "YTD": [6500,6600,6700,6900,7100,7200,7350,7475],
+    "1A": [5500,5800,6100,6400,6700,7000,7200,7475],
+    "5A": [2000,3000,4000,5000,5500,6000,6800,7475],
+    "DEBUT": [1000,2000,3500,5000,6000,6800,7200,7475],
   };
   const labels = {
-    "1J": ["9h","11h","12h","13h","14h","15h","16h","17h","18h"],
-    "1S": ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim","Lun"],
-    "1M": ["S1","S2","S3","S4","S5","S6","S7","S8","S9"],
-    "1A": ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Déc"],
-    "ALL": ["2019","2020","2021","2022","2023","2024","2025","2026"],
+    "1J": ["9h","11h","12h","13h","14h","15h","16h","17h","Maint."],
+    "1M": ["S1","S2","S3","S4","S5","S6","S7","S8","Auj."],
+    "3M": ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Auj."],
+    "6M": ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Auj."],
+    "YTD": ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Auj."],
+    "1A": ["Juil 24","Sep","Nov","Jan 25","Mar","Mai","Jun","Auj."],
+    "5A": ["2021","2022","2023","2024","2025","2025","2026","Auj."],
+    "DEBUT": [String(investingSince || 2019),"","","","","","","Auj."],
   };
+
+  // Perf calculée pour la période affichée
+  function getPerfPeriod() {
+    const d = datasets[period];
+    if (!d || d.length < 2) return null;
+    return ((d[d.length - 1] - d[0]) / d[0]) * 100;
+  }
+  const perfPeriod = getPerfPeriod();
+
   useEffect(() => {
     if (!canvasRef.current || !window.Chart) return;
     if (chartRef.current) chartRef.current.destroy();
@@ -72,21 +104,28 @@ function MiniChart({ perfGlobale }) {
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { mode: "index", intersect: false, callbacks: { label: c => c.parsed.y.toLocaleString("fr-FR") + " €" } } }, scales: { x: { grid: { display: false }, ticks: { color: "rgba(255,255,255,0.3)", font: { size: 10 } }, border: { display: false } }, y: { display: false } } },
     });
   }, [period]);
+
   return (
     <div>
+      {/* Perf période */}
+      {perfPeriod !== null && (
+        <div style={{ fontSize: 12, color: perfPeriod >= 0 ? "rgba(159,225,203,0.7)" : "rgba(240,128,128,0.7)", marginBottom: 8 }}>
+          {perfPeriod >= 0 ? "+" : ""}{perfPeriod.toFixed(2)}% sur la période
+        </div>
+      )}
       <div style={{ position: "relative", width: "100%", height: 120, marginBottom: 10 }}>
         <canvas ref={canvasRef} role="img" aria-label="Évolution du portefeuille"></canvas>
       </div>
-      <div style={{ display: "flex", gap: 4 }}>
-        {["1J","1S","1M","1A","ALL"].map(p => (
-          <button key={p} onClick={() => setPeriod(p)} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${period === p ? "#9FE1CB" : "rgba(255,255,255,0.1)"}`, background: period === p ? "rgba(159,225,203,0.1)" : "none", color: period === p ? "#9FE1CB" : "rgba(255,255,255,0.35)", cursor: "pointer", fontFamily: "inherit" }}>{p}</button>
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+        {periods.map(p => (
+          <button key={p.id} onClick={() => setPeriod(p.id)} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${period === p.id ? "#9FE1CB" : "rgba(255,255,255,0.1)"}`, background: period === p.id ? "rgba(159,225,203,0.1)" : "none", color: period === p.id ? "#9FE1CB" : "rgba(255,255,255,0.35)", cursor: "pointer", fontFamily: "inherit" }}>{p.label}</button>
         ))}
       </div>
     </div>
   );
 }
 
-export default function Portfolio({ session }) {
+export default function Portfolio({ session, profile }) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -230,7 +269,7 @@ export default function Portfolio({ session }) {
           {!hasValeur && <span style={{ fontSize: 13, color: "rgba(255,255,255,0.25)" }}>Ajoute le nombre de parts pour voir la valeur</span>}
           {lastRefresh && <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>· {lastRefresh.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>}
         </div>
-        {chartLoaded && <MiniChart perfGlobale={perfGlobale} />}
+        {chartLoaded && <MiniChart perfGlobale={perfGlobale} investingSince={profile?.investing_since} />}
       </div>
 
       {/* 2. ALLOCATION */}
@@ -395,6 +434,59 @@ export default function Portfolio({ session }) {
           </div>
         ))}
       </div>
+
+
+      {/* PROJECTIONS */}
+      {entries.length > 0 && perfGlobale !== null && hasValeur && (
+        <div style={card}>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            📊 Projection
+          </div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", marginBottom: 16, lineHeight: 1.6 }}>
+            Si ton portefeuille continue sur cette lancée à <strong style={{ color: "#9FE1CB" }}>+{Math.min(perfGlobale, 30).toFixed(1)}%/an</strong>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", marginLeft: 6 }}>(plafonné à 30% pour rester réaliste)</span>
+          </div>
+
+          {[5, 10, 20].map(years => {
+            const rate = Math.min(perfGlobale / 100, 0.30);
+            const valeur = valeurTotale * Math.pow(1 + rate, years);
+            return (
+              <div key={years} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: years === 5 ? "none" : "0.5px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(159,225,203,0.06)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#9FE1CB" }}>{years}</div>
+                    <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)" }}>ans</div>
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>
+                    {valeur.toLocaleString("fr-FR", { maximumFractionDigits: 0 })} €
+                  </div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>
+                    +{(valeur - valeurTotale).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} € de gains estimés
+                  </div>
+                </div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>
+                  ×{Math.pow(1 + rate, years).toFixed(1)}
+                </div>
+              </div>
+            );
+          })}
+
+          <div style={{ marginTop: 14, padding: "10px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 8, fontSize: 12, color: "rgba(255,255,255,0.25)", lineHeight: 1.6 }}>
+            ⚠️ Projection indicative basée sur ta performance actuelle. Les rendements passés ne préjugent pas des rendements futurs.
+          </div>
+
+          <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", background: "rgba(159,225,203,0.05)", border: "0.5px solid rgba(159,225,203,0.15)", borderRadius: 10 }}>
+            <span style={{ fontSize: 16 }}>✨</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#9FE1CB" }}>Verio Plus</div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>Ajuste le rendement, l'apport mensuel et l'horizon</div>
+            </div>
+            <span style={{ fontSize: 11, color: "#9FE1CB", fontWeight: 600, padding: "2px 8px", borderRadius: 999, border: "0.5px solid rgba(159,225,203,0.3)" }}>🔒</span>
+          </div>
+        </div>
+      )}
 
       {/* 4. SCORE DIVERSIFICATION + PROFIL RISQUE */}
       {entries.length > 0 && (

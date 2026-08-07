@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import Badges from "./Badges";
+import KYC from "./KYC";
 
 const STRATEGIES = ["ETF passif", "Stock picking", "Dividendes", "Value investing", "DCA", "Mixte"];
 
@@ -180,6 +181,8 @@ export default function Profil({ profile: initialProfile, session }) {
   const [profile, setProfile] = useState(initialProfile || {});
   const [section, setSection] = useState("stats");
   const [editing, setEditing] = useState(false);
+  const [streakMois, setStreakMois] = useState(profile?.streak_mois || 0);
+  const [showKYC, setShowKYC] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -195,7 +198,7 @@ export default function Profil({ profile: initialProfile, session }) {
   const [message, setMessage] = useState("");
 
   useEffect(() => { if (initialProfile) setProfile(initialProfile); }, [initialProfile]);
-  useEffect(() => { loadStats(); loadFriendships(); loadClubs(); }, []);
+  useEffect(() => { loadStats(); loadFriendships(); loadClubs(); updateStreak(); }, []);
 
   async function loadStats() {
     const { data } = await supabase.from("portfolio_entries").select("performance, percentage, type, broker").eq("user_id", session.user.id);
@@ -208,6 +211,50 @@ export default function Profil({ profile: initialProfile, session }) {
       const allPct = data.reduce((s, d) => s + Number(d.percentage), 0);
       setStats({ positions: data.length, perfPonderee: perf, types, brokers, totalPct: allPct });
     }
+  }
+
+
+  async function updateStreak() {
+    // Récupère toutes les activités d'investissement
+    const { data: acts } = await supabase
+      .from("activities")
+      .select("created_at")
+      .eq("user_id", session.user.id)
+      .in("type", ["new_position", "renforcement", "rebalancement"])
+      .order("created_at", { ascending: false });
+
+    if (!acts || acts.length === 0) return;
+
+    // Grouper par mois
+    const moisInvestis = new Set(acts.map(a => {
+      const d = new Date(a.created_at);
+      return `${d.getFullYear()}-${d.getMonth()}`;
+    }));
+
+    // Calculer le streak depuis maintenant en remontant mois par mois
+    let streak = 0;
+    const now = new Date();
+    let current = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    while (true) {
+      const key = `${current.getFullYear()}-${current.getMonth()}`;
+      if (moisInvestis.has(key)) {
+        streak++;
+        current.setMonth(current.getMonth() - 1);
+      } else {
+        break;
+      }
+    }
+
+    // Mettre à jour en base si changé
+    if (streak !== profile?.streak_mois) {
+      await supabase.from("profiles").update({
+        streak_mois: streak,
+        streak_derniere_date: now.toISOString().split("T")[0],
+      }).eq("id", session.user.id);
+    }
+
+    setStreakMois(streak);
   }
 
   async function loadFriendships() {
@@ -320,11 +367,28 @@ export default function Profil({ profile: initialProfile, session }) {
           </select>
           <label style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 4, display: "block" }}>Investisseur depuis (année)</label>
           <input style={inp} placeholder="2018" type="number" value={form.investing_since} onChange={e => setForm({ ...form, investing_since: e.target.value })} />
+          <div style={{ height: "0.5px", background: "rgba(255,255,255,0.06)", margin: "16px 0" }} />
+          <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.6)", marginBottom: 10 }}>Profil investisseur</div>
+          <button
+            onClick={() => { setEditing(false); setShowKYC(true); }}
+            style={{ width: "100%", padding: "10px", background: "rgba(159,225,203,0.06)", border: "0.5px solid rgba(159,225,203,0.2)", borderRadius: 10, fontSize: 13, color: "#9FE1CB", cursor: "pointer", fontFamily: "inherit", marginBottom: 14, textAlign: "left" }}
+          >
+            📋 Modifier mon profil investisseur →
+          </button>
           <div style={{ display: "flex", gap: 8 }}>
             <button style={btn} onClick={saveProfile} disabled={saving}>{saving ? "Enregistrement…" : "Sauvegarder"}</button>
             <button style={btnSm} onClick={() => setEditing(false)}>Annuler</button>
           </div>
         </div>
+      )}
+
+      {showKYC && (
+        <KYC
+          session={session}
+          profile={profile}
+          onComplete={() => { setShowKYC(false); window.location.reload(); }}
+          onSkip={() => setShowKYC(false)}
+        />
       )}
 
       <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>

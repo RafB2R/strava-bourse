@@ -20,7 +20,7 @@ const btn = { background: "#9FE1CB", border: "none", borderRadius: 10, padding: 
 const btnSm = { background: "none", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "5px 12px", fontSize: 12, color: "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" };
 const lbl = { fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 4, display: "block" };
 
-const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB", "rgba(240,153,123,0.12)|#F0997B", "rgba(175,169,236,0.12)|#AFA9EC", "rgba(123,184,240,0.12)|#7BB8F0", "rgba(240,203,123,0.12)|#F0CB7B"];
+const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB","rgba(240,153,123,0.12)|#F0997B","rgba(175,169,236,0.12)|#AFA9EC","rgba(123,184,240,0.12)|#7BB8F0","rgba(240,203,123,0.12)|#F0CB7B"];
 function Avatar({ name, size = 32 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
   const [bg, color] = PALETTE[name?.charCodeAt(0) % PALETTE.length || 0].split("|");
@@ -44,7 +44,6 @@ function Post({ post, session, isMember, onReact, onDelete }) {
 
   const myReactions = post.reactions?.filter(r => r.user_id === session.user.id).map(r => r.type) || [];
   const reactionCounts = REACTIONS.reduce((acc, r) => { acc[r] = post.reactions?.filter(x => x.type === r).length || 0; return acc; }, {});
-  const totalReactions = Object.values(reactionCounts).reduce((s, v) => s + v, 0);
 
   async function loadReplies() {
     setLoadingReplies(true);
@@ -128,6 +127,89 @@ function Post({ post, session, isMember, onReact, onDelete }) {
   );
 }
 
+function ClubRanking({ clubId, session }) {
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("performance");
+
+  useEffect(() => { loadRanking(); }, [clubId]);
+
+  async function loadRanking() {
+    setLoading(true);
+    const { data: memberships } = await supabase
+      .from("club_members")
+      .select("user_id, profiles!club_members_user_id_fkey(full_name, username, streak_mois)")
+      .eq("club_id", clubId);
+
+    if (!memberships) { setLoading(false); return; }
+
+    const enriched = await Promise.all(memberships.map(async m => {
+      const { data: entries } = await supabase.from("portfolio_entries").select("performance, percentage").eq("user_id", m.user_id);
+      const { data: badges } = await supabase.from("user_badges").select("badge_id").eq("user_id", m.user_id);
+      let perf = null;
+      if (entries && entries.length > 0) {
+        const avecPerf = entries.filter(e => e.performance !== null);
+        const totalPct = avecPerf.reduce((s, e) => s + Number(e.percentage), 0);
+        if (totalPct > 0) perf = avecPerf.reduce((s, e) => s + Number(e.performance) * Number(e.percentage) / totalPct, 0);
+      }
+      return {
+        user_id: m.user_id,
+        name: m.profiles?.full_name || "Investisseur",
+        username: m.profiles?.username,
+        streak: m.profiles?.streak_mois || 0,
+        perf,
+        nbBadges: (badges || []).length,
+        isMe: m.user_id === session.user.id,
+      };
+    }));
+
+    setMembers(enriched);
+    setLoading(false);
+  }
+
+  const sorted = [...members].sort((a, b) => {
+    if (filter === "performance") return (b.perf ?? -Infinity) - (a.perf ?? -Infinity);
+    if (filter === "regularite") return b.streak - a.streak;
+    if (filter === "badges") return b.nbBadges - a.nbBadges;
+    return 0;
+  });
+
+  const rankIcon = i => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+        {[["performance", "📈 Performance"], ["regularite", "🔥 Régularité"], ["badges", "🏅 Badges"]].map(([id, label]) => (
+          <button key={id} onClick={() => setFilter(id)} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filter === id ? "#9FE1CB" : "rgba(255,255,255,0.1)"}`, background: filter === id ? "rgba(159,225,203,0.1)" : "none", color: filter === id ? "#9FE1CB" : "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" }}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {loading && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "1rem" }}>Chargement…</div>}
+      {!loading && sorted.map((m, i) => {
+        const val = filter === "performance" ? (m.perf !== null ? `${m.perf >= 0 ? "+" : ""}${m.perf.toFixed(1)}%` : "—")
+          : filter === "regularite" ? (m.streak > 0 ? `🔥 ${m.streak} mois` : "—")
+          : `🏅 ${m.nbBadges}`;
+        const color = filter === "performance" ? (m.perf === null ? "rgba(255,255,255,0.3)" : m.perf >= 0 ? "#9FE1CB" : "#F08080") : filter === "regularite" ? "#F0CB7B" : "#FFD700";
+        return (
+          <div key={m.user_id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderTop: i === 0 ? "none" : "0.5px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ fontSize: 16, minWidth: 28, textAlign: "center" }}>
+              {rankIcon(i) || <span style={{ fontSize: 13, color: "rgba(255,255,255,0.25)" }}>{i + 1}</span>}
+            </div>
+            <Avatar name={m.name} size={32} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: m.isMe ? "#9FE1CB" : "#fff" }}>
+                {m.name}{m.isMe && <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginLeft: 6 }}>· moi</span>}
+              </div>
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 600, color }}>{val}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCount }) {
   const [posts, setPosts] = useState([]);
   const [input, setInput] = useState("");
@@ -136,6 +218,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
   const [sort, setSort] = useState("date");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [clubTab, setClubTab] = useState("discussion");
 
   useEffect(() => { loadPosts(); }, [club.id, sort, page]);
 
@@ -143,25 +226,14 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
     setLoading(true);
     const from = (page - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
-
-    const { data: postsData, count } = await supabase
-      .from("club_posts")
-      .select("*, author:profiles!club_posts_user_id_fkey(full_name, username)", { count: "exact" })
-      .eq("club_id", club.id)
-      .order("created_at", { ascending: sort === "date" ? false : true })
-      .range(from, to);
-
+    const { data: postsData, count } = await supabase.from("club_posts").select("*, author:profiles!club_posts_user_id_fkey(full_name, username)", { count: "exact" }).eq("club_id", club.id).order("created_at", { ascending: sort === "date" ? false : true }).range(from, to);
     if (postsData) {
       const postsWithData = await Promise.all(postsData.map(async post => {
         const { data: reactions } = await supabase.from("club_reactions").select("*").eq("post_id", post.id);
         const { count: replyCount } = await supabase.from("club_replies").select("*", { count: "exact", head: true }).eq("post_id", post.id);
         return { ...post, reactions: reactions || [], reply_count: replyCount || 0, score: (reactions || []).length + (replyCount || 0) };
       }));
-
-      const sorted = sort === "popularite"
-        ? [...postsWithData].sort((a, b) => b.score - a.score)
-        : postsWithData;
-
+      const sorted = sort === "popularite" ? [...postsWithData].sort((a, b) => b.score - a.score) : postsWithData;
       setPosts(sorted);
       setTotal(count || 0);
     }
@@ -172,22 +244,25 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
     if (!input.trim() || sending) return;
     setSending(true);
     await supabase.from("club_posts").insert({ club_id: club.id, user_id: session.user.id, content: input.trim() });
-    setInput("");
-    setSending(false);
-    setPage(1);
-    loadPosts();
+    setInput(""); setSending(false); setPage(1); loadPosts();
   }
 
-  async function deletePost(id) {
-    await supabase.from("club_posts").delete().eq("id", id);
-    loadPosts();
-  }
+  async function deletePost(id) { await supabase.from("club_posts").delete().eq("id", id); loadPosts(); }
 
   async function handleReact(postId, type) {
     const post = posts.find(p => p.id === postId);
     const already = post?.reactions?.find(r => r.user_id === session.user.id && r.type === type);
-    if (already) await supabase.from("club_reactions").delete().eq("id", already.id);
-    else await supabase.from("club_reactions").insert({ post_id: postId, user_id: session.user.id, type });
+    if (already) {
+      await supabase.from("club_reactions").delete().eq("id", already.id);
+    } else {
+      await supabase.from("club_reactions").insert({ post_id: postId, user_id: session.user.id, type });
+      // Notifier l'auteur du post si c'est pas soi-même
+      const post = posts.find(p => p.id === postId);
+      if (post && post.user_id !== session.user.id) {
+        const { data: me } = await supabase.from("profiles").select("full_name").eq("id", session.user.id).single();
+        await supabase.from("notifications").insert({ user_id: post.user_id, type: "post_reaction", data: { from_name: me?.full_name, reaction: type, post_id: postId } });
+      }
+    }
     loadPosts();
   }
 
@@ -212,40 +287,55 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
         </div>
       </div>
 
-      {isMember && (
-        <div style={{ ...card, marginBottom: 20 }}>
-          <textarea style={{ ...inp, marginBottom: 8, height: 80, resize: "none" }} placeholder="Partage une idée, une question, une analyse…" value={input} onChange={e => setInput(e.target.value)} />
-          <button style={{ ...btn, padding: "8px 20px" }} onClick={sendPost} disabled={sending || !input.trim()}>{sending ? "Publication…" : "Publier"}</button>
+      {/* Onglets */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+        {[["discussion", "💬 Discussion"], ["classement", "🏆 Classement"]].map(([id, label]) => (
+          <button key={id} onClick={() => setClubTab(id)} style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, border: `0.5px solid ${clubTab === id ? "#9FE1CB" : "rgba(255,255,255,0.1)"}`, background: clubTab === id ? "rgba(159,225,203,0.1)" : "none", color: clubTab === id ? "#9FE1CB" : "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Classement */}
+      {clubTab === "classement" && (
+        <div style={card}>
+          <ClubRanking clubId={club.id} session={session} />
         </div>
       )}
 
-      {!isMember && <div style={{ textAlign: "center", padding: "1rem 0 1.5rem", fontSize: 13, color: "rgba(255,255,255,0.3)" }}>Rejoins ce club pour participer aux discussions</div>}
+      {/* Discussion */}
+      {clubTab === "discussion" && (
+        <div>
+          {isMember && (
+            <div style={{ ...card, marginBottom: 20 }}>
+              <textarea style={{ ...inp, marginBottom: 8, height: 80, resize: "none" }} placeholder="Partage une idée, une question, une analyse…" value={input} onChange={e => setInput(e.target.value)} />
+              <button style={{ ...btn, padding: "8px 20px" }} onClick={sendPost} disabled={sending || !input.trim()}>{sending ? "Publication…" : "Publier"}</button>
+            </div>
+          )}
+          {!isMember && <div style={{ textAlign: "center", padding: "1rem 0 1.5rem", fontSize: 13, color: "rgba(255,255,255,0.3)" }}>Rejoins ce club pour participer aux discussions</div>}
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          {total} post{total > 1 ? "s" : ""}
-        </div>
-        <div style={{ display: "flex", gap: 6 }}>
-          {[["date", "🕐 Récents"], ["popularite", "🔥 Populaires"]].map(([id, label]) => (
-            <button key={id} onClick={() => { setSort(id); setPage(1); }} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${sort === id ? "#9FE1CB" : "rgba(255,255,255,0.1)"}`, background: sort === id ? "rgba(159,225,203,0.1)" : "none", color: sort === id ? "#9FE1CB" : "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" }}>
-              {label}
-            </button>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>{total} post{total > 1 ? "s" : ""}</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              {[["date", "🕐 Récents"], ["popularite", "🔥 Populaires"]].map(([id, label]) => (
+                <button key={id} onClick={() => { setSort(id); setPage(1); }} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${sort === id ? "#9FE1CB" : "rgba(255,255,255,0.1)"}`, background: sort === id ? "rgba(159,225,203,0.1)" : "none", color: sort === id ? "#9FE1CB" : "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" }}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          {loading && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "2rem" }}>Chargement…</div>}
+          {!loading && posts.length === 0 && <div style={{ ...card, textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: 13, padding: "2rem" }}>Aucun post encore — lance la discussion ! 🚀</div>}
+          {posts.map(post => (
+            <Post key={post.id} post={post} session={session} isMember={isMember} onReact={handleReact} onDelete={deletePost} />
           ))}
-        </div>
-      </div>
 
-      {loading && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "2rem" }}>Chargement…</div>}
-      {!loading && posts.length === 0 && <div style={{ ...card, textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: 13, padding: "2rem" }}>Aucun post encore — lance la discussion ! 🚀</div>}
-
-      {posts.map(post => (
-        <Post key={post.id} post={post} session={session} isMember={isMember} onReact={handleReact} onDelete={deletePost} />
-      ))}
-
-      {totalPages > 1 && (
-        <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16 }}>
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ ...btnSm, opacity: page === 1 ? 0.3 : 1 }}>← Préc.</button>
-          <span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", padding: "5px 12px" }}>{page} / {totalPages}</span>
-          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ ...btnSm, opacity: page === totalPages ? 0.3 : 1 }}>Suiv. →</button>
+          {totalPages > 1 && (
+            <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16 }}>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ ...btnSm, opacity: page === 1 ? 0.3 : 1 }}>← Préc.</button>
+              <span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", padding: "5px 12px" }}>{page} / {totalPages}</span>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ ...btnSm, opacity: page === totalPages ? 0.3 : 1 }}>Suiv. →</button>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -296,9 +386,7 @@ export default function Clubs({ session }) {
     if (err) { setError(err.message); setSaving(false); return; }
     await supabase.from("club_members").insert({ club_id: data.id, user_id: session.user.id });
     setForm({ name: "", description: "", category: "", subcategory: "" });
-    setShowForm(false);
-    loadClubs();
-    setSaving(false);
+    setShowForm(false); loadClubs(); setSaving(false);
   }
 
   async function joinClub(clubId) {
@@ -378,13 +466,7 @@ export default function Clubs({ session }) {
 
       {!showForm && view === "explorer" && (
         <>
-          <input
-            style={{ ...inp, marginBottom: 12 }}
-            placeholder="🔍 Rechercher un club par nom…"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-
+          <input style={{ ...inp, marginBottom: 12 }} placeholder="🔍 Rechercher un club par nom…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
             {categories.map(cat => (
               <button key={cat} onClick={() => { setFilterCat(cat); setFilterSub("Tous"); }} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filterCat === cat ? "#9FE1CB" : "rgba(255,255,255,0.1)"}`, background: filterCat === cat ? "rgba(159,225,203,0.1)" : "none", color: filterCat === cat ? "#9FE1CB" : "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
@@ -392,7 +474,6 @@ export default function Clubs({ session }) {
               </button>
             ))}
           </div>
-
           {filterCat !== "Tous" && (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
               <button onClick={() => setFilterSub("Tous")} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${filterSub === "Tous" ? "#9FE1CB" : "rgba(255,255,255,0.08)"}`, background: filterSub === "Tous" ? "rgba(159,225,203,0.08)" : "none", color: filterSub === "Tous" ? "#9FE1CB" : "rgba(255,255,255,0.3)", cursor: "pointer", fontFamily: "inherit" }}>Tous</button>
@@ -402,21 +483,16 @@ export default function Clubs({ session }) {
             </div>
           )}
           {filterCat === "Tous" && <div style={{ marginBottom: 16 }} />}
-
           {searchQuery && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginBottom: 12 }}>{filteredClubs.length} résultat{filteredClubs.length > 1 ? "s" : ""} pour "{searchQuery}"</div>}
-
           {loading && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "2rem" }}>Chargement…</div>}
           {!loading && filteredClubs.length === 0 && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "2rem 0" }}>{searchQuery ? `Aucun club pour "${searchQuery}"` : "Aucun club — crée le premier ! 🚀"}</div>}
-
           {filteredClubs.map(club => (
             <div key={club.id} style={{ ...card, cursor: "pointer" }} onClick={() => setSelectedClub(club)}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(159,225,203,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", marginBottom: 4 }}>
-                    {searchQuery ? (
-                      <span dangerouslySetInnerHTML={{ __html: club.name.replace(new RegExp(`(${searchQuery})`, "gi"), '<span style="color:#9FE1CB">$1</span>') }} />
-                    ) : club.name}
+                    {searchQuery ? <span dangerouslySetInnerHTML={{ __html: club.name.replace(new RegExp(`(${searchQuery})`, "gi"), '<span style="color:#9FE1CB">$1</span>') }} /> : club.name}
                   </div>
                   <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
                     <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: "rgba(159,225,203,0.08)", color: "#9FE1CB" }}>{club.subcategory}</span>
