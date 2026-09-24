@@ -208,7 +208,7 @@ export default function Marches() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>{e.name || e.company}</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{e.symbol}{e.eps ? ` · BPA estimé : $${Number(e.eps).toFixed(2)}` : ""}</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{e.symbol}{e.eps !== null && !isNaN(e.eps) ? ` · BPA estimé : $${Number(e.eps).toFixed(2)}` : ""}</div>
               </div>
             </div>
           );
