@@ -53,16 +53,9 @@ const SECTEURS = [
 
 async function fetchQuote(symbol) {
   try {
-    const proxy = "https://corsproxy.io/?";
-    const url = `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
-    const res = await fetch(proxy + encodeURIComponent(url));
-    const data = await res.json();
-    const meta = data?.chart?.result?.[0]?.meta;
-    if (!meta) return null;
-    const price = meta.regularMarketPrice;
-    const prev = meta.previousClose || meta.chartPreviousClose;
-    const change = prev ? ((price - prev) / prev) * 100 : null;
-    return { price, change, currency: meta.currency };
+    const res = await fetch(`/api/quote?symbol=${encodeURIComponent(symbol)}`);
+    if (!res.ok) return null;
+    return await res.json();
   } catch { return null; }
 }
 
