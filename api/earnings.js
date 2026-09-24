@@ -1,36 +1,35 @@
 export const config = { runtime: 'edge' };
 
 export default async function handler(req) {
-  const apiKey = process.env.FMP_API_KEY;
+  const apiKey = process.env.ALPHA_VANTAGE_KEY;
   if (!apiKey) return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
 
   try {
-    const today = new Date();
-    const in30 = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-    const from = today.toISOString().split('T')[0];
-    const to = in30.toISOString().split('T')[0];
-
-    const url = `https://financialmodelingprep.com/api/v3/earning_calendar?from=${from}&to=${to}&apikey=${apiKey}`;
+    const url = `https://www.alphavantage.co/query?function=EARNINGS_CALENDAR&horizon=3month&apikey=${apiKey}`;
     const res = await fetch(url);
-    const data = await res.json();
+    const csv = await res.text();
 
-    // Vérifier que c'est bien un tableau
-    if (!Array.isArray(data)) {
-      return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
-    }
+    // Parser le CSV
+    const lines = csv.trim().split('\n');
+    const headers = lines[0].split(',');
+    
+    const watchlist = ['AAPL','NVDA','MSFT','GOOGL','META','AMZN','TSLA','MC.PA','TTE.PA','AIR.PA','BNP.PA','SAN.PA','OR.PA','CAP.PA'];
 
-    const watchlist = ['AAPL','NVDA','MSFT','GOOGL','META','AMZN','TSLA','MC.PA','TTE.PA','AIR.PA','BNP.PA','SAN.PA','OR.PA'];
-    const filtered = data
-      .filter(e => watchlist.includes(e.symbol))
-      .slice(0, 10)
-      .map(e => ({
-        date: e.date,
-        company: e.symbol,
-        eps: e.epsEstimated || null,
-        revenue: e.revenueEstimated || null,
-      }));
+    const rows = lines.slice(1)
+      .map(line => {
+        const vals = line.split(',');
+        return {
+          symbol: vals[0],
+          name: vals[1],
+          date: vals[2],
+          eps: vals[3] || null,
+          revenue: vals[4] || null,
+        };
+      })
+      .filter(r => watchlist.includes(r.symbol))
+      .slice(0, 10);
 
-    return new Response(JSON.stringify(filtered), {
+    return new Response(JSON.stringify(rows), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
   } catch (e) {
