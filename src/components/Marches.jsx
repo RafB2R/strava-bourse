@@ -95,7 +95,7 @@ export default function Marches() {
     try {
       const res = await fetch('/api/sectors');
       const data = await res.json();
-      setSecteurs(data || []);
+      setSecteurs(Array.isArray(data) ? data : []);
     } catch { setSecteurs([]); }
     setLoadingSecteurs(false);
   }
@@ -105,7 +105,7 @@ export default function Marches() {
     try {
       const res = await fetch('/api/earnings');
       const data = await res.json();
-      setEarnings(data || []);
+      setEarnings(Array.isArray(data) ? data : []);
     } catch { setEarnings([]); }
     setLoadingEarnings(false);
   }
