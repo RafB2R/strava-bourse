@@ -31,25 +31,9 @@ const TAUX = [
   { symbol: "^TYX", name: "US 30 ans", flag: "🇺🇸" },
 ];
 
-const EARNINGS = [
-  { date: "12 Aug", company: "Apple", ticker: "AAPL", consensus: "BPA estimé : $1.35" },
-  { date: "13 Aug", company: "NVIDIA", ticker: "NVDA", consensus: "BPA estimé : $0.64" },
-  { date: "14 Aug", company: "Walmart", ticker: "WMT", consensus: "BPA estimé : $0.65" },
-  { date: "19 Aug", company: "LVMH", ticker: "MC.PA", consensus: "RN estimé : 7.2Md€" },
-  { date: "20 Aug", company: "TotalEnergies", ticker: "TTE.PA", consensus: "BNA estimé : 2.1Md€" },
-  { date: "21 Aug", company: "Airbus", ticker: "AIR.PA", consensus: "EBIT estimé : 1.8Md€" },
-];
+// Earnings chargés dynamiquement via /api/earnings
 
-const SECTEURS = [
-  { name: "Technologie", change: "+1.24%", up: true },
-  { name: "Santé", change: "+0.42%", up: true },
-  { name: "Finance", change: "-0.18%", up: false },
-  { name: "Énergie", change: "+0.87%", up: true },
-  { name: "Consommation", change: "-0.31%", up: false },
-  { name: "Industrie", change: "+0.15%", up: true },
-  { name: "Immobilier", change: "-0.52%", up: false },
-  { name: "Matériaux", change: "+0.33%", up: true },
-];
+// Secteurs chargés dynamiquement via /api/sectors
 
 async function fetchQuote(symbol) {
   try {
@@ -99,6 +83,38 @@ function QuoteCard({ symbol, name, flag, unit }) {
 
 export default function Marches() {
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [secteurs, setSecteurs] = useState([]);
+  const [earnings, setEarnings] = useState([]);
+  const [loadingSecteurs, setLoadingSecteurs] = useState(true);
+  const [loadingEarnings, setLoadingEarnings] = useState(true);
+
+  useEffect(() => { loadSecteurs(); loadEarnings(); }, []);
+
+  async function loadSecteurs() {
+    setLoadingSecteurs(true);
+    try {
+      const res = await fetch('/api/sectors');
+      const data = await res.json();
+      setSecteurs(data || []);
+    } catch { setSecteurs([]); }
+    setLoadingSecteurs(false);
+  }
+
+  async function loadEarnings() {
+    setLoadingEarnings(true);
+    try {
+      const res = await fetch('/api/earnings');
+      const data = await res.json();
+      setEarnings(data || []);
+    } catch { setEarnings([]); }
+    setLoadingEarnings(false);
+  }
+
+  function refresh() {
+    setLastUpdate(new Date());
+    loadSecteurs();
+    loadEarnings();
+  }
 
   return (
     <div>
@@ -106,7 +122,7 @@ export default function Marches() {
         <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}>
           Mis à jour à {lastUpdate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
         </div>
-        <button onClick={() => setLastUpdate(new Date())} style={{ background: "none", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "4px 10px", fontSize: 11, color: "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" }}>
+        <button onClick={refresh} style={{ background: "none", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "4px 10px", fontSize: 11, color: "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" }}>
           ⟳ Actualiser
         </button>
       </div>
@@ -122,15 +138,19 @@ export default function Marches() {
       {/* Secteurs */}
       <div style={card}>
         <div style={sectionLabel}>🏭 Secteurs S&P 500</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {SECTEURS.map(s => (
-            <div key={s.name} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>{s.name}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: s.up ? "#9FE1CB" : "#F08080" }}>{s.change}</span>
-            </div>
-          ))}
-        </div>
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", marginTop: 10, textAlign: "center" }}>Données indicatives — temps réel bientôt</div>
+        {loadingSecteurs && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "1rem" }}>Chargement…</div>}
+        {!loadingSecteurs && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {secteurs.map(s => (
+              <div key={s.name} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>{s.name}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: s.change === null ? "rgba(255,255,255,0.3)" : s.change >= 0 ? "#9FE1CB" : "#F08080" }}>
+                  {s.change === null ? "—" : `${s.change >= 0 ? "+" : ""}${s.change.toFixed(2)}%`}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Taux */}
@@ -170,21 +190,29 @@ export default function Marches() {
       {/* Résultats d'entreprises */}
       <div style={card}>
         <div style={sectionLabel}>📅 Résultats à venir</div>
-        {EARNINGS.map((e, i) => (
-          <div key={e.ticker} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: i === 0 ? "none" : "0.5px solid rgba(255,255,255,0.06)" }}>
-            <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 10, color: "#9FE1CB", fontWeight: 600 }}>{e.date.split(" ")[0]}</div>
-                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)" }}>{e.date.split(" ")[1]}</div>
+        {loadingEarnings && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "1rem" }}>Chargement…</div>}
+        {!loadingEarnings && earnings.length === 0 && (
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "1rem" }}>Aucun résultat à venir</div>
+        )}
+        {!loadingEarnings && earnings.map((e, i) => {
+          const d = new Date(e.date);
+          const day = d.getDate();
+          const month = d.toLocaleString("fr-FR", { month: "short" });
+          return (
+            <div key={e.company + i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: i === 0 ? "none" : "0.5px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 13, color: "#9FE1CB", fontWeight: 700 }}>{day}</div>
+                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)" }}>{month}</div>
+                </div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>{e.company}</div>
+                {e.eps && <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>BPA estimé : ${e.eps.toFixed(2)}</div>}
               </div>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>{e.company}</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{e.consensus}</div>
-            </div>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontFamily: "monospace" }}>{e.ticker}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
