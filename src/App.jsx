@@ -8,6 +8,7 @@ import Feed from "./components/Feed";
 import Explore from "./components/Explore";
 import Notifications from "./components/Notifications";
 import KYC from "./components/KYC";
+import ProfilPublic from "./components/ProfilPublic";
 
 const TABS = [
   { id: "feed", label: "Fil", icon: "🏠" },
@@ -95,6 +96,7 @@ export default function App() {
     (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
   );
   const [isDesktop, setIsDesktop] = useState(window.innerWidth > 900);
+  const [publicUserId, setPublicUserId] = useState(null);
 
   const T = themes[themeKey];
 
@@ -157,10 +159,16 @@ export default function App() {
   const content = (
     <>
       {showKYC && <KYC session={session} profile={profile} onComplete={() => { setShowKYC(false); loadProfile(session.user.id); }} onSkip={() => setShowKYC(false)} />}
-      {tab === "feed" && <Feed session={session} T={T} />}
-      {tab === "explore" && <Explore session={session} T={T} />}
-      {tab === "portfolio" && <Portfolio session={session} profile={profile} T={T} />}
-      {tab === "profil" && <Profil profile={profile} session={session} T={T} />}
+      {publicUserId ? (
+        <ProfilPublic userId={publicUserId} session={session} T={T} onBack={() => setPublicUserId(null)} />
+      ) : (
+        <>
+          {tab === "feed" && <Feed session={session} T={T} onViewProfile={setPublicUserId} />}
+          {tab === "explore" && <Explore session={session} T={T} onViewProfile={setPublicUserId} />}
+          {tab === "portfolio" && <Portfolio session={session} profile={profile} T={T} />}
+          {tab === "profil" && <Profil profile={profile} session={session} T={T} onViewProfile={setPublicUserId} />}
+        </>
+      )}
     </>
   );
 
@@ -204,11 +212,10 @@ export default function App() {
 
       {/* Droite */}
       <div style={{ width: 280, flexShrink: 0, padding: "24px 16px", position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}>
-        <MarketWidget T={T} />
-        <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16, overflow: "visible", position: "relative" }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 8 }}>🔔 Notifications</div>
-          <Notifications session={session} T={T} desktop />
+        <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16, marginBottom: 16, overflow: "visible" }}>
+          <Notifications session={session} T={T} />
         </div>
+        <MarketWidget T={T} />
       </div>
     </div>
   );

@@ -68,7 +68,7 @@ export default function Notifications({ session, T: TProp }) {
       </button>
 
       {open && (
-        <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, width: 320, background: T.bgSecondary, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.15)", zIndex: 100, overflow: "hidden" }}>
+        <div style={{ position: "fixed", top: 60, right: 16, width: 320, background: T.bgSecondary, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.15)", zIndex: 100, overflow: "hidden" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", borderBottom: `0.5px solid ${T.border}` }}>
             <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Notifications</span>
             {unread > 0 && (

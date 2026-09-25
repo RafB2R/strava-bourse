@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import ProfilPublic from "./ProfilPublic";
 import { supabase } from "../supabase";
 import { themes } from "../App";
 
@@ -61,7 +60,7 @@ const FILTERS = [
   { id: "badges", label: "Badges 🏅" },
 ];
 
-export default function Feed({ session, T: TProp }) {
+export default function Feed({ session, T: TProp, onViewProfile }) {
   const T = TProp || themes[localStorage.getItem("verio-theme") || "light"];
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
   const btnAct = { background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
@@ -77,7 +76,6 @@ export default function Feed({ session, T: TProp }) {
   const [commentInputs, setCommentInputs] = useState({});
   const [postInput, setPostInput] = useState("");
   const [posting, setPosting] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
   const [profile, setProfile] = useState(null);
 
   useEffect(() => { loadProfile(); loadFriendsAndActivities(); }, []);
@@ -130,7 +128,7 @@ export default function Feed({ session, T: TProp }) {
     return true;
   });
 
-  if (selectedUser) return <ProfilPublic userId={selectedUser} session={session} T={T} onBack={() => setSelectedUser(null)} />;
+
 
   return (
     <div>
@@ -200,7 +198,7 @@ export default function Feed({ session, T: TProp }) {
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
               <Avatar name={activity.author?.full_name} size={36} />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: T.text, cursor: "pointer" }} onClick={() => setSelectedUser(activity.user_id)}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.text, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(activity.user_id)}>
                   {activity.author?.full_name}
                   {isMe && <span style={{ fontSize: 11, color: T.textFaint, marginLeft: 6 }}>· moi</span>}
                 </div>

@@ -122,8 +122,7 @@ function StatsSection({ profile, session, friends, perf, T }) {
   const ranking = [{ id: session.user.id, name: profile?.full_name, perf, me: true }, ...friendPerfs]
     .sort((a, b) => (b.perf ?? -Infinity) - (a.perf ?? -Infinity));
 
-  if (selectedUser) {
-    return <ProfilPublicEmbed userId={selectedUser} session={session} onBack={() => setSelectedUser(null)} />;
+  // Navigation gérée par App
   }
 
   return (
@@ -184,7 +183,7 @@ function getProgress(category, current) {
   return Math.min(((current - from) / (next.target - from)) * 100, 100);
 }
 
-export default function Profil({ profile: initialProfile, session, T: TProp }) {
+export default function Profil({ profile: initialProfile, session, T: TProp, onViewProfile }) {
   const T = TProp || themes[localStorage.getItem("verio-theme") || "light"];
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
   const inp = { width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.input.border}`, background: T.input.background, color: T.input.color, fontFamily: "inherit", marginBottom: 10, display: "block" };
@@ -204,7 +203,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp }) {
   const [stats, setStats] = useState({ positions: 0, perfPonderee: null, types: 0, brokers: 0, totalPct: 0 });
   const [selectedCat, setSelectedCat] = useState(null);
   const [friends, setFriends] = useState([]);
-  const [selectedPublicUser, setSelectedPublicUser] = useState(null);
+
   const [pending, setPending] = useState([]);
   const [received, setReceived] = useState([]);
   const [myClubs, setMyClubs] = useState(0);
@@ -449,7 +448,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp }) {
               {received.map(f => (
                 <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: "0.5px solid rgba(255,255,255,0.06)" }}>
                   <Avatar name={f.friend.full_name} size={34} />
-                  <div style={{ flex: 1, cursor: "pointer" }} onClick={() => setSelectedPublicUser(f.friend.id)}>
+                  <div style={{ flex: 1, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(f.friend.id)}>
                     <div style={{ fontSize: 14, fontWeight: 600, color: T.accent }}>{f.friend.full_name}</div>
                     <div style={{ fontSize: 12, color: T.textFaint }}>@{f.friend.username}</div>
                   </div>
@@ -464,7 +463,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp }) {
             <div style={sectionLabel}>Mes amis ({friends.length})</div>
             {friends.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem 0" }}>Aucun ami encore 🙂</div>}
             {friends.map(f => (
-              <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: "0.5px solid rgba(255,255,255,0.06)", cursor: "pointer" }} onClick={() => setSelectedPublicUser(f.friend.id)}>
+              <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: "0.5px solid rgba(255,255,255,0.06)", cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(f.friend.id)}>
                 <Avatar name={f.friend.full_name} size={34} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: T.accent }}>{f.friend.full_name}</div>
