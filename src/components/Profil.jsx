@@ -96,10 +96,9 @@ function Avatar({ name, size = 36 }) {
   return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
 }
 
-function StatsSection({ profile, session, friends, perf, T }) {
+function StatsSection({ profile, session, friends, perf, T, onViewProfile }) {
   const [friendPerfs, setFriendPerfs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
 
   useEffect(() => { if (friends.length > 0) loadFriendPerfs(); }, [friends]);
 
@@ -131,7 +130,7 @@ function StatsSection({ profile, session, friends, perf, T }) {
       {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>Chargement…</div>}
       {!loading && friends.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem 0" }}>Ajoute des amis pour voir le classement 🙂</div>}
       {!loading && ranking.map((f, i) => (
-        <div key={i} onClick={() => !f.me && setSelectedUser(f.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: i === 0 ? "none" : "0.5px solid rgba(255,255,255,0.06)", cursor: f.me ? "default" : "pointer" }}>
+        <div key={i} onClick={() => !f.me && onViewProfile && onViewProfile(f.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: i === 0 ? "none" : "0.5px solid rgba(255,255,255,0.06)", cursor: f.me ? "default" : "pointer" }}>
           <div style={{ fontSize: 13, color: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : T.textFaint, minWidth: 20, fontWeight: 600 }}>{i + 1}</div>
           <div style={{ width: 30, height: 30, borderRadius: "50%", background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>
             {f.name?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)}
@@ -415,7 +414,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
       </div>
 
       {section === "stats" && (
-        <StatsSection profile={profile} session={session} friends={friends} perf={perf} T={T} />
+        <StatsSection profile={profile} session={session} friends={friends} perf={perf} T={T} onViewProfile={onViewProfile} />
       )}
 
       {section === "badges" && (

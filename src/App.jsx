@@ -211,8 +211,8 @@ export default function App() {
       </div>
 
       {/* Droite */}
-      <div style={{ width: 280, flexShrink: 0, padding: "24px 16px", position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}>
-        <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16, marginBottom: 16, overflow: "visible" }}>
+      <div style={{ width: 280, flexShrink: 0, padding: "24px 16px", position: "sticky", top: 0, height: "100vh", overflowY: "auto", overflowX: "visible" }}>
+        <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16, marginBottom: 16, position: "relative", zIndex: 50 }}>
           <Notifications session={session} T={T} />
         </div>
         <MarketWidget T={T} />
