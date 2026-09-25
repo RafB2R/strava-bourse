@@ -84,6 +84,46 @@ function MarketWidget({ T }) {
   );
 }
 
+
+function ComparisonWidget({ data, T }) {
+  if (!data) return null;
+  const { profile, perfGlobale: theirPerf, myPerf } = data;
+  const theirVol = 12.4;
+  const myVol = 8.7;
+  const theirDD = -18.2;
+  const myDD = -11.4;
+
+  function Row({ label, mine, theirs, higherBetter = true }) {
+    const meBetter = higherBetter ? mine > theirs : mine < theirs;
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, padding: "8px 0", borderTop: `0.5px solid ${T.border}`, alignItems: "center" }}>
+        <div style={{ textAlign: "right", fontSize: 13, fontWeight: 700, color: meBetter ? T.accent : T.text }}>
+          {mine !== null ? `${mine >= 0 ? "+" : ""}${Number(mine).toFixed(1)}%` : "—"}
+        </div>
+        <div style={{ textAlign: "center", fontSize: 10, color: T.textFaint, minWidth: 70 }}>{label}</div>
+        <div style={{ textAlign: "left", fontSize: 13, fontWeight: 700, color: !meBetter ? T.accent : T.text }}>
+          {theirs !== null ? `${theirs >= 0 ? "+" : ""}${Number(theirs).toFixed(1)}%` : "—"}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
+      <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>⚖️ Comparaison</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, marginBottom: 4 }}>
+        <div style={{ textAlign: "right", fontSize: 12, fontWeight: 700, color: T.text }}>Moi</div>
+        <div style={{ minWidth: 70 }} />
+        <div style={{ textAlign: "left", fontSize: 12, fontWeight: 700, color: T.text }}>{profile.full_name?.split(" ")[0]}</div>
+      </div>
+      <Row label="Perf. totale" mine={myPerf} theirs={theirPerf} higherBetter={true} />
+      <Row label="Volatilité" mine={myVol} theirs={theirVol} higherBetter={false} />
+      <Row label="Max drawdown" mine={myDD} theirs={theirDD} higherBetter={false} />
+      <div style={{ fontSize: 10, color: T.textFaint, marginTop: 8, textAlign: "center" }}>Vol. et drawdown indicatifs</div>
+    </div>
+  );
+}
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -97,6 +137,7 @@ export default function App() {
   );
   const [isDesktop, setIsDesktop] = useState(window.innerWidth > 900);
   const [publicUserId, setPublicUserId] = useState(null);
+  const [compareData, setCompareData] = useState(null);
 
   const T = themes[themeKey];
 
@@ -160,7 +201,7 @@ export default function App() {
     <>
       {showKYC && <KYC session={session} profile={profile} onComplete={() => { setShowKYC(false); loadProfile(session.user.id); }} onSkip={() => setShowKYC(false)} />}
       {publicUserId ? (
-        <ProfilPublic userId={publicUserId} session={session} T={T} onBack={() => setPublicUserId(null)} />
+        <ProfilPublic userId={publicUserId} session={session} T={T} onBack={() => { setPublicUserId(null); setCompareData(null); }} onCompareData={setCompareData} />
       ) : (
         <>
           {tab === "feed" && <Feed session={session} T={T} onViewProfile={setPublicUserId} />}
@@ -211,11 +252,17 @@ export default function App() {
       </div>
 
       {/* Droite */}
-      <div style={{ width: 280, flexShrink: 0, padding: "24px 16px", position: "sticky", top: 0, height: "100vh", overflowY: "auto", overflowX: "visible" }}>
-        <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16, marginBottom: 16, position: "relative", zIndex: 50 }}>
-          <Notifications session={session} T={T} />
-        </div>
-        <MarketWidget T={T} />
+      <div style={{ width: 280, flexShrink: 0, padding: "24px 16px", position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}>
+        {publicUserId ? (
+          <ComparisonWidget data={compareData} T={T} />
+        ) : (
+          <>
+            <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16, marginBottom: 16, position: "relative", zIndex: 50 }}>
+              <Notifications session={session} T={T} />
+            </div>
+            <MarketWidget T={T} />
+          </>
+        )}
       </div>
     </div>
   );

@@ -20,56 +20,7 @@ function timeAgo(date) {
   return `il y a ${Math.floor(diff / 86400)} j`;
 }
 
-// Données de comparaison statiques pour l'instant
-function ComparisonBlock({ profile, myStats, T }) {
-  const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
-
-  const theirPerf = myStats.perfGlobale; // perf du profil visité
-  const myPerf = myStats.myPerf; // perf du visiteur
-  const theirVol = 12.4; // statique pour l'instant
-  const myVol = 8.7;
-  const theirDD = -18.2;
-  const myDD = -11.4;
-
-  function CompRow({ label, mine, theirs, unit = "%", higherBetter = true }) {
-    const iMeBetter = higherBetter ? mine > theirs : mine < theirs;
-    return (
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 8, padding: "10px 0", borderTop: `0.5px solid ${T.border}`, alignItems: "center" }}>
-        <div style={{ textAlign: "right" }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: iMeBetter ? T.accent : T.text }}>
-            {mine !== null ? `${mine >= 0 && unit === "%" ? "+" : ""}${Number(mine).toFixed(1)}${unit}` : "—"}
-          </span>
-        </div>
-        <div style={{ textAlign: "center", fontSize: 11, color: T.textFaint, minWidth: 80 }}>{label}</div>
-        <div style={{ textAlign: "left" }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: !iMeBetter ? T.accent : T.text }}>
-            {theirs !== null ? `${theirs >= 0 && unit === "%" ? "+" : ""}${Number(theirs).toFixed(1)}${unit}` : "—"}
-          </span>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={card}>
-      <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Comparaison</div>
-      {/* En-têtes */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 8, marginBottom: 4 }}>
-        <div style={{ textAlign: "right", fontSize: 12, fontWeight: 600, color: T.text }}>Moi</div>
-        <div style={{ minWidth: 80 }} />
-        <div style={{ textAlign: "left", fontSize: 12, fontWeight: 600, color: T.text }}>{profile.full_name?.split(" ")[0]}</div>
-      </div>
-      <CompRow label="Perf. totale" mine={myPerf} theirs={theirPerf} higherBetter={true} />
-      <CompRow label="Volatilité" mine={myVol} theirs={theirVol} higherBetter={false} />
-      <CompRow label="Max drawdown" mine={myDD} theirs={theirDD} higherBetter={false} />
-      <div style={{ fontSize: 11, color: T.textFaint, marginTop: 10, textAlign: "center" }}>
-        Volatilité et drawdown — données indicatives
-      </div>
-    </div>
-  );
-}
-
-export default function ProfilPublic({ userId, session, onBack, T: TProp }) {
+export default function ProfilPublic({ userId, session, onBack, T: TProp, onCompareData }) {
   const T = TProp || themes[localStorage.getItem("verio-theme") || "light"];
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
   const btnSm = { background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
@@ -132,6 +83,18 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp }) {
   const perfGlobale = totalPctPerf > 0 ? avecPerf.reduce((s, e) => s + Number(e.performance) * Number(e.percentage) / totalPctPerf, 0) : null;
   const byExpo = entries.reduce((acc, e) => { const k = e.exposition || e.type || "Autre"; acc[k] = (acc[k] || 0) + Number(e.percentage); return acc; }, {});
 
+  // Envoyer les données de comparaison vers App
+  useEffect(() => {
+    if (profile && onCompareData) {
+      onCompareData({ profile, perfGlobale, myPerf });
+    }
+  }, [profile, perfGlobale, myPerf]);
+
+  // Nettoyer à la fermeture
+  useEffect(() => {
+    return () => { if (onCompareData) onCompareData(null); };
+  }, []);
+
   function getActivityText(a) {
     const d = a.data || {};
     switch (a.type) {
@@ -155,7 +118,6 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp }) {
     <div>
       <button onClick={onBack} style={{ ...btnSm, marginBottom: 16 }}>← Retour</button>
 
-      {/* Header */}
       <div style={card}>
         <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 14 }}>
           <Avatar name={profile.full_name} size={56} />
@@ -193,12 +155,6 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp }) {
         </div>
       </div>
 
-      {/* Comparaison */}
-      {userId !== session.user.id && (
-        <ComparisonBlock profile={profile} myStats={{ perfGlobale, myPerf }} T={T} />
-      )}
-
-      {/* Onglets */}
       <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: `0.5px solid ${T.border}` }}>
         {[["holdings", "Holdings"], ["activite", "Activité"], ["badges", "Badges"]].map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} style={{ flex: 1, padding: "10px 4px", fontSize: 13, fontWeight: tab === id ? 600 : 400, background: "none", border: "none", borderBottom: `2px solid ${tab === id ? T.accent : "transparent"}`, color: tab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
@@ -207,7 +163,6 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp }) {
         ))}
       </div>
 
-      {/* Holdings */}
       {tab === "holdings" && (
         <div>
           {Object.keys(byExpo).length > 0 && (
@@ -246,7 +201,6 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp }) {
         </div>
       )}
 
-      {/* Activité */}
       {tab === "activite" && (
         <div>
           {activities.length === 0 && <div style={{ ...card, textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>Aucune activité</div>}
@@ -264,7 +218,6 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp }) {
         </div>
       )}
 
-      {/* Badges */}
       {tab === "badges" && (
         <div>
           {badges.length === 0 && <div style={{ ...card, textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>Aucun badge débloqué</div>}
