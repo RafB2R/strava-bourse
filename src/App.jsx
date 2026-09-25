@@ -197,7 +197,7 @@ export default function App() {
       </div>
 
       {/* Centre */}
-      <div style={{ marginLeft: 220, flex: 1, maxWidth: 700, borderRight: `1px solid ${T.border}`, minHeight: "100vh" }}>
+      <div style={{ marginLeft: 220, flex: 1, minWidth: 0, borderRight: `1px solid ${T.border}`, minHeight: "100vh" }}>
         {kycBanner}
         <div style={{ padding: "24px" }}>{content}</div>
       </div>
@@ -205,8 +205,9 @@ export default function App() {
       {/* Droite */}
       <div style={{ width: 280, flexShrink: 0, padding: "24px 16px", position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}>
         <MarketWidget T={T} />
-        <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16 }}>
-          <Notifications session={session} T={T} />
+        <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16, overflow: "visible", position: "relative" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 8 }}>🔔 Notifications</div>
+          <Notifications session={session} T={T} desktop />
         </div>
       </div>
     </div>
