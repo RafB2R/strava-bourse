@@ -1,10 +1,96 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import { themes } from "../App";
 
 const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB","rgba(240,153,123,0.12)|#F0997B","rgba(175,169,236,0.12)|#AFA9EC","rgba(123,184,240,0.12)|#7BB8F0"];
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
 const MEDAL_COLORS = { "🥉": "#CD7F32", "🥈": "#C0C0C0", "🥇": "#FFD700", "💎": "#B9F2FF" };
+
+
+// Palette de couleurs distinctes pour les positions individuelles
+const POSITION_COLORS = [
+  "#1D9E75", "#185FA5", "#D85A30", "#7F77DD", "#F0CB7B",
+  "#E84393", "#00B4D8", "#F77F00", "#4CC9F0", "#A8DADC",
+];
+
+function PieChart({ data, T }) {
+  // data = [{ label, value, color }]
+  const total = data.reduce((s, d) => s + d.value, 0);
+  if (total === 0) return null;
+
+  const size = 160;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = 58;
+  const innerR = 32;
+  const [hovered, setHovered] = React.useState(null);
+
+  let angle = -Math.PI / 2;
+  const slices = data.map((d, i) => {
+    const pct = d.value / total;
+    const startAngle = angle;
+    const endAngle = angle + pct * 2 * Math.PI;
+    angle = endAngle;
+    const x1 = cx + r * Math.cos(startAngle);
+    const y1 = cy + r * Math.sin(startAngle);
+    const x2 = cx + r * Math.cos(endAngle);
+    const y2 = cy + r * Math.sin(endAngle);
+    const xi1 = cx + innerR * Math.cos(startAngle);
+    const yi1 = cy + innerR * Math.sin(startAngle);
+    const xi2 = cx + innerR * Math.cos(endAngle);
+    const yi2 = cy + innerR * Math.sin(endAngle);
+    const large = pct > 0.5 ? 1 : 0;
+    const path = [
+      `M ${xi1} ${yi1}`,
+      `L ${x1} ${y1}`,
+      `A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`,
+      `L ${xi2} ${yi2}`,
+      `A ${innerR} ${innerR} 0 ${large} 0 ${xi1} ${yi1}`,
+      "Z"
+    ].join(" ");
+    return { ...d, path, pct, midAngle: (startAngle + endAngle) / 2 };
+  });
+
+  const hov = hovered !== null ? slices[hovered] : null;
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <svg width={size} height={size} style={{ flexShrink: 0 }}>
+        {slices.map((s, i) => (
+          <path
+            key={i}
+            d={s.path}
+            fill={s.color}
+            opacity={hovered === null || hovered === i ? 1 : 0.4}
+            stroke={T.bgSecondary || "#fff"}
+            strokeWidth={2}
+            onMouseEnter={() => setHovered(i)}
+            onMouseLeave={() => setHovered(null)}
+            style={{ cursor: "pointer", transition: "opacity 0.15s" }}
+          />
+        ))}
+        {/* Centre */}
+        <text x={cx} y={cy - 6} textAnchor="middle" fill={T.text} fontSize={hov ? 13 : 12} fontWeight={700}>
+          {hov ? `${Math.round(hov.pct * 100)}%` : `${data.length}`}
+        </text>
+        <text x={cx} y={cy + 10} textAnchor="middle" fill={T.textFaint} fontSize={9}>
+          {hov ? hov.label.split(" ")[0] : "positions"}
+        </text>
+      </svg>
+      {/* Légende */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+        {slices.map((s, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, opacity: hovered === null || hovered === i ? 1 : 0.4, transition: "opacity 0.15s", cursor: "pointer" }}
+            onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}>
+            <div style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }} />
+            <div style={{ flex: 1, fontSize: 12, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.label}</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: T.textMuted }}>{Math.round(s.pct * 100)}%</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function Avatar({ name, size = 60 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
@@ -165,20 +251,17 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
 
       {tab === "holdings" && (
         <div>
-          {Object.keys(byExpo).length > 0 && (
+          {entries.length > 0 && (
             <div style={card}>
-              <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Exposition réelle</div>
-              {Object.entries(byExpo).sort((a,b) => b[1]-a[1]).map(([expo, pct]) => (
-                <div key={expo} style={{ marginBottom: 10 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 13, color: T.text }}>{expo}</span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{pct.toFixed(0)}%</span>
-                  </div>
-                  <div style={{ height: 5, background: T.border, borderRadius: 3, overflow: "hidden" }}>
-                    <div style={{ width: `${pct}%`, height: "100%", background: EXP_COLORS[expo] || "#888", borderRadius: 3 }} />
-                  </div>
-                </div>
-              ))}
+              <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Allocation</div>
+              <PieChart
+                T={T}
+                data={entries.map((e, i) => ({
+                  label: e.label,
+                  value: Number(e.percentage),
+                  color: POSITION_COLORS[i % POSITION_COLORS.length],
+                }))}
+              />
             </div>
           )}
           <div style={card}>
