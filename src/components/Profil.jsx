@@ -125,12 +125,12 @@ function StatsSection({ profile, session, friends, perf, T, onViewProfile }) {
   }
 
   return (
-    <div style={{ background: T.bgCard, border: "0.5px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "1.25rem", marginBottom: 12 }}>
+    <div style={{ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 }}>
       <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Classement amis</div>
       {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>Chargement…</div>}
       {!loading && friends.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem 0" }}>Ajoute des amis pour voir le classement 🙂</div>}
       {!loading && ranking.map((f, i) => (
-        <div key={i} onClick={() => !f.me && onViewProfile && onViewProfile(f.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: i === 0 ? "none" : "0.5px solid rgba(255,255,255,0.06)", cursor: f.me ? "default" : "pointer" }}>
+        <div key={i} onClick={() => !f.me && onViewProfile && onViewProfile(f.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}`, cursor: f.me ? "default" : "pointer" }}>
           <div style={{ fontSize: 13, color: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : T.textFaint, minWidth: 20, fontWeight: 600 }}>{i + 1}</div>
           <div style={{ width: 30, height: 30, borderRadius: "50%", background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>
             {f.name?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)}
@@ -186,7 +186,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
   const T = TProp || themes[localStorage.getItem("verio-theme") || "light"];
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
   const inp = { width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.input.border}`, background: T.input.background, color: T.input.color, fontFamily: "inherit", marginBottom: 10, display: "block" };
-  const btn = { background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.text, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 };
+  const btn = { background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 };
   const btnSm = { background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
   const btnGreen = { background: "none", border: `0.5px solid ${T.accent}`, borderRadius: 8, padding: "5px 10px", fontSize: 12, color: T.accent, cursor: "pointer", fontFamily: "inherit" };
   const btnRed = { background: "none", border: `0.5px solid ${T.red}`, borderRadius: 8, padding: "5px 10px", fontSize: 12, color: T.red, cursor: "pointer", fontFamily: "inherit" };
@@ -353,7 +353,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
           {[
             ["Positions", stats.positions, T.accent],
             ["Perf. totale", perf === null ? "—" : `${perf >= 0 ? "+" : ""}${perf.toFixed(2)}%`, perf === null ? T.textFaint : perf >= 0 ? T.accent : T.red],
-            ["Depuis", profile.investing_since || "—", "rgba(255,255,255,0.7)"],
+            ["Depuis", profile.investing_since || "—", T.text],
           ].map(([label, val, color]) => (
             <div key={label} style={{ background: T.bgCard, borderRadius: 10, padding: 12 }}>
               <div style={{ fontSize: 12, color: T.textFaint, marginBottom: 4 }}>{label}</div>
@@ -369,20 +369,20 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
           <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 16 }}>✏️ Modifier mon profil</div>
           {[["Prénom et nom", "full_name", "Raphael Dupont"], ["Nom d'utilisateur", "username", "raphaeld"], ["Ville", "city", "Paris"]].map(([label, key, ph]) => (
             <div key={key}>
-              <label style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 4, display: "block" }}>{label}</label>
+              <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{label}</label>
               <input style={inp} placeholder={ph} value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} />
             </div>
           ))}
-          <label style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 4, display: "block" }}>Bio</label>
+          <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Bio</label>
           <textarea style={{ ...inp, height: 80, resize: "vertical" }} placeholder="Investisseur passif…" value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} />
-          <label style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 4, display: "block" }}>Stratégie</label>
-          <select style={{ ...inp, background: "rgba(255,255,255,0.05)" }} value={form.strategy} onChange={e => setForm({ ...form, strategy: e.target.value })}>
+          <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Stratégie</label>
+          <select style={{ ...inp, background: T.bgCard }} value={form.strategy} onChange={e => setForm({ ...form, strategy: e.target.value })}>
             {STRATEGIES.map(s => <option key={s} style={{ background: "#1e2130" }}>{s}</option>)}
           </select>
-          <label style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 4, display: "block" }}>Investisseur depuis (année)</label>
+          <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Investisseur depuis (année)</label>
           <input style={inp} placeholder="2018" type="number" value={form.investing_since} onChange={e => setForm({ ...form, investing_since: e.target.value })} />
           <div style={{ height: "0.5px", background: T.border, margin: "16px 0" }} />
-          <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.6)", marginBottom: 10 }}>Profil investisseur</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: T.textMuted, marginBottom: 10 }}>Profil investisseur</div>
           <button
             onClick={() => { setEditing(false); setShowKYC(true); }}
             style={{ width: "100%", padding: "10px", background: "rgba(159,225,203,0.06)", border: "0.5px solid rgba(159,225,203,0.2)", borderRadius: 10, fontSize: 13, color: T.accent, cursor: "pointer", fontFamily: "inherit", marginBottom: 14, textAlign: "left" }}
@@ -429,7 +429,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
             {message && <div style={{ fontSize: 13, color: T.accent, marginBottom: 10 }}>{message}</div>}
             {searching && <div style={{ fontSize: 13, color: T.textFaint }}>Recherche…</div>}
             {searchResults.map(u => (
-              <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: "0.5px solid rgba(255,255,255,0.06)" }}>
+              <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `0.5px solid ${T.border}` }}>
                 <Avatar name={u.full_name} size={34} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}</div>
@@ -445,7 +445,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
             <div style={card}>
               <div style={sectionLabel}>Demandes reçues ({received.length})</div>
               {received.map(f => (
-                <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: "0.5px solid rgba(255,255,255,0.06)" }}>
+                <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `0.5px solid ${T.border}` }}>
                   <Avatar name={f.friend.full_name} size={34} />
                   <div style={{ flex: 1, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(f.friend.id)}>
                     <div style={{ fontSize: 14, fontWeight: 600, color: T.accent }}>{f.friend.full_name}</div>
@@ -462,7 +462,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
             <div style={sectionLabel}>Mes amis ({friends.length})</div>
             {friends.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem 0" }}>Aucun ami encore 🙂</div>}
             {friends.map(f => (
-              <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: "0.5px solid rgba(255,255,255,0.06)", cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(f.friend.id)}>
+              <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `0.5px solid ${T.border}`, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(f.friend.id)}>
                 <Avatar name={f.friend.full_name} size={34} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: T.accent }}>{f.friend.full_name}</div>
