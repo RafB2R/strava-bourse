@@ -121,8 +121,6 @@ function StatsSection({ profile, session, friends, perf, T, onViewProfile }) {
   const ranking = [{ id: session.user.id, name: profile?.full_name, perf, me: true }, ...friendPerfs]
     .sort((a, b) => (b.perf ?? -Infinity) - (a.perf ?? -Infinity));
 
-  // Navigation gérée par App
-  }
 
   return (
     <div style={{ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 }}>
