@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { supabase } from "../supabase";
-import { themes } from "../App";
+import { T as TLive } from "../theme";
 
-const inp = { width: "100%", padding: "12px 14px", fontSize: 14, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: "#f0f0f0", fontFamily: "inherit", marginBottom: 12, display: "block" };
+const inp = (T) => ({ width: "100%", padding: "12px 14px", fontSize: 14, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: T.text, fontFamily: "inherit", marginBottom: 12, display: "block" });
 const btn = { width: "100%", padding: "12px", fontSize: 14, fontWeight: 700, borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "inherit" };
 
 export default function Auth({ T: TProp }) {
-  const T = TProp || themes[localStorage.getItem("verio-theme") || "light"];
+  const T = TProp || TLive;
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,7 +56,7 @@ export default function Auth({ T: TProp }) {
 
         <div style={{ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 16, padding: "2rem" }}>
 
-          <button onClick={handleGoogle} disabled={loading} style={{ ...btn, background: T.text, color: T.text, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 16 }}>
+          <button onClick={handleGoogle} disabled={loading} style={{ ...btn, background: T.text, color: T.bg, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 16 }}>
             <svg width="18" height="18" viewBox="0 0 18 18">
               <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
               <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/>
@@ -75,22 +75,22 @@ export default function Auth({ T: TProp }) {
           {mode === "register" && (
             <>
               <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Prénom et nom</label>
-              <input style={inp} placeholder="Raphaël Dupont" value={fullName} onChange={e => setFullName(e.target.value)} />
+              <input style={inp(T)} placeholder="Raphaël Dupont" value={fullName} onChange={e => setFullName(e.target.value)} />
               <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Nom d'utilisateur</label>
-              <input style={inp} placeholder="rafb2r" value={username} onChange={e => setUsername(e.target.value)} />
+              <input style={inp(T)} placeholder="rafb2r" value={username} onChange={e => setUsername(e.target.value)} />
             </>
           )}
 
           <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Email</label>
-          <input style={inp} type="email" placeholder="toi@email.com" value={email} onChange={e => setEmail(e.target.value)} />
+          <input style={inp(T)} type="email" placeholder="toi@email.com" value={email} onChange={e => setEmail(e.target.value)} />
 
           <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Mot de passe</label>
-          <input style={{ ...inp, marginBottom: 16 }} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} />
+          <input style={{ ...inp(T), marginBottom: 16 }} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} />
 
           {error && <div style={{ fontSize: 13, color: T.red, marginBottom: 12 }}>⚠️ {error}</div>}
           {success && <div style={{ fontSize: 13, color: T.accent, marginBottom: 12 }}>✅ {success}</div>}
 
-          <button onClick={handleSubmit} disabled={loading} style={{ ...btn, background: T.accent, color: T.accentDark, marginBottom: 14 }}>
+          <button onClick={handleSubmit} disabled={loading} style={{ ...btn, background: T.accent, color: T.onAccent, marginBottom: 14 }}>
             {loading ? "Chargement…" : mode === "login" ? "Se connecter" : "Créer mon compte"}
           </button>
 

@@ -3,11 +3,11 @@ import ProfilPublic from "./ProfilPublic";
 import Marches from "./Marches";
 import Clubs from "./Clubs";
 import { supabase } from "../supabase";
-import { themes } from "../App";
+import { T as TLive } from "../theme";
 
-const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
-const inp = { width: "100%", padding: "10px 14px", fontSize: 14, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: "#f0f0f0", fontFamily: "inherit", display: "block" };
-const btnSm = { background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
+const card = (T) => ({ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 });
+const inp = (T) => ({ width: "100%", padding: "10px 14px", fontSize: 14, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: T.text, fontFamily: "inherit", display: "block" });
+const btnSm = (T) => ({ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" });
 
 const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB","rgba(240,153,123,0.12)|#F0997B","rgba(175,169,236,0.12)|#AFA9EC","rgba(123,184,240,0.12)|#7BB8F0"];
 function Avatar({ name, size = 36 }) {
@@ -34,6 +34,7 @@ const CATEGORIES = {
 };
 
 export default function Explore({ session , T: TProp }) {
+  const T = TProp || TLive;
   const [query, setQuery] = useState("");
   const [searchTab, setSearchTab] = useState("users");
   const [users, setUsers] = useState([]);
@@ -136,7 +137,7 @@ export default function Explore({ session , T: TProp }) {
     <div>
       {/* Barre de recherche */}
       <div style={{ position: "relative", marginBottom: 20 }}>
-        <input style={{ ...inp, paddingLeft: 40 }} placeholder="Rechercher un investisseur, un club…" value={query} onChange={e => setQuery(e.target.value)} />
+        <input style={{ ...inp(T), paddingLeft: 40 }} placeholder="Rechercher un investisseur, un club…" value={query} onChange={e => setQuery(e.target.value)} />
         <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, color: T.textFaint }}>🔍</span>
         {query && <button onClick={() => setQuery("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 14 }}>✕</button>}
       </div>
@@ -155,7 +156,7 @@ export default function Explore({ session , T: TProp }) {
           {loading && <div style={{ fontSize: 13, color: T.textFaint, padding: "1rem 0" }}>Recherche…</div>}
 
           {!loading && searchTab === "users" && users.map(u => (
-            <div key={u.id} onClick={() => setSelectedUser(u.id)} style={{ ...card, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+            <div key={u.id} onClick={() => setSelectedUser(u.id)} style={{ ...card(T), display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
               <Avatar name={u.full_name} size={40} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}</div>
@@ -164,19 +165,19 @@ export default function Explore({ session , T: TProp }) {
               </div>
               {friendIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.accent }}>✓ Ami</span>
                 : pendingIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.textFaint }}>En attente</span>
-                : <button onClick={() => sendRequest(u.id)} style={{ ...btnSm, borderColor: T.accent, color: T.accent }}>+ Suivre</button>}
+                : <button onClick={() => sendRequest(u.id)} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>+ Suivre</button>}
             </div>
           ))}
 
           {!loading && searchTab === "clubs" && clubs.map(club => (
-            <div key={club.id} style={{ ...card, display: "flex", alignItems: "center", gap: 12 }}>
+            <div key={club.id} style={{ ...card(T), display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 40, height: 40, borderRadius: 10, background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{club.name}</div>
                 <div style={{ fontSize: 12, color: T.textMuted }}>{club.subcategory}</div>
               </div>
               {myClubIds.includes(club.id) ? <span style={{ fontSize: 12, color: T.accent }}>✓ Membre</span>
-                : <button onClick={() => joinClub(club.id)} style={{ ...btnSm, borderColor: T.accent, color: T.accent }}>Rejoindre</button>}
+                : <button onClick={() => joinClub(club.id)} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>Rejoindre</button>}
             </div>
           ))}
 
@@ -208,16 +209,16 @@ export default function Explore({ session , T: TProp }) {
                     </button>
                   ))}
                 </div>
-                <button onClick={() => setShowForm(!showForm)} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: T.accentDark, cursor: "pointer", fontFamily: "inherit", flexShrink: 0, marginLeft: 8 }}>
+                <button onClick={() => setShowForm(!showForm)} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", flexShrink: 0, marginLeft: 8 }}>
                   {showForm ? "Annuler" : "+ Créer"}
                 </button>
               </div>
 
               {showForm && (
-                <div style={{ ...card, marginBottom: 16 }}>
+                <div style={{ ...card(T), marginBottom: 16 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 12 }}>Créer un club</div>
-                  <input style={{ ...inp, marginBottom: 10 }} placeholder="Nom du club" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-                  <textarea style={{ ...inp, height: 60, resize: "none", marginBottom: 10 }} placeholder="Description (optionnel)" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+                  <input style={{ ...inp(T), marginBottom: 10 }} placeholder="Nom du club" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                  <textarea style={{ ...inp(T), height: 60, resize: "none", marginBottom: 10 }} placeholder="Description (optionnel)" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
                     {Object.keys(CATEGORIES).map(cat => (
                       <button key={cat} onClick={() => setForm({ ...form, category: cat, subcategory: "" })} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${form.category === cat ? T.accent : T.border}`, background: form.category === cat ? T.accentBg : "none", color: form.category === cat ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{cat}</button>
@@ -231,14 +232,14 @@ export default function Explore({ session , T: TProp }) {
                     </div>
                   )}
                   {error && <div style={{ fontSize: 13, color: T.red, marginBottom: 8 }}>⚠️ {error}</div>}
-                  <button onClick={createClub} disabled={saving} style={{ background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.accentDark, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>{saving ? "Création…" : "Créer"}</button>
+                  <button onClick={createClub} disabled={saving} style={{ background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>{saving ? "Création…" : "Créer"}</button>
                 </div>
               )}
 
               {filteredClubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}>Aucun club — crée le premier ! 🚀</div>}
 
               {filteredClubs.map(club => (
-                <div key={club.id} onClick={() => setSelectedClub(club)} style={{ ...card, cursor: "pointer" }}>
+                <div key={club.id} onClick={() => setSelectedClub(club)} style={{ ...card(T), cursor: "pointer" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                     <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
                     <div style={{ flex: 1 }}>
@@ -251,7 +252,7 @@ export default function Explore({ session , T: TProp }) {
                       {club.description && <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5 }}>{club.description}</div>}
                     </div>
                     {!myClubIds.includes(club.id) && (
-                      <button onClick={() => joinClub(club.id)} style={{ ...btnSm, borderColor: T.accent, color: T.accent, flexShrink: 0 }}>+ Rejoindre</button>
+                      <button onClick={() => joinClub(club.id)} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent, flexShrink: 0 }}>+ Rejoindre</button>
                     )}
                   </div>
                 </div>
@@ -266,7 +267,7 @@ export default function Explore({ session , T: TProp }) {
                 Suis les positions des plus grands investisseurs mondiaux via les déclarations 13F publiques.
               </div>
               {SUPER_INVESTORS.map((inv, i) => (
-                <div key={inv.handle} style={{ ...card }}>
+                <div key={inv.handle} style={{ ...card(T) }}>
                   <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                     <div style={{ width: 52, height: 52, borderRadius: 14, background: T.bgCard, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>{inv.icon}</div>
                     <div style={{ flex: 1 }}>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabase";
-import { themes } from "../App";
+import { T as TLive } from "../theme";
 
 function timeAgo(date) {
   const diff = (Date.now() - new Date(date)) / 1000;
@@ -22,7 +22,7 @@ function getNotifMeta(notif) {
 }
 
 export default function Notifications({ session, T: TProp }) {
-  const T = TProp || themes[localStorage.getItem("verio-theme") || "light"];
+  const T = TProp || TLive;
   const [open, setOpen] = useState(false);
   const [notifs, setNotifs] = useState([]);
   const [unread, setUnread] = useState(0);

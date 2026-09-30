@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
-import { themes } from "../App";
+import { T as TLive } from "../theme";
 
 const FILTERS = [
   { id: "performance", label: "📈 Performance" },
@@ -17,9 +17,10 @@ function Avatar({ name, size = 36 }) {
   return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size*0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
 }
 
-const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
+const card = (T) => ({ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 });
 
 export default function Classements({ session , T: TProp }) {
+  const T = TProp || TLive;
   const [filter, setFilter] = useState("performance");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -118,7 +119,7 @@ export default function Classements({ session , T: TProp }) {
         ))}
       </div>
 
-      <div style={card}>
+      <div style={card(T)}>
         {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1.5rem" }}>Chargement…</div>}
 
         {!loading && users.length === 0 && (

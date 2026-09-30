@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
-import { themes } from "../App";
+import { T as TLive } from "../theme";
 
 const CATS = [
   {
@@ -111,6 +111,7 @@ function getProgress(cat, val) {
 }
 
 export default function Badges({ session, profile , T: TProp }) {
+  const T = TProp || TLive;
   const [data, setData] = useState({ perf: null, types: 0, positions: 0, clubs: 0, years: null, brokers: 0, totalPct: 0 });
   const [flipped, setFlipped] = useState({});
   const [unlockedBadgeIds, setUnlockedBadgeIds] = useState([]);

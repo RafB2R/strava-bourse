@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabase";
-import { themes } from "../App";
+import { T as TLive } from "../theme";
 
 const VEHICULES = ["ETF", "Action directe", "Fonds actif", "Obligation directe", "SCPI", "Crypto", "Autre"];
 const EXPOSITIONS = ["Actions", "Obligations", "Immobilier", "Multi-actifs", "Monétaire", "Crypto", "Matières premières"];
@@ -127,9 +127,9 @@ function MiniChart({ perfGlobale, investingSince, T }) {
 }
 
 export default function Portfolio({ session, profile, T: TProp }) {
-  const T = TProp || themes[localStorage.getItem("verio-theme") || "light"];
+  const T = TProp || TLive;
   const inp = { width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.input.border}`, background: T.input.background, color: T.input.color, fontFamily: "inherit", marginBottom: 10, display: "block" };
-  const btn = { background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.text, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 };
+  const btn = { background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 };
   const btnSm = { background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 10px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 14 };
   const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" };
@@ -519,7 +519,7 @@ export default function Portfolio({ session, profile, T: TProp }) {
         <div style={{ ...card, border: "0.5px solid rgba(159,225,203,0.15)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div style={sectionLabel}>Analyse avancée</div>
-            <span style={{ background: T.accent, color: T.accentDark, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 999 }}>PLUS</span>
+            <span style={{ background: T.accent, color: T.onAccent, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 999 }}>PLUS</span>
           </div>
 
           {perfGlobale !== null && (
@@ -548,7 +548,7 @@ export default function Portfolio({ session, profile, T: TProp }) {
             </div>
           ))}
 
-          <button onClick={() => alert("Verio Plus arrive bientôt ! Tu seras notifié en avant-première.")} style={{ width: "100%", marginTop: 16, padding: "12px", background: T.accent, border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, color: T.accentDark, cursor: "pointer", fontFamily: "inherit" }}>
+          <button onClick={() => alert("Verio Plus arrive bientôt ! Tu seras notifié en avant-première.")} style={{ width: "100%", marginTop: 16, padding: "12px", background: T.accent, border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>
             ✨ Débloquer l'analyse avancée — 9,99 €/mois
           </button>
         </div>

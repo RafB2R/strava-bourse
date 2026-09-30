@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { themes } from "../App";
+import { T as TLive } from "../theme";
 
 // card défini dynamiquement avec T
 // sectionLabel défini dynamiquement avec T
@@ -83,7 +83,7 @@ function QuoteCard({ symbol, name, flag, unit, T }) {
 }
 
 export default function Marches({ T: TProp }) {
-  const T = TProp || themes[localStorage.getItem("verio-theme") || "light"];
+  const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
   const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" };
   const [lastUpdate, setLastUpdate] = useState(new Date());

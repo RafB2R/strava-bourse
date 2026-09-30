@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { themes } from "../App";
+import { T as TLive } from "../theme";
 import { supabase } from "../supabase";
 import Badges from "./Badges";
 import KYC from "./KYC";
@@ -181,10 +181,10 @@ function getProgress(category, current) {
 }
 
 export default function Profil({ profile: initialProfile, session, T: TProp, onViewProfile }) {
-  const T = TProp || themes[localStorage.getItem("verio-theme") || "light"];
+  const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
   const inp = { width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.input.border}`, background: T.input.background, color: T.input.color, fontFamily: "inherit", marginBottom: 10, display: "block" };
-  const btn = { background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.text, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 };
+  const btn = { background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 };
   const btnSm = { background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
   const btnGreen = { background: "none", border: `0.5px solid ${T.accent}`, borderRadius: 8, padding: "5px 10px", fontSize: 12, color: T.accent, cursor: "pointer", fontFamily: "inherit" };
   const btnRed = { background: "none", border: `0.5px solid ${T.red}`, borderRadius: 8, padding: "5px 10px", fontSize: 12, color: T.red, cursor: "pointer", fontFamily: "inherit" };

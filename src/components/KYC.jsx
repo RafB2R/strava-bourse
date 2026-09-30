@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { supabase } from "../supabase";
-import { themes } from "../App";
+import { T, T as TLive } from "../theme";
 
 const BROKERS = ["Boursorama", "Saxo", "Trade Republic", "Degiro", "Fortuneo", "BinckBank", "Interactive Brokers", "Revolut", "eToro", "Autre"];
 const ACTIFS = ["ETF", "Actions", "Fonds actifs", "Obligations", "Crypto", "Immobilier (SCPI)", "Matières premières"];
 const STRATEGIES = ["ETF passif", "Dividendes", "Value Investing", "Growth Investing", "Stock Picking", "DCA", "Mixte"];
 
-const btn = { background: T.accent, border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 14, color: T.accentDark, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 };
-const btnSm = { background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "8px 16px", fontSize: 13, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
-const inp = { width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: "#f0f0f0", fontFamily: "inherit", marginBottom: 10, display: "block" };
-// lbl défini dynamiquement
+const btn = (T) => ({ background: T.accent, border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 14, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 });
+const btnSm = (T) => ({ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "8px 16px", fontSize: 13, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" });
+const inp = (T) => ({ width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: T.text, fontFamily: "inherit", marginBottom: 10, display: "block" });
+const lbl = (T) => ({ fontSize: 12, color: T.textMuted, marginBottom: 6, display: "block" });
 
 function ChoiceGrid({ options, value, onChange, multi = false }) {
   return (
@@ -42,6 +42,7 @@ const STEPS = [
 ];
 
 export default function KYC({ session, profile, onComplete, onSkip , T: TProp }) {
+  const T = TProp || TLive;
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState({
@@ -93,25 +94,25 @@ export default function KYC({ session, profile, onComplete, onSkip , T: TProp })
         {/* Étape 1 — Qui es-tu */}
         {step === 0 && (
           <div>
-            <label style={lbl}>Prénom et nom</label>
-            <input style={inp} placeholder="Raphaël Dupont" value={data.full_name} onChange={e => set("full_name", e.target.value)} />
-            <label style={lbl}>Ville</label>
-            <input style={inp} placeholder="Paris" value={data.city} onChange={e => set("city", e.target.value)} />
-            <label style={lbl}>Date de naissance</label>
-            <input style={inp} type="date" value={data.date_naissance} onChange={e => set("date_naissance", e.target.value)} />
-            <label style={lbl}>Investisseur depuis (année)</label>
-            <input style={inp} type="number" placeholder="2018" value={data.investing_since} onChange={e => set("investing_since", e.target.value)} />
+            <label style={lbl(T)}>Prénom et nom</label>
+            <input style={inp(T)} placeholder="Raphaël Dupont" value={data.full_name} onChange={e => set("full_name", e.target.value)} />
+            <label style={lbl(T)}>Ville</label>
+            <input style={inp(T)} placeholder="Paris" value={data.city} onChange={e => set("city", e.target.value)} />
+            <label style={lbl(T)}>Date de naissance</label>
+            <input style={inp(T)} type="date" value={data.date_naissance} onChange={e => set("date_naissance", e.target.value)} />
+            <label style={lbl(T)}>Investisseur depuis (année)</label>
+            <input style={inp(T)} type="number" placeholder="2018" value={data.investing_since} onChange={e => set("investing_since", e.target.value)} />
           </div>
         )}
 
         {/* Étape 2 — Situation */}
         {step === 1 && (
           <div>
-            <label style={lbl}>Revenus annuels nets</label>
+            <label style={lbl(T)}>Revenus annuels nets</label>
             <ChoiceGrid options={["< 30 000 €", "30 000 – 50 000 €", "50 000 – 100 000 €", "100 000 – 200 000 €", "> 200 000 €"]} value={data.revenus} onChange={v => set("revenus", v)} />
-            <label style={lbl}>Patrimoine financier estimé</label>
+            <label style={lbl(T)}>Patrimoine financier estimé</label>
             <ChoiceGrid options={["< 10 000 €", "10 000 – 50 000 €", "50 000 – 100 000 €", "100 000 – 500 000 €", "> 500 000 €"]} value={data.patrimoine_estime} onChange={v => set("patrimoine_estime", v)} />
-            <label style={lbl}>Capacité d'épargne mensuelle</label>
+            <label style={lbl(T)}>Capacité d'épargne mensuelle</label>
             <ChoiceGrid options={["< 100 €", "100 – 500 €", "500 – 1 000 €", "1 000 – 3 000 €", "> 3 000 €"]} value={data.epargne_mensuelle} onChange={v => set("epargne_mensuelle", v)} />
           </div>
         )}
@@ -119,11 +120,11 @@ export default function KYC({ session, profile, onComplete, onSkip , T: TProp })
         {/* Étape 3 — Profil investisseur */}
         {step === 2 && (
           <div>
-            <label style={lbl}>Ton niveau d'expérience</label>
+            <label style={lbl(T)}>Ton niveau d'expérience</label>
             <ChoiceGrid options={["Débutant", "Intermédiaire", "Avancé", "Expert"]} value={data.experience} onChange={v => set("experience", v)} />
-            <label style={lbl}>Ta stratégie principale</label>
+            <label style={lbl(T)}>Ta stratégie principale</label>
             <ChoiceGrid options={STRATEGIES} value={data.strategy} onChange={v => set("strategy", v)} />
-            <label style={lbl}>Ta tolérance au risque</label>
+            <label style={lbl(T)}>Ta tolérance au risque</label>
             <ChoiceGrid options={["Défensif", "Équilibré", "Dynamique", "Agressif"]} value={data.tolerance_risque} onChange={v => set("tolerance_risque", v)} />
           </div>
         )}
@@ -131,11 +132,11 @@ export default function KYC({ session, profile, onComplete, onSkip , T: TProp })
         {/* Étape 4 — Objectifs */}
         {step === 3 && (
           <div>
-            <label style={lbl}>Ton objectif principal</label>
+            <label style={lbl(T)}>Ton objectif principal</label>
             <ChoiceGrid options={["Retraite", "Liberté financière", "Projet immobilier", "Revenus complémentaires", "Croissance du patrimoine", "Protection contre l'inflation"]} value={data.objectif_principal} onChange={v => set("objectif_principal", v)} />
-            <label style={lbl}>Horizon d'investissement</label>
+            <label style={lbl(T)}>Horizon d'investissement</label>
             <ChoiceGrid options={["< 3 ans", "3 – 10 ans", "> 10 ans"]} value={data.horizon} onChange={v => set("horizon", v)} />
-            <label style={lbl}>Objectif de patrimoine cible</label>
+            <label style={lbl(T)}>Objectif de patrimoine cible</label>
             <ChoiceGrid options={["100 000 €", "250 000 €", "500 000 €", "1 000 000 €", "> 1 000 000 €"]} value={data.objectif_patrimoine} onChange={v => set("objectif_patrimoine", v)} />
           </div>
         )}
@@ -143,9 +144,9 @@ export default function KYC({ session, profile, onComplete, onSkip , T: TProp })
         {/* Étape 5 — Setup */}
         {step === 4 && (
           <div>
-            <label style={lbl}>Brokers que tu utilises (plusieurs possibles)</label>
+            <label style={lbl(T)}>Brokers que tu utilises (plusieurs possibles)</label>
             <ChoiceGrid options={BROKERS} value={data.brokers_utilises} onChange={v => set("brokers_utilises", v)} multi />
-            <label style={lbl}>Types d'actifs que tu détiens (plusieurs possibles)</label>
+            <label style={lbl(T)}>Types d'actifs que tu détiens (plusieurs possibles)</label>
             <ChoiceGrid options={ACTIFS} value={data.actifs_detenus} onChange={v => set("actifs_detenus", v)} multi />
           </div>
         )}
@@ -153,13 +154,13 @@ export default function KYC({ session, profile, onComplete, onSkip , T: TProp })
         {/* Navigation */}
         <div style={{ display: "flex", gap: 10, marginTop: 24, justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ display: "flex", gap: 8 }}>
-            {step > 0 && <button style={btnSm} onClick={() => setStep(s => s - 1)}>← Retour</button>}
-            <button style={{ ...btnSm, fontSize: 12 }} onClick={onSkip}>Passer</button>
+            {step > 0 && <button style={btnSm(T)} onClick={() => setStep(s => s - 1)}>← Retour</button>}
+            <button style={{ ...btnSm(T), fontSize: 12 }} onClick={onSkip}>Passer</button>
           </div>
           {step < STEPS.length - 1 ? (
-            <button style={btn} onClick={() => setStep(s => s + 1)}>Continuer →</button>
+            <button style={btn(T)} onClick={() => setStep(s => s + 1)}>Continuer →</button>
           ) : (
-            <button style={btn} onClick={save} disabled={saving}>{saving ? "Enregistrement…" : "Terminer ✓"}</button>
+            <button style={btn(T)} onClick={save} disabled={saving}>{saving ? "Enregistrement…" : "Terminer ✓"}</button>
           )}
         </div>
       </div>

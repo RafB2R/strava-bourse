@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
-import { themes } from "../App";
+import { T, T as TLive } from "../theme";
 
 const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB","rgba(240,153,123,0.12)|#F0997B","rgba(175,169,236,0.12)|#AFA9EC","rgba(123,184,240,0.12)|#7BB8F0","rgba(240,203,123,0.12)|#F0CB7B"];
 function Avatar({ name, size = 36 }) {
@@ -61,7 +61,7 @@ const FILTERS = [
 ];
 
 export default function Feed({ session, T: TProp, onViewProfile }) {
-  const T = TProp || themes[localStorage.getItem("verio-theme") || "light"];
+  const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
   const btnAct = { background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
 
@@ -145,7 +145,7 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
             />
             {postInput.trim() && (
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-                <button onClick={publishPost} disabled={posting} style={{ background: T.accent, border: "none", borderRadius: 999, padding: "6px 18px", fontSize: 13, fontWeight: 700, color: T.text, cursor: "pointer", fontFamily: "inherit" }}>
+                <button onClick={publishPost} disabled={posting} style={{ background: T.accent, border: "none", borderRadius: 999, padding: "6px 18px", fontSize: 13, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>
                   {posting ? "…" : "Publier"}
                 </button>
               </div>

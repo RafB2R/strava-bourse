@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
-import { themes } from "../App";
+import { T, T as TLive } from "../theme";
 
 const CATEGORIES = {
   "📈 Actions": ["Actions France", "Actions Europe", "Actions USA", "Actions Monde", "Actions Émergents", "Small Caps", "Value Investing", "Growth Investing", "Dividendes", "Stock Picking"],
@@ -15,11 +15,11 @@ const CATEGORIES = {
 const REACTIONS = ["👍", "🔥", "💡"];
 const PAGE_SIZE = 10;
 
-const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
-const inp = { width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: "#f0f0f0", fontFamily: "inherit", marginBottom: 10, display: "block" };
-const btn = { background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.accentDark, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 };
-const btnSm = { background: "transparent", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
-const lbl = { fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" };
+const card = (T) => ({ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 });
+const inp = (T) => ({ width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: T.text, fontFamily: "inherit", marginBottom: 10, display: "block" });
+const btn = (T) => ({ background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 });
+const btnSm = (T) => ({ background: "transparent", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" });
+const lbl = (T) => ({ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" });
 
 const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB","rgba(240,153,123,0.12)|#F0997B","rgba(175,169,236,0.12)|#AFA9EC","rgba(123,184,240,0.12)|#7BB8F0","rgba(240,203,123,0.12)|#F0CB7B"];
 function Avatar({ name, size = 32 }) {
@@ -74,7 +74,7 @@ function Post({ post, session, isMember, onReact, onDelete }) {
   }
 
   return (
-    <div style={{ ...card, marginBottom: 10 }}>
+    <div style={{ ...card(T), marginBottom: 10 }}>
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
         <Avatar name={post.author?.full_name} size={34} />
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -92,7 +92,7 @@ function Post({ post, session, isMember, onReact, onDelete }) {
                 {r} {reactionCounts[r] > 0 && <span style={{ fontSize: 11 }}>{reactionCounts[r]}</span>}
               </button>
             ))}
-            <button onClick={toggleReplies} style={{ ...btnSm, fontSize: 12, padding: "3px 10px", marginLeft: 4 }}>
+            <button onClick={toggleReplies} style={{ ...btnSm(T), fontSize: 12, padding: "3px 10px", marginLeft: 4 }}>
               💬 {post.reply_count > 0 ? `${post.reply_count} réponse${post.reply_count > 1 ? "s" : ""}` : "Répondre"}
             </button>
           </div>
@@ -118,8 +118,8 @@ function Post({ post, session, isMember, onReact, onDelete }) {
           {isMember && (
             <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
               <Avatar name={session.user.email} size={26} />
-              <input style={{ ...inp, marginBottom: 0, flex: 1, fontSize: 12, padding: "7px 10px" }} placeholder="Répondre…" value={replyInput} onChange={e => setReplyInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendReply()} />
-              <button onClick={sendReply} disabled={sendingReply || !replyInput.trim()} style={{ ...btn, padding: "7px 14px", fontSize: 12, flexShrink: 0 }}>↵</button>
+              <input style={{ ...inp(T), marginBottom: 0, flex: 1, fontSize: 12, padding: "7px 10px" }} placeholder="Répondre…" value={replyInput} onChange={e => setReplyInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendReply()} />
+              <button onClick={sendReply} disabled={sendingReply || !replyInput.trim()} style={{ ...btn(T), padding: "7px 14px", fontSize: 12, flexShrink: 0 }}>↵</button>
             </div>
           )}
         </div>
@@ -271,9 +271,9 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
 
   return (
     <div>
-      <button onClick={onBack} style={{ ...btnSm, marginBottom: 16 }}>← Retour</button>
+      <button onClick={onBack} style={{ ...btnSm(T), marginBottom: 16 }}>← Retour</button>
 
-      <div style={card}>
+      <div style={card(T)}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
           <div style={{ width: 48, height: 48, borderRadius: 12, background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
           <div style={{ flex: 1 }}>
@@ -284,7 +284,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
             </div>
             {club.description && <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5, marginTop: 6 }}>{club.description}</div>}
           </div>
-          {isMember ? <button onClick={onLeave} style={btnSm}>Quitter</button> : <button onClick={onJoin} style={{ ...btnSm, borderColor: T.accent, color: T.accent }}>+ Rejoindre</button>}
+          {isMember ? <button onClick={onLeave} style={btnSm(T)}>Quitter</button> : <button onClick={onJoin} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>+ Rejoindre</button>}
         </div>
       </div>
 
@@ -299,7 +299,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
 
       {/* Classement */}
       {clubTab === "classement" && (
-        <div style={card}>
+        <div style={card(T)}>
           <ClubRanking clubId={club.id} session={session} />
         </div>
       )}
@@ -308,9 +308,9 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
       {clubTab === "discussion" && (
         <div>
           {isMember && (
-            <div style={{ ...card, marginBottom: 20 }}>
-              <textarea style={{ ...inp, marginBottom: 8, height: 80, resize: "none" }} placeholder="Partage une idée, une question, une analyse…" value={input} onChange={e => setInput(e.target.value)} />
-              <button style={{ ...btn, padding: "8px 20px" }} onClick={sendPost} disabled={sending || !input.trim()}>{sending ? "Publication…" : "Publier"}</button>
+            <div style={{ ...card(T), marginBottom: 20 }}>
+              <textarea style={{ ...inp(T), marginBottom: 8, height: 80, resize: "none" }} placeholder="Partage une idée, une question, une analyse…" value={input} onChange={e => setInput(e.target.value)} />
+              <button style={{ ...btn(T), padding: "8px 20px" }} onClick={sendPost} disabled={sending || !input.trim()}>{sending ? "Publication…" : "Publier"}</button>
             </div>
           )}
           {!isMember && <div style={{ textAlign: "center", padding: "1rem 0 1.5rem", fontSize: 13, color: T.textFaint }}>Rejoins ce club pour participer aux discussions</div>}
@@ -325,16 +325,16 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
           </div>
 
           {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>Chargement…</div>}
-          {!loading && posts.length === 0 && <div style={{ ...card, textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>Aucun post encore — lance la discussion ! 🚀</div>}
+          {!loading && posts.length === 0 && <div style={{ ...card(T), textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>Aucun post encore — lance la discussion ! 🚀</div>}
           {posts.map(post => (
             <Post key={post.id} post={post} session={session} isMember={isMember} onReact={handleReact} onDelete={deletePost} />
           ))}
 
           {totalPages > 1 && (
             <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16 }}>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ ...btnSm, opacity: page === 1 ? 0.3 : 1 }}>← Préc.</button>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ ...btnSm(T), opacity: page === 1 ? 0.3 : 1 }}>← Préc.</button>
               <span style={{ fontSize: 13, color: T.textMuted, padding: "5px 12px" }}>{page} / {totalPages}</span>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ ...btnSm, opacity: page === totalPages ? 0.3 : 1 }}>Suiv. →</button>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ ...btnSm(T), opacity: page === totalPages ? 0.3 : 1 }}>Suiv. →</button>
             </div>
           )}
         </div>
@@ -344,6 +344,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
 }
 
 export default function Clubs({ session, initialClub = null, onBack = null , T: TProp }) {
+  const T = TProp || TLive;
   const [clubs, setClubs] = useState([]);
   const [myClubs, setMyClubs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -434,19 +435,19 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
             {v === "explorer" ? "🔍 Explorer" : `👥 Mes clubs (${myClubs.length})`}
           </button>
         ))}
-        <button onClick={() => setShowForm(!showForm)} style={{ ...btn, marginLeft: "auto", padding: "7px 16px" }}>
+        <button onClick={() => setShowForm(!showForm)} style={{ ...btn(T), marginLeft: "auto", padding: "7px 16px" }}>
           {showForm ? "Annuler" : "+ Créer"}
         </button>
       </div>
 
       {showForm && (
-        <div style={card}>
+        <div style={card(T)}>
           <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 16 }}>Créer un club</div>
-          <span style={lbl}>Nom du club</span>
-          <input style={inp} placeholder="ex: ETF World Investors France" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-          <span style={lbl}>Description (optionnel)</span>
-          <textarea style={{ ...inp, height: 70, resize: "vertical" }} placeholder="De quoi parle ce club ?" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
-          <span style={lbl}>Catégorie principale</span>
+          <span style={lbl(T)}>Nom du club</span>
+          <input style={inp(T)} placeholder="ex: ETF World Investors France" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+          <span style={lbl(T)}>Description (optionnel)</span>
+          <textarea style={{ ...inp(T), height: 70, resize: "vertical" }} placeholder="De quoi parle ce club ?" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+          <span style={lbl(T)}>Catégorie principale</span>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
             {Object.keys(CATEGORIES).map(cat => (
               <button key={cat} onClick={() => setForm({ ...form, category: cat, subcategory: "" })} style={{ padding: "5px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${form.category === cat ? T.accent : T.border}`, background: form.category === cat ? T.accentBg : "none", color: form.category === cat ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{cat}</button>
@@ -454,7 +455,7 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
           </div>
           {form.category && (
             <>
-              <span style={lbl}>Sous-catégorie</span>
+              <span style={lbl(T)}>Sous-catégorie</span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
                 {CATEGORIES[form.category].map(sub => (
                   <button key={sub} onClick={() => setForm({ ...form, subcategory: sub })} style={{ padding: "5px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${form.subcategory === sub ? T.accent : T.border}`, background: form.subcategory === sub ? T.accentBg : "none", color: form.subcategory === sub ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{sub}</button>
@@ -463,13 +464,13 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
             </>
           )}
           {error && <div style={{ fontSize: 13, color: T.red, marginBottom: 10 }}>⚠️ {error}</div>}
-          <button style={btn} onClick={createClub} disabled={saving}>{saving ? "Création…" : "Créer le club"}</button>
+          <button style={btn(T)} onClick={createClub} disabled={saving}>{saving ? "Création…" : "Créer le club"}</button>
         </div>
       )}
 
       {!showForm && view === "explorer" && (
         <>
-          <input style={{ ...inp, marginBottom: 12 }} placeholder="🔍 Rechercher un club par nom…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+          <input style={{ ...inp(T), marginBottom: 12 }} placeholder="🔍 Rechercher un club par nom…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
             {categories.map(cat => (
               <button key={cat} onClick={() => { setFilterCat(cat); setFilterSub("Tous"); }} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filterCat === cat ? T.accent : T.border}`, background: filterCat === cat ? T.accentBg : "none", color: filterCat === cat ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
@@ -490,7 +491,7 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
           {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>Chargement…</div>}
           {!loading && filteredClubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}>{searchQuery ? `Aucun club pour "${searchQuery}"` : "Aucun club — crée le premier ! 🚀"}</div>}
           {filteredClubs.map(club => (
-            <div key={club.id} style={{ ...card, cursor: "pointer" }} onClick={() => setSelectedClub(club)}>
+            <div key={club.id} style={{ ...card(T), cursor: "pointer" }} onClick={() => setSelectedClub(club)}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
                 <div style={{ flex: 1 }}>
@@ -515,7 +516,7 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
         <>
           {myClubsData.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}>Tu n'as rejoint aucun club 🙂</div>}
           {myClubsData.map(club => (
-            <div key={club.id} style={{ ...card, cursor: "pointer" }} onClick={() => setSelectedClub(club)}>
+            <div key={club.id} style={{ ...card(T), cursor: "pointer" }} onClick={() => setSelectedClub(club)}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
                 <div style={{ flex: 1 }}>
