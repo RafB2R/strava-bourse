@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
+import { themes } from "../App";
 
 const FILTERS = [
   { id: "performance", label: "📈 Performance" },
@@ -16,9 +17,9 @@ function Avatar({ name, size = 36 }) {
   return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size*0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
 }
 
-const card = { background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
+const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
 
-export default function Classements({ session }) {
+export default function Classements({ session , T: TProp }) {
   const [filter, setFilter] = useState("performance");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -87,22 +88,22 @@ export default function Classements({ session }) {
   const rankIcon = i => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
 
   function getValue(u) {
-    if (filter === "performance") return { val: u.perf !== null ? `${u.perf >= 0 ? "+" : ""}${u.perf.toFixed(1)}%` : "—", color: u.perf === null ? "rgba(255,255,255,0.25)" : u.perf >= 0 ? "#9FE1CB" : "#F08080" };
+    if (filter === "performance") return { val: u.perf !== null ? `${u.perf >= 0 ? "+" : ""}${u.perf.toFixed(1)}%` : "—", color: u.perf === null ? T.textFaint : u.perf >= 0 ? T.accent : T.red };
     if (filter === "regularite") return { val: u.streak > 0 ? `🔥 ${u.streak} mois` : "—", color: "#F0CB7B" };
-    if (filter === "diversification") return { val: `${u.scoreDiversif}/100`, color: u.scoreDiversif >= 70 ? "#9FE1CB" : u.scoreDiversif >= 40 ? "#F0CB7B" : "#F08080" };
+    if (filter === "diversification") return { val: `${u.scoreDiversif}/100`, color: u.scoreDiversif >= 70 ? T.accent : u.scoreDiversif >= 40 ? "#F0CB7B" : T.red };
     if (filter === "contribution") return { val: u.contribution > 0 ? `💬 ${u.contribution}` : "—", color: "#AFA9EC" };
     if (filter === "badges") return { val: `🏅 ${u.nbBadges}`, color: "#FFD700" };
-    return { val: "—", color: "rgba(255,255,255,0.3)" };
+    return { val: "—", color: T.textFaint };
   }
 
   return (
     <div>
-      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", marginBottom: 14 }}>🏆 Classements Verio</div>
+      <div style={{ fontSize: 13, color: T.textFaint, marginBottom: 14 }}>🏆 Classements Verio</div>
 
       {/* Scope */}
       <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
         {[["amis", "👥 Amis"], ["global", "🌍 Global"]].map(([id, label]) => (
-          <button key={id} onClick={() => setScope(id)} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${scope === id ? "#9FE1CB" : "rgba(255,255,255,0.1)"}`, background: scope === id ? "rgba(159,225,203,0.1)" : "none", color: scope === id ? "#9FE1CB" : "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" }}>
+          <button key={id} onClick={() => setScope(id)} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${scope === id ? T.accent : T.border}`, background: scope === id ? T.accentBg : "none", color: scope === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
             {label}
           </button>
         ))}
@@ -111,17 +112,17 @@ export default function Classements({ session }) {
       {/* Filtres */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
         {FILTERS.map(f => (
-          <button key={f.id} onClick={() => setFilter(f.id)} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filter === f.id ? "#9FE1CB" : "rgba(255,255,255,0.1)"}`, background: filter === f.id ? "rgba(159,225,203,0.1)" : "none", color: filter === f.id ? "#9FE1CB" : "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" }}>
+          <button key={f.id} onClick={() => setFilter(f.id)} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filter === f.id ? T.accent : T.border}`, background: filter === f.id ? T.accentBg : "none", color: filter === f.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
             {f.label}
           </button>
         ))}
       </div>
 
       <div style={card}>
-        {loading && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "1.5rem" }}>Chargement…</div>}
+        {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1.5rem" }}>Chargement…</div>}
 
         {!loading && users.length === 0 && (
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "1.5rem" }}>
+          <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1.5rem" }}>
             {scope === "amis" ? "Ajoute des amis pour te comparer 🙂" : "Aucun utilisateur trouvé"}
           </div>
         )}
@@ -129,17 +130,17 @@ export default function Classements({ session }) {
         {users.map((u, i) => {
           const { val, color } = getValue(u);
           return (
-            <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: i === 0 ? "none" : "0.5px solid rgba(255,255,255,0.06)", background: u.isMe ? "rgba(159,225,203,0.03)" : "none", borderRadius: 8, paddingLeft: u.isMe ? 8 : 0 }}>
+            <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}`, background: u.isMe ? T.accentBg : "none", borderRadius: 8, paddingLeft: u.isMe ? 8 : 0 }}>
               <div style={{ fontSize: 18, minWidth: 28, textAlign: "center" }}>
-                {rankIcon(i) || <span style={{ fontSize: 13, color: "rgba(255,255,255,0.25)", fontWeight: 600 }}>{i + 1}</span>}
+                {rankIcon(i) || <span style={{ fontSize: 13, color: T.textFaint, fontWeight: 600 }}>{i + 1}</span>}
               </div>
               <Avatar name={u.full_name} size={36} />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: u.isMe ? "#9FE1CB" : "#fff" }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: u.isMe ? T.accent : T.text }}>
                   {u.full_name}
-                  {u.isMe && <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginLeft: 6 }}>· moi</span>}
+                  {u.isMe && <span style={{ fontSize: 11, color: T.textFaint, marginLeft: 6 }}>· moi</span>}
                 </div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>
+                <div style={{ fontSize: 12, color: T.textFaint }}>
                   {u.strategy && <span style={{ marginRight: 8 }}>{u.strategy}</span>}
                   {u.city && <span>{u.city}</span>}
                 </div>

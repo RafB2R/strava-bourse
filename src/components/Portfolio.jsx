@@ -119,7 +119,7 @@ function MiniChart({ perfGlobale, investingSince, T }) {
       </div>
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
         {periods.map(p => (
-          <button key={p.id} onClick={() => setPeriod(p.id)} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${period === p.id ? T.accent : "rgba(255,255,255,0.1)"}`, background: period === p.id ? T.accentBg : "none", color: period === p.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{p.label}</button>
+          <button key={p.id} onClick={() => setPeriod(p.id)} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${period === p.id ? T.accent : T.border}`, background: period === p.id ? T.accentBg : "none", color: period === p.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{p.label}</button>
         ))}
       </div>
     </div>
@@ -263,7 +263,7 @@ export default function Portfolio({ session, profile, T: TProp }) {
       <div style={card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
           <div style={{ fontSize: 13, color: T.textMuted }}>Valeur du portefeuille</div>
-          <button onClick={() => refreshAllPrices(entries)} disabled={refreshing || entries.filter(e => e.isin).length === 0} style={{ background: "none", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "4px 10px", fontSize: 11, color: refreshing ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
+          <button onClick={() => refreshAllPrices(entries)} disabled={refreshing || entries.filter(e => e.isin).length === 0} style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "4px 10px", fontSize: 11, color: refreshing ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
             {refreshing ? "⟳ Mise à jour…" : "⟳ Actualiser"}
           </button>
         </div>
@@ -291,8 +291,8 @@ export default function Portfolio({ session, profile, T: TProp }) {
           {Object.entries(byExpo).sort((a, b) => b[1] - a[1]).map(([expo, pct]) => (
             <div key={expo} style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <span style={{ fontSize: 14, fontWeight: 500, color: "rgba(255,255,255,0.8)" }}>{expo}</span>
-                <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.8)" }}>{pct.toFixed(0)} %</span>
+                <span style={{ fontSize: 14, fontWeight: 500, color: T.text }}>{expo}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{pct.toFixed(0)} %</span>
               </div>
               <div style={{ height: 6, background: T.border, borderRadius: 3, overflow: "hidden" }}>
                 <div style={{ width: `${pct}%`, height: "100%", background: EXP_COLORS[expo] || "#888", borderRadius: 3 }} />
@@ -412,7 +412,7 @@ export default function Portfolio({ session, profile, T: TProp }) {
 
         {valeurParPosition.map((e, i) => (
           <div key={e.id}>
-            <div onClick={() => setOpenDetail(p => ({ ...p, [e.id]: !p[e.id] }))} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: i === 0 ? "none" : "0.5px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
+            <div onClick={() => setOpenDetail(p => ({ ...p, [e.id]: !p[e.id] }))} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}`, cursor: "pointer" }}>
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: EXP_COLORS[e.exposition] || VEH_COLORS[e.type] || "#888", flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 500, color: T.text }}>{e.label}</div>
@@ -458,7 +458,7 @@ export default function Portfolio({ session, profile, T: TProp }) {
             const rate = Math.min(perfGlobale / 100, 0.30);
             const valeur = valeurTotale * Math.pow(1 + rate, years);
             return (
-              <div key={years} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: years === 5 ? "none" : "0.5px solid rgba(255,255,255,0.06)" }}>
+              <div key={years} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: years === 5 ? "none" : `0.5px solid ${T.border}` }}>
                 <div style={{ width: 48, height: 48, borderRadius: 12, background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 16, fontWeight: 700, color: T.accent }}>{years}</div>
@@ -536,7 +536,7 @@ export default function Portfolio({ session, profile, T: TProp }) {
             { label: "Max Drawdown", desc: "Perte maximale depuis un sommet" },
             { label: "Tracking Error", desc: "Écart par rapport à l'indice de référence" },
           ].map((m, i) => (
-            <div key={m.label} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: i === 0 ? "none" : "0.5px solid rgba(255,255,255,0.06)" }}>
+            <div key={m.label} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}` }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 500, color: T.textMuted }}>{m.label}</div>
                 <div style={{ fontSize: 11, color: T.textFaint, marginTop: 2 }}>{m.desc}</div>

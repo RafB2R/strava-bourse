@@ -27,20 +27,37 @@ function getGreeting(name) {
 
 export const themes = {
   dark: {
-    bg: "#111318", bgSecondary: "#1a1d24", bgCard: "rgba(255,255,255,0.04)",
-    border: "rgba(255,255,255,0.08)", borderStrong: "rgba(255,255,255,0.14)",
-    text: "#ffffff", textMuted: "rgba(255,255,255,0.4)", textFaint: "rgba(255,255,255,0.2)",
-    accent: "#9FE1CB", accentBg: "rgba(159,225,203,0.08)", accentDark: "#0F6E56",
-    red: "#F08080", redBg: "rgba(240,128,128,0.1)",
-    input: { background: "rgba(255,255,255,0.05)", color: "#f0f0f0", border: "rgba(255,255,255,0.12)" },
+    bg: "#111318",
+    bgSecondary: "#1a1d24",
+    bgCard: "rgba(255,255,255,0.05)",
+    border: "rgba(255,255,255,0.08)",
+    borderStrong: "rgba(255,255,255,0.15)",
+    text: "#ffffff",
+    textMuted: "rgba(255,255,255,0.55)",
+    textFaint: "rgba(255,255,255,0.30)",
+    accent: "#9FE1CB",
+    accentBg: "rgba(159,225,203,0.10)",
+    accentDark: "#0F6E56",
+    red: "#F08080",
+    redBg: "rgba(240,128,128,0.10)",
+    input: { background: "rgba(255,255,255,0.06)", color: "#f0f0f0", border: "rgba(255,255,255,0.14)" },
   },
   light: {
-    bg: "#f4f5f7", bgSecondary: "#ffffff", bgCard: "rgba(0,0,0,0.02)",
-    border: "rgba(0,0,0,0.07)", borderStrong: "rgba(0,0,0,0.13)",
-    text: "#111318", textMuted: "rgba(0,0,0,0.45)", textFaint: "rgba(0,0,0,0.25)",
-    accent: "#0F6E56", accentBg: "rgba(15,110,86,0.07)", accentDark: "#0F6E56",
-    red: "#c0392b", redBg: "rgba(192,57,43,0.08)",
-    input: { background: "rgba(0,0,0,0.03)", color: "#111318", border: "rgba(0,0,0,0.12)" },
+    bg: "#ECEEF2",
+    bgSecondary: "#FFFFFF",
+    bgCard: "#FFFFFF",
+    border: "#DDE1E7",
+    borderStrong: "#C4C9D4",
+    text: "#0D0F14",
+    textMuted: "#374151",
+    textFaint: "#6B7280",
+    accent: "#0F6E56",
+    accentBg: "rgba(15,110,86,0.08)",
+    accentDark: "#0F6E56",
+    red: "#DC2626",
+    redBg: "rgba(220,38,38,0.08)",
+    cardShadow: "0 1px 4px rgba(0,0,0,0.06)",
+    input: { background: "#F9FAFB", color: "#0D0F14", border: "#D1D5DB" },
   }
 };
 
@@ -181,7 +198,7 @@ export default function App() {
   );
 
   if (!session && !showAuth) return <Landing onStart={() => setShowAuth(true)} />;
-  if (!session && showAuth) return <Auth />;
+  if (!session && showAuth) return <Auth T={T} />;
 
   const kyc = profile && !profile.kyc_complete && !showKYC;
   const kycBanner = kyc ? (
@@ -199,7 +216,7 @@ export default function App() {
 
   const content = (
     <>
-      {showKYC && <KYC session={session} profile={profile} onComplete={() => { setShowKYC(false); loadProfile(session.user.id); }} onSkip={() => setShowKYC(false)} />}
+      {showKYC && <KYC session={session} profile={profile} T={T} onComplete={() => { setShowKYC(false); loadProfile(session.user.id); }} onSkip={() => setShowKYC(false)} />}
       {publicUserId ? (
         <ProfilPublic userId={publicUserId} session={session} T={T} onBack={() => { setPublicUserId(null); setCompareData(null); }} onCompareData={setCompareData} />
       ) : (

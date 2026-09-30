@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import { themes } from "../App";
 
-const card = { background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
-const sectionLabel = { fontSize: 11, color: "rgba(255,255,255,0.25)", fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" };
+// card défini dynamiquement avec T
+// sectionLabel défini dynamiquement avec T
 
 const INDICES = [
   { symbol: "^GSPC", name: "S&P 500", flag: "🇺🇸" },
@@ -43,7 +44,7 @@ async function fetchQuote(symbol) {
   } catch { return null; }
 }
 
-function QuoteCard({ symbol, name, flag, unit }) {
+function QuoteCard({ symbol, name, flag, unit, T }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -59,19 +60,19 @@ function QuoteCard({ symbol, name, flag, unit }) {
   };
 
   return (
-    <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: "12px 14px" }}>
-      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>
+    <div style={{ background: T.bgCard, borderRadius: 12, padding: "12px 14px" }}>
+      <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>
         {flag && <span style={{ marginRight: 4 }}>{flag}</span>}{name}
       </div>
       {loading ? (
-        <div style={{ fontSize: 14, color: "rgba(255,255,255,0.2)" }}>…</div>
+        <div style={{ fontSize: 14, color: T.textFaint }}>…</div>
       ) : (
         <>
-          <div style={{ fontSize: 16, fontWeight: 600, color: "#fff" }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>
             {formatPrice(data?.price)}{unit ? ` ${unit}` : ""}
           </div>
           {data?.change !== null && data?.change !== undefined && (
-            <div style={{ fontSize: 12, fontWeight: 500, color: data.change >= 0 ? "#9FE1CB" : "#F08080", marginTop: 2 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: data.change >= 0 ? T.accent : T.red, marginTop: 2 }}>
               {data.change >= 0 ? "+" : ""}{data.change.toFixed(2)}%
             </div>
           )}
@@ -81,7 +82,10 @@ function QuoteCard({ symbol, name, flag, unit }) {
   );
 }
 
-export default function Marches() {
+export default function Marches({ T: TProp }) {
+  const T = TProp || themes[localStorage.getItem("verio-theme") || "light"];
+  const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
+  const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" };
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [secteurs, setSecteurs] = useState([]);
   const [earnings, setEarnings] = useState([]);
@@ -119,10 +123,10 @@ export default function Marches() {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}>
+        <div style={{ fontSize: 13, color: T.textFaint }}>
           Mis à jour à {lastUpdate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
         </div>
-        <button onClick={refresh} style={{ background: "none", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "4px 10px", fontSize: 11, color: "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" }}>
+        <button onClick={refresh} style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "4px 10px", fontSize: 11, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
           ⟳ Actualiser
         </button>
       </div>
@@ -131,20 +135,20 @@ export default function Marches() {
       <div style={card}>
         <div style={sectionLabel}>📊 Indices</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {INDICES.map(idx => <QuoteCard key={idx.symbol} {...idx} />)}
+          {INDICES.map(idx => <QuoteCard key={idx.symbol} {...idx} T={T} />)}
         </div>
       </div>
 
       {/* Secteurs */}
       <div style={card}>
         <div style={sectionLabel}>🏭 Secteurs S&P 500</div>
-        {loadingSecteurs && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "1rem" }}>Chargement…</div>}
+        {loadingSecteurs && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>Chargement…</div>}
         {!loadingSecteurs && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {secteurs.map(s => (
-              <div key={s.name} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>{s.name}</span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: s.change === null ? "rgba(255,255,255,0.3)" : s.change >= 0 ? "#9FE1CB" : "#F08080" }}>
+              <div key={s.name} style={{ background: T.bgCard, borderRadius: 10, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: T.textMuted }}>{s.name}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: s.change === null ? T.textFaint : s.change >= 0 ? T.accent : T.red }}>
                   {s.change === null ? "—" : `${s.change >= 0 ? "+" : ""}${s.change.toFixed(2)}%`}
                 </span>
               </div>
@@ -157,16 +161,16 @@ export default function Marches() {
       <div style={card}>
         <div style={sectionLabel}>🏦 Taux obligataires</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {TAUX.map(t => <QuoteCard key={t.symbol} {...t} unit="%" />)}
-          <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: "12px 14px" }}>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>🇫🇷 OAT 10 ans</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "#fff" }}>3.12%</div>
-            <div style={{ fontSize: 12, color: "#9FE1CB", marginTop: 2 }}>+0.02%</div>
+          {TAUX.map(t => <QuoteCard key={t.symbol} {...t} unit="%" T={T} />)}
+          <div style={{ background: T.bgCard, borderRadius: 12, padding: "12px 14px" }}>
+            <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>🇫🇷 OAT 10 ans</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>3.12%</div>
+            <div style={{ fontSize: 12, color: T.accent, marginTop: 2 }}>+0.02%</div>
           </div>
-          <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 12, padding: "12px 14px" }}>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>🇩🇪 Bund 10 ans</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "#fff" }}>2.41%</div>
-            <div style={{ fontSize: 12, color: "#F08080", marginTop: 2 }}>-0.01%</div>
+          <div style={{ background: T.bgCard, borderRadius: 12, padding: "12px 14px" }}>
+            <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>🇩🇪 Bund 10 ans</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>2.41%</div>
+            <div style={{ fontSize: 12, color: T.red, marginTop: 2 }}>-0.01%</div>
           </div>
         </div>
       </div>
@@ -175,7 +179,7 @@ export default function Marches() {
       <div style={card}>
         <div style={sectionLabel}>💱 Devises</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {FOREX.map(f => <QuoteCard key={f.symbol} {...f} />)}
+          {FOREX.map(f => <QuoteCard key={f.symbol} {...f} T={T} />)}
         </div>
       </div>
 
@@ -183,32 +187,32 @@ export default function Marches() {
       <div style={card}>
         <div style={sectionLabel}>🥇 Matières premières</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {MATIERES.map(m => <QuoteCard key={m.symbol} {...m} />)}
+          {MATIERES.map(m => <QuoteCard key={m.symbol} {...m} T={T} />)}
         </div>
       </div>
 
       {/* Résultats d'entreprises */}
       <div style={card}>
         <div style={sectionLabel}>📅 Résultats à venir</div>
-        {loadingEarnings && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "1rem" }}>Chargement…</div>}
+        {loadingEarnings && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>Chargement…</div>}
         {!loadingEarnings && earnings.length === 0 && (
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "1rem" }}>Aucun résultat à venir</div>
+          <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>Aucun résultat à venir</div>
         )}
         {!loadingEarnings && earnings.map((e, i) => {
           const d = new Date(e.date);
           const day = d.getDate();
           const month = d.toLocaleString("fr-FR", { month: "short" });
           return (
-            <div key={e.company + i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: i === 0 ? "none" : "0.5px solid rgba(255,255,255,0.06)" }}>
-              <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div key={e.company + i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}` }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: T.bgCard, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 13, color: "#9FE1CB", fontWeight: 700 }}>{day}</div>
-                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)" }}>{month}</div>
+                  <div style={{ fontSize: 13, color: T.accent, fontWeight: 700 }}>{day}</div>
+                  <div style={{ fontSize: 9, color: T.textMuted }}>{month}</div>
                 </div>
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>{e.name || e.company}</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{e.symbol}{e.eps !== null && !isNaN(e.eps) ? ` · BPA estimé : $${Number(e.eps).toFixed(2)}` : ""}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{e.name || e.company}</div>
+                <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{e.symbol}{e.eps !== null && !isNaN(e.eps) ? ` · BPA estimé : $${Number(e.eps).toFixed(2)}` : ""}</div>
               </div>
             </div>
           );

@@ -184,7 +184,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
   const T = TProp || themes[localStorage.getItem("verio-theme") || "light"];
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
   const inp = { width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.input.border}`, background: T.input.background, color: T.input.color, fontFamily: "inherit", marginBottom: 10, display: "block" };
-  const btn = { background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 };
+  const btn = { background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.text, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 };
   const btnSm = { background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
   const btnGreen = { background: "none", border: `0.5px solid ${T.accent}`, borderRadius: 8, padding: "5px 10px", fontSize: 12, color: T.accent, cursor: "pointer", fontFamily: "inherit" };
   const btnRed = { background: "none", border: `0.5px solid ${T.red}`, borderRadius: 8, padding: "5px 10px", fontSize: 12, color: T.red, cursor: "pointer", fontFamily: "inherit" };
@@ -375,7 +375,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
           <textarea style={{ ...inp, height: 80, resize: "vertical" }} placeholder="Investisseur passif…" value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} />
           <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Stratégie</label>
           <select style={{ ...inp, background: T.bgCard }} value={form.strategy} onChange={e => setForm({ ...form, strategy: e.target.value })}>
-            {STRATEGIES.map(s => <option key={s} style={{ background: "#1e2130" }}>{s}</option>)}
+            {STRATEGIES.map(s => <option key={s} style={{ background: T.bgSecondary }}>{s}</option>)}
           </select>
           <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Investisseur depuis (année)</label>
           <input style={inp} placeholder="2018" type="number" value={form.investing_since} onChange={e => setForm({ ...form, investing_since: e.target.value })} />
@@ -405,7 +405,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
 
       <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
         {[["stats", "📊 Stats"], ["badges", `🏅 Badges (${unlockedCount})`], ["reseau", "👥 Réseau"]].map(([id, label]) => (
-          <button key={id} onClick={() => setSection(id)} style={{ padding: "6px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${section === id ? T.accent : "rgba(255,255,255,0.1)"}`, background: section === id ? T.accentBg : "none", color: section === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
+          <button key={id} onClick={() => setSection(id)} style={{ padding: "6px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${section === id ? T.accent : T.border}`, background: section === id ? T.accentBg : "none", color: section === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
             {label}
           </button>
         ))}
@@ -416,7 +416,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
       )}
 
       {section === "badges" && (
-        <Badges session={session} profile={profile} />
+        <Badges session={session} T={T} profile={profile} />
       )}
 
       {section === "reseau" && (

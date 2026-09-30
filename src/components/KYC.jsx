@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { supabase } from "../supabase";
+import { themes } from "../App";
 
 const BROKERS = ["Boursorama", "Saxo", "Trade Republic", "Degiro", "Fortuneo", "BinckBank", "Interactive Brokers", "Revolut", "eToro", "Autre"];
 const ACTIFS = ["ETF", "Actions", "Fonds actifs", "Obligations", "Crypto", "Immobilier (SCPI)", "Matières premières"];
 const STRATEGIES = ["ETF passif", "Dividendes", "Value Investing", "Growth Investing", "Stock Picking", "DCA", "Mixte"];
 
-const btn = { background: "#9FE1CB", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 14, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 };
-const btnSm = { background: "none", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "8px 16px", fontSize: 13, color: "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" };
-const inp = { width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: "0.5px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#f0f0f0", fontFamily: "inherit", marginBottom: 10, display: "block" };
-const lbl = { fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 6, display: "block" };
+const btn = { background: T.accent, border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 14, color: T.accentDark, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 };
+const btnSm = { background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "8px 16px", fontSize: 13, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
+const inp = { width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: "#f0f0f0", fontFamily: "inherit", marginBottom: 10, display: "block" };
+// lbl défini dynamiquement
 
 function ChoiceGrid({ options, value, onChange, multi = false }) {
   return (
@@ -23,7 +24,7 @@ function ChoiceGrid({ options, value, onChange, multi = false }) {
             } else {
               onChange(opt);
             }
-          }} style={{ padding: "8px 14px", borderRadius: 999, fontSize: 13, border: `0.5px solid ${selected ? "#9FE1CB" : "rgba(255,255,255,0.1)"}`, background: selected ? "rgba(159,225,203,0.12)" : "none", color: selected ? "#9FE1CB" : "rgba(255,255,255,0.5)", cursor: "pointer", fontFamily: "inherit", fontWeight: selected ? 600 : 400 }}>
+          }} style={{ padding: "8px 14px", borderRadius: 999, fontSize: 13, border: `0.5px solid ${selected ? T.accent : T.border}`, background: selected ? T.accentBg : "none", color: selected ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: selected ? 600 : 400 }}>
             {opt}
           </button>
         );
@@ -40,7 +41,7 @@ const STEPS = [
   { title: "Ton setup", emoji: "🔧", subtitle: "Ce que tu utilises déjà" },
 ];
 
-export default function KYC({ session, profile, onComplete, onSkip }) {
+export default function KYC({ session, profile, onComplete, onSkip , T: TProp }) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState({
@@ -74,19 +75,19 @@ export default function KYC({ session, profile, onComplete, onSkip }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "1rem" }}>
-      <div style={{ background: "#181b23", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: "2rem", maxWidth: 520, width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
+      <div style={{ background: T.bgSecondary, border: `0.5px solid ${T.border}`, borderRadius: 20, padding: "2rem", maxWidth: 520, width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
 
         {/* Progress bar */}
-        <div style={{ height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 2, marginBottom: 24, overflow: "hidden" }}>
-          <div style={{ width: `${progress}%`, height: "100%", background: "#9FE1CB", borderRadius: 2, transition: "width 0.3s" }} />
+        <div style={{ height: 3, background: T.bgCard, borderRadius: 2, marginBottom: 24, overflow: "hidden" }}>
+          <div style={{ width: `${progress}%`, height: "100%", background: T.accent, borderRadius: 2, transition: "width 0.3s" }} />
         </div>
 
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 28, marginBottom: 8 }}>{STEPS[step].emoji}</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 4 }}>{STEPS[step].title}</div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)" }}>{STEPS[step].subtitle}</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.2)", marginTop: 4 }}>Étape {step + 1} / {STEPS.length}</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: T.text, marginBottom: 4 }}>{STEPS[step].title}</div>
+          <div style={{ fontSize: 13, color: T.textMuted }}>{STEPS[step].subtitle}</div>
+          <div style={{ fontSize: 12, color: T.textFaint, marginTop: 4 }}>Étape {step + 1} / {STEPS.length}</div>
         </div>
 
         {/* Étape 1 — Qui es-tu */}

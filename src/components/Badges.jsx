@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
+import { themes } from "../App";
 
 const CATS = [
   {
@@ -109,7 +110,7 @@ function getProgress(cat, val) {
   return Math.min(((val - prev) / (next.target - prev)) * 100, 100);
 }
 
-export default function Badges({ session, profile }) {
+export default function Badges({ session, profile , T: TProp }) {
   const [data, setData] = useState({ perf: null, types: 0, positions: 0, clubs: 0, years: null, brokers: 0, totalPct: 0 });
   const [flipped, setFlipped] = useState({});
   const [unlockedBadgeIds, setUnlockedBadgeIds] = useState([]);
@@ -232,7 +233,7 @@ export default function Badges({ session, profile }) {
     <div>
       <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
         {[["trophees", `🏅 Trophées (${unlockedTotal})`], ["identite", `✨ Identité`], ["cachés", "🔮 Cachés"]].map(([id, label]) => (
-          <button key={id} onClick={() => setActiveTab(id)} style={{ padding: "6px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${activeTab === id ? "#9FE1CB" : "rgba(255,255,255,0.1)"}`, background: activeTab === id ? "rgba(159,225,203,0.1)" : "none", color: activeTab === id ? "#9FE1CB" : "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" }}>
+          <button key={id} onClick={() => setActiveTab(id)} style={{ padding: "6px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${activeTab === id ? T.accent : T.border}`, background: activeTab === id ? T.accentBg : "none", color: activeTab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
             {label}
           </button>
         ))}
@@ -251,37 +252,37 @@ export default function Badges({ session, profile }) {
             return (
               <div key={cat.id} onClick={() => toggle(cat.id)} style={{ height: 160, cursor: "pointer", perspective: "800px" }}>
                 <div style={{ position: "relative", width: "100%", height: "100%", transformStyle: "preserve-3d", transition: "transform 0.5s ease", transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)" }}>
-                  <div style={{ position: "absolute", inset: 0, borderRadius: 14, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "14px 10px", background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.08)" }}>
+                  <div style={{ position: "absolute", inset: 0, borderRadius: 14, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "14px 10px", background: T.bgCard, border: `0.5px solid ${T.border}` }}>
                     <div style={{ fontSize: 26, marginBottom: 6 }}>{cat.icon}</div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.7)", textAlign: "center", lineHeight: 1.3 }}>{cat.name}</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: T.text, textAlign: "center", lineHeight: 1.3 }}>{cat.name}</div>
                     <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
                       {cat.levels.map(l => <span key={l.medal} style={{ fontSize: 14, opacity: (val !== null && val >= l.target) ? 1 : 0.2 }}>{l.medal}</span>)}
                     </div>
                     {topBadge && <div style={{ marginTop: 8, fontSize: 11, color: MEDAL_COLORS[topBadge.medal] }}>{topBadge.medal} {topBadge.name}</div>}
-                    {!topBadge && <div style={{ marginTop: 8, fontSize: 10, color: "rgba(255,255,255,0.2)" }}>En cours…</div>}
+                    {!topBadge && <div style={{ marginTop: 8, fontSize: 10, color: T.textFaint }}>En cours…</div>}
                   </div>
 
                   <div style={{ position: "absolute", inset: 0, borderRadius: 14, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: "rotateY(180deg)", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-start", padding: "10px 10px 8px", background: "#1e2235", border: "0.5px solid rgba(159,225,203,0.15)", overflow: "hidden" }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "#9FE1CB", textAlign: "center", width: "100%", marginBottom: 8 }}>{cat.icon} {cat.name}</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: T.accent, textAlign: "center", width: "100%", marginBottom: 8 }}>{cat.icon} {cat.name}</div>
                     {cat.levels.map(l => {
                       const done = val !== null && val >= l.target;
                       return (
                         <div key={l.medal} style={{ display: "flex", alignItems: "center", gap: 5, width: "100%", marginBottom: 4 }}>
                           <span style={{ fontSize: 12 }}>{l.medal}</span>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 10, fontWeight: 600, color: done ? MEDAL_COLORS[l.medal] : "rgba(255,255,255,0.35)" }}>{l.name}</div>
-                            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)" }}>{l.desc}</div>
+                            <div style={{ fontSize: 10, fontWeight: 600, color: done ? MEDAL_COLORS[l.medal] : T.textMuted }}>{l.name}</div>
+                            <div style={{ fontSize: 9, color: T.textFaint }}>{l.desc}</div>
                           </div>
-                          {done && <span style={{ fontSize: 10, color: "#9FE1CB" }}>✓</span>}
+                          {done && <span style={{ fontSize: 10, color: T.accent }}>✓</span>}
                         </div>
                       );
                     })}
                     {next && (
                       <>
-                        <div style={{ width: "100%", height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden", marginTop: 4 }}>
+                        <div style={{ width: "100%", height: 3, background: T.bgCard, borderRadius: 2, overflow: "hidden", marginTop: 4 }}>
                           <div style={{ width: `${progress.toFixed(0)}%`, height: "100%", background: MEDAL_COLORS[next.medal], borderRadius: 2 }} />
                         </div>
-                        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", textAlign: "center", width: "100%", marginTop: 2 }}>{val ?? 0} / {next.target} {cat.unit}</div>
+                        <div style={{ fontSize: 9, color: T.textFaint, textAlign: "center", width: "100%", marginTop: 2 }}>{val ?? 0} / {next.target} {cat.unit}</div>
                       </>
                     )}
                     {!next && <div style={{ fontSize: 10, color: "#FFD700", textAlign: "center", width: "100%", marginTop: 4 }}>💎 Max atteint !</div>}
@@ -295,33 +296,33 @@ export default function Badges({ session, profile }) {
 
       {activeTab === "identite" && (
         <div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", marginBottom: 16, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 13, color: T.textFaint, marginBottom: 16, lineHeight: 1.6 }}>
             Ton identité d'investisseur se construit avec le temps. Elle ne se choisit pas — elle se révèle.
           </div>
           {myIdentities.length === 0 && (
-            <div style={{ background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "2rem", textAlign: "center" }}>
+            <div style={{ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "2rem", textAlign: "center" }}>
               <div style={{ fontSize: 32, marginBottom: 12 }}>🌱</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.6)", marginBottom: 8 }}>Ton identité se construit</div>
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}>Continue d'investir pour révéler qui tu es</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: T.textMuted, marginBottom: 8 }}>Ton identité se construit</div>
+              <div style={{ fontSize: 13, color: T.textFaint }}>Continue d'investir pour révéler qui tu es</div>
             </div>
           )}
           {myIdentities.map(id => (
-            <div key={id.id} style={{ background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(159,225,203,0.2)", borderRadius: 14, padding: "1.25rem", marginBottom: 10, display: "flex", gap: 14, alignItems: "center" }}>
-              <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(159,225,203,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>{id.icon}</div>
+            <div key={id.id} style={{ background: T.bgCard, border: "0.5px solid rgba(159,225,203,0.2)", borderRadius: 14, padding: "1.25rem", marginBottom: 10, display: "flex", gap: 14, alignItems: "center" }}>
+              <div style={{ width: 52, height: 52, borderRadius: "50%", background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>{id.icon}</div>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#9FE1CB", marginBottom: 4 }}>{id.name}</div>
-                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 1.5 }}>{id.desc}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: T.accent, marginBottom: 4 }}>{id.name}</div>
+                <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5 }}>{id.desc}</div>
               </div>
             </div>
           ))}
           <div style={{ marginTop: 16 }}>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Identités à débloquer</div>
+            <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Identités à débloquer</div>
             {IDENTITIES.filter(id => !id.condition(data)).map(id => (
-              <div key={id.id} style={{ background: "rgba(255,255,255,0.02)", border: "0.5px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "1rem 1.25rem", marginBottom: 8, display: "flex", gap: 12, alignItems: "center", opacity: 0.45 }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{id.icon}</div>
+              <div key={id.id} style={{ background: T.border, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1rem 1.25rem", marginBottom: 8, display: "flex", gap: 12, alignItems: "center", opacity: 0.45 }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: T.bgCard, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{id.icon}</div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>{id.name}</div>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>{id.desc}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: T.textMuted }}>{id.name}</div>
+                  <div style={{ fontSize: 12, color: T.textFaint }}>{id.desc}</div>
                 </div>
               </div>
             ))}
@@ -331,7 +332,7 @@ export default function Badges({ session, profile }) {
 
       {activeTab === "cachés" && (
         <div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", marginBottom: 16, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 13, color: T.textFaint, marginBottom: 16, lineHeight: 1.6 }}>
             Ces badges se débloquent dans des moments inattendus. Tu ne sais pas quand — jusqu'à ce que ça arrive.
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
@@ -339,14 +340,14 @@ export default function Badges({ session, profile }) {
               const isUnlocked = unlockedBadgeIds.includes(b.id);
               const isSoon = b.soon && !isUnlocked;
               return (
-                <div key={b.id} style={{ background: "rgba(255,255,255,0.04)", border: `0.5px solid ${isUnlocked ? "rgba(159,225,203,0.3)" : "rgba(255,255,255,0.06)"}`, borderRadius: 14, padding: "14px 10px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, opacity: isUnlocked ? 1 : isSoon ? 0.3 : 0.5 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: isUnlocked ? "rgba(159,225,203,0.1)" : "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
+                <div key={b.id} style={{ background: T.bgCard, border: `0.5px solid ${isUnlocked ? "rgba(159,225,203,0.3)" : T.bgCard}`, borderRadius: 14, padding: "14px 10px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, opacity: isUnlocked ? 1 : isSoon ? 0.3 : 0.5 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: isUnlocked ? T.accentBg : T.bgCard, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
                     {isUnlocked ? b.icon : "🔮"}
                   </div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: isUnlocked ? "#9FE1CB" : "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 1.3 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: isUnlocked ? T.accent : T.textMuted, textAlign: "center", lineHeight: 1.3 }}>
                     {isUnlocked ? b.name : isSoon ? "Bientôt" : "???"}
                   </div>
-                  {isUnlocked && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textAlign: "center" }}>{b.desc}</div>}
+                  {isUnlocked && <div style={{ fontSize: 10, color: T.textFaint, textAlign: "center" }}>{b.desc}</div>}
                 </div>
               );
             })}

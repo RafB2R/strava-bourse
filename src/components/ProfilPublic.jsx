@@ -62,7 +62,7 @@ function PieChart({ data, T }) {
             d={s.path}
             fill={s.color}
             opacity={hovered === null || hovered === i ? 1 : 0.4}
-            stroke={T.bgSecondary || "#fff"}
+            stroke={T.bgSecondary || T.text}
             strokeWidth={2}
             onMouseEnter={() => setHovered(i)}
             onMouseLeave={() => setHovered(null)}

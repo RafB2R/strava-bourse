@@ -3,10 +3,11 @@ import ProfilPublic from "./ProfilPublic";
 import Marches from "./Marches";
 import Clubs from "./Clubs";
 import { supabase } from "../supabase";
+import { themes } from "../App";
 
-const card = { background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
-const inp = { width: "100%", padding: "10px 14px", fontSize: 14, borderRadius: 10, border: "0.5px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)", color: "#f0f0f0", fontFamily: "inherit", display: "block" };
-const btnSm = { background: "none", border: "0.5px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "5px 12px", fontSize: 12, color: "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" };
+const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
+const inp = { width: "100%", padding: "10px 14px", fontSize: 14, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: "#f0f0f0", fontFamily: "inherit", display: "block" };
+const btnSm = { background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
 
 const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB","rgba(240,153,123,0.12)|#F0997B","rgba(175,169,236,0.12)|#AFA9EC","rgba(123,184,240,0.12)|#7BB8F0"];
 function Avatar({ name, size = 36 }) {
@@ -32,7 +33,7 @@ const CATEGORIES = {
   "₿ Crypto": ["Bitcoin","Altcoins","DeFi","NFT & Web3"],
 };
 
-export default function Explore({ session }) {
+export default function Explore({ session , T: TProp }) {
   const [query, setQuery] = useState("");
   const [searchTab, setSearchTab] = useState("users");
   const [users, setUsers] = useState([]);
@@ -129,15 +130,15 @@ export default function Explore({ session }) {
   const filteredClubs = filterCat === "Tous" ? allClubs : allClubs.filter(c => c.category === filterCat);
 
   if (selectedUser) return <ProfilPublic userId={selectedUser} session={session} onBack={() => setSelectedUser(null)} />;
-  if (selectedClub) return <Clubs session={session} initialClub={selectedClub} onBack={() => setSelectedClub(null)} />;
+  if (selectedClub) return <Clubs session={session} T={T} initialClub={selectedClub} onBack={() => setSelectedClub(null)} />;
 
   return (
     <div>
       {/* Barre de recherche */}
       <div style={{ position: "relative", marginBottom: 20 }}>
         <input style={{ ...inp, paddingLeft: 40 }} placeholder="Rechercher un investisseur, un club…" value={query} onChange={e => setQuery(e.target.value)} />
-        <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, color: "rgba(255,255,255,0.3)" }}>🔍</span>
-        {query && <button onClick={() => setQuery("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 14 }}>✕</button>}
+        <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, color: T.textFaint }}>🔍</span>
+        {query && <button onClick={() => setQuery("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 14 }}>✕</button>}
       </div>
 
       {/* Résultats de recherche */}
@@ -145,56 +146,56 @@ export default function Explore({ session }) {
         <div>
           <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
             {[["users", "👤 Investisseurs"], ["clubs", "🏛️ Clubs"]].map(([id, label]) => (
-              <button key={id} onClick={() => setSearchTab(id)} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${searchTab === id ? "#9FE1CB" : "rgba(255,255,255,0.1)"}`, background: searchTab === id ? "rgba(159,225,203,0.1)" : "none", color: searchTab === id ? "#9FE1CB" : "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" }}>
+              <button key={id} onClick={() => setSearchTab(id)} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${searchTab === id ? T.accent : T.border}`, background: searchTab === id ? T.accentBg : "none", color: searchTab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
                 {label}
               </button>
             ))}
           </div>
 
-          {loading && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", padding: "1rem 0" }}>Recherche…</div>}
+          {loading && <div style={{ fontSize: 13, color: T.textFaint, padding: "1rem 0" }}>Recherche…</div>}
 
           {!loading && searchTab === "users" && users.map(u => (
             <div key={u.id} onClick={() => setSelectedUser(u.id)} style={{ ...card, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
               <Avatar name={u.full_name} size={40} />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{u.full_name}</div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>@{u.username}{u.city ? ` · ${u.city}` : ""}{u.strategy ? ` · ${u.strategy}` : ""}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}</div>
+                <div style={{ fontSize: 12, color: T.textMuted }}>@{u.username}{u.city ? ` · ${u.city}` : ""}{u.strategy ? ` · ${u.strategy}` : ""}</div>
                 {u.streak_mois > 0 && <div style={{ fontSize: 11, color: "#F0CB7B", marginTop: 2 }}>🔥 {u.streak_mois} mois</div>}
               </div>
-              {friendIds.includes(u.id) ? <span style={{ fontSize: 12, color: "#9FE1CB" }}>✓ Ami</span>
-                : pendingIds.includes(u.id) ? <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>En attente</span>
-                : <button onClick={() => sendRequest(u.id)} style={{ ...btnSm, borderColor: "#9FE1CB", color: "#9FE1CB" }}>+ Suivre</button>}
+              {friendIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.accent }}>✓ Ami</span>
+                : pendingIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.textFaint }}>En attente</span>
+                : <button onClick={() => sendRequest(u.id)} style={{ ...btnSm, borderColor: T.accent, color: T.accent }}>+ Suivre</button>}
             </div>
           ))}
 
           {!loading && searchTab === "clubs" && clubs.map(club => (
             <div key={club.id} style={{ ...card, display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(159,225,203,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{club.name}</div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>{club.subcategory}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{club.name}</div>
+                <div style={{ fontSize: 12, color: T.textMuted }}>{club.subcategory}</div>
               </div>
-              {myClubIds.includes(club.id) ? <span style={{ fontSize: 12, color: "#9FE1CB" }}>✓ Membre</span>
-                : <button onClick={() => joinClub(club.id)} style={{ ...btnSm, borderColor: "#9FE1CB", color: "#9FE1CB" }}>Rejoindre</button>}
+              {myClubIds.includes(club.id) ? <span style={{ fontSize: 12, color: T.accent }}>✓ Membre</span>
+                : <button onClick={() => joinClub(club.id)} style={{ ...btnSm, borderColor: T.accent, color: T.accent }}>Rejoindre</button>}
             </div>
           ))}
 
-          {!loading && searchTab === "users" && users.length === 0 && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}>Aucun investisseur trouvé</div>}
-          {!loading && searchTab === "clubs" && clubs.length === 0 && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}>Aucun club trouvé</div>}
+          {!loading && searchTab === "users" && users.length === 0 && <div style={{ fontSize: 13, color: T.textFaint }}>Aucun investisseur trouvé</div>}
+          {!loading && searchTab === "clubs" && clubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint }}>Aucun club trouvé</div>}
         </div>
       ) : (
         <>
           {/* Onglets Marchés / Clubs / Super Investors */}
           <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
             {[["marches", "🌍 Marchés"], ["clubs", "🏛️ Clubs"], ["super", "🏆 Super Investors"]].map(([id, label]) => (
-              <button key={id} onClick={() => { setSection(id); setFilterCat('Tous'); }} style={{ padding: "7px 14px", borderRadius: 999, fontSize: 13, border: `0.5px solid ${section === id ? "#9FE1CB" : "rgba(255,255,255,0.1)"}`, background: section === id ? "rgba(159,225,203,0.1)" : "none", color: section === id ? "#9FE1CB" : "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+              <button key={id} onClick={() => { setSection(id); setFilterCat('Tous'); }} style={{ padding: "7px 14px", borderRadius: 999, fontSize: 13, border: `0.5px solid ${section === id ? T.accent : T.border}`, background: section === id ? T.accentBg : "none", color: section === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
                 {label}
               </button>
             ))}
           </div>
 
           {/* Marchés */}
-          {section === "marches" && <Marches />}
+          {section === "marches" && <Marches T={T} />}
 
           {/* Clubs */}
           {section === "clubs" && (
@@ -202,55 +203,55 @@ export default function Explore({ session }) {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {[["Tous","Tous"],["📈 Actions","Actions"],["📊 ETF","ETF"],["🏦 Fonds","Fonds"],["📉 Obligations","Oblig."],["🏠 Immobilier","Immo"],["💰 Patrimoine & Stratégie","Stratégie"],["₿ Crypto","Crypto"]].map(([key,label]) => (
-                    <button key={key} onClick={() => setFilterCat(key)} style={{ padding: "5px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filterCat === key ? "#9FE1CB" : "rgba(255,255,255,0.1)"}`, background: filterCat === key ? "rgba(159,225,203,0.1)" : "none", color: filterCat === key ? "#9FE1CB" : "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+                    <button key={key} onClick={() => setFilterCat(key)} style={{ padding: "5px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filterCat === key ? T.accent : T.border}`, background: filterCat === key ? T.accentBg : "none", color: filterCat === key ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
                       {label}
                     </button>
                   ))}
                 </div>
-                <button onClick={() => setShowForm(!showForm)} style={{ background: "#9FE1CB", border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit", flexShrink: 0, marginLeft: 8 }}>
+                <button onClick={() => setShowForm(!showForm)} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: T.accentDark, cursor: "pointer", fontFamily: "inherit", flexShrink: 0, marginLeft: 8 }}>
                   {showForm ? "Annuler" : "+ Créer"}
                 </button>
               </div>
 
               {showForm && (
                 <div style={{ ...card, marginBottom: 16 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 12 }}>Créer un club</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 12 }}>Créer un club</div>
                   <input style={{ ...inp, marginBottom: 10 }} placeholder="Nom du club" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                   <textarea style={{ ...inp, height: 60, resize: "none", marginBottom: 10 }} placeholder="Description (optionnel)" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
                     {Object.keys(CATEGORIES).map(cat => (
-                      <button key={cat} onClick={() => setForm({ ...form, category: cat, subcategory: "" })} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${form.category === cat ? "#9FE1CB" : "rgba(255,255,255,0.1)"}`, background: form.category === cat ? "rgba(159,225,203,0.1)" : "none", color: form.category === cat ? "#9FE1CB" : "rgba(255,255,255,0.4)", cursor: "pointer", fontFamily: "inherit" }}>{cat}</button>
+                      <button key={cat} onClick={() => setForm({ ...form, category: cat, subcategory: "" })} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${form.category === cat ? T.accent : T.border}`, background: form.category === cat ? T.accentBg : "none", color: form.category === cat ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{cat}</button>
                     ))}
                   </div>
                   {form.category && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
                       {CATEGORIES[form.category].map(sub => (
-                        <button key={sub} onClick={() => setForm({ ...form, subcategory: sub })} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${form.subcategory === sub ? "#9FE1CB" : "rgba(255,255,255,0.08)"}`, background: form.subcategory === sub ? "rgba(159,225,203,0.08)" : "none", color: form.subcategory === sub ? "#9FE1CB" : "rgba(255,255,255,0.3)", cursor: "pointer", fontFamily: "inherit" }}>{sub}</button>
+                        <button key={sub} onClick={() => setForm({ ...form, subcategory: sub })} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${form.subcategory === sub ? T.accent : T.border}`, background: form.subcategory === sub ? T.accentBg : "none", color: form.subcategory === sub ? T.accent : T.textFaint, cursor: "pointer", fontFamily: "inherit" }}>{sub}</button>
                       ))}
                     </div>
                   )}
-                  {error && <div style={{ fontSize: 13, color: "#F08080", marginBottom: 8 }}>⚠️ {error}</div>}
-                  <button onClick={createClub} disabled={saving} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>{saving ? "Création…" : "Créer"}</button>
+                  {error && <div style={{ fontSize: 13, color: T.red, marginBottom: 8 }}>⚠️ {error}</div>}
+                  <button onClick={createClub} disabled={saving} style={{ background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.accentDark, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>{saving ? "Création…" : "Créer"}</button>
                 </div>
               )}
 
-              {filteredClubs.length === 0 && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "2rem 0" }}>Aucun club — crée le premier ! 🚀</div>}
+              {filteredClubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}>Aucun club — crée le premier ! 🚀</div>}
 
               {filteredClubs.map(club => (
                 <div key={club.id} onClick={() => setSelectedClub(club)} style={{ ...card, cursor: "pointer" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(159,225,203,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", marginBottom: 4 }}>{club.name}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 4 }}>{club.name}</div>
                       <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
-                        <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: "rgba(159,225,203,0.08)", color: "#9FE1CB" }}>{club.subcategory}</span>
-                        <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.35)" }}>👥 {memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
-                        {myClubIds.includes(club.id) && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: "rgba(159,225,203,0.08)", color: "#9FE1CB" }}>✓ Membre</span>}
+                        <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{club.subcategory}</span>
+                        <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgCard, color: T.textMuted }}>👥 {memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
+                        {myClubIds.includes(club.id) && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>✓ Membre</span>}
                       </div>
-                      {club.description && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>{club.description}</div>}
+                      {club.description && <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5 }}>{club.description}</div>}
                     </div>
                     {!myClubIds.includes(club.id) && (
-                      <button onClick={() => joinClub(club.id)} style={{ ...btnSm, borderColor: "#9FE1CB", color: "#9FE1CB", flexShrink: 0 }}>+ Rejoindre</button>
+                      <button onClick={() => joinClub(club.id)} style={{ ...btnSm, borderColor: T.accent, color: T.accent, flexShrink: 0 }}>+ Rejoindre</button>
                     )}
                   </div>
                 </div>
@@ -261,19 +262,19 @@ export default function Explore({ session }) {
           {/* Super Investors */}
           {section === "super" && (
             <div>
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", marginBottom: 16, lineHeight: 1.6 }}>
+              <div style={{ fontSize: 13, color: T.textFaint, marginBottom: 16, lineHeight: 1.6 }}>
                 Suis les positions des plus grands investisseurs mondiaux via les déclarations 13F publiques.
               </div>
               {SUPER_INVESTORS.map((inv, i) => (
                 <div key={inv.handle} style={{ ...card }}>
                   <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                    <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>{inv.icon}</div>
+                    <div style={{ width: 52, height: 52, borderRadius: 14, background: T.bgCard, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>{inv.icon}</div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", marginBottom: 4 }}>{inv.name}</div>
-                      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 6 }}>{inv.desc}</div>
-                      <div style={{ fontSize: 13, color: "#9FE1CB", fontWeight: 500 }}>{inv.perf}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 4 }}>{inv.name}</div>
+                      <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 6 }}>{inv.desc}</div>
+                      <div style={{ fontSize: 13, color: T.accent, fontWeight: 500 }}>{inv.perf}</div>
                     </div>
-                    <span style={{ fontSize: 11, color: "#9FE1CB", fontWeight: 600, padding: "3px 10px", borderRadius: 999, border: "0.5px solid rgba(159,225,203,0.3)", background: "rgba(159,225,203,0.06)", flexShrink: 0 }}>Bientôt</span>
+                    <span style={{ fontSize: 11, color: T.accent, fontWeight: 600, padding: "3px 10px", borderRadius: 999, border: "0.5px solid rgba(159,225,203,0.3)", background: T.accentBg, flexShrink: 0 }}>Bientôt</span>
                   </div>
                 </div>
               ))}

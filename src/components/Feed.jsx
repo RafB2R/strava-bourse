@@ -26,12 +26,12 @@ function getActivityMeta(activity) {
   const name = activity.author?.full_name || "Quelqu'un";
   const map = {
     new_position: { tag: "Nouvelle position", tagBg: "rgba(123,184,240,0.1)", tagColor: "#7BB8F0", title: `${name} a ajouté une nouvelle position`, sub: d.label, stat: `${d.exposition || d.vehicule || ""}${d.broker ? ` · ${d.broker}` : ""}${d.percentage ? ` · ${d.percentage}%` : ""}` },
-    renforcement: { tag: "Renforcement", tagBg: "rgba(159,225,203,0.1)", tagColor: "#9FE1CB", title: `${name} a renforcé une position`, sub: d.label, stat: "" },
+    renforcement: { tag: "Renforcement", tagBg: T.accentBg, tagColor: T.accent, title: `${name} a renforcé une position`, sub: d.label, stat: "" },
     vente: { tag: "Vente", tagBg: "rgba(240,153,123,0.1)", tagColor: "#F0997B", title: `${name} a vendu une position`, sub: d.label, stat: "" },
     allegement: { tag: "Allègement", tagBg: "rgba(240,153,123,0.1)", tagColor: "#F0997B", title: `${name} a allégé une position`, sub: d.label, stat: "" },
     dividende: { tag: "Dividende 💰", tagBg: "rgba(240,203,123,0.1)", tagColor: "#F0CB7B", title: `${name} a reçu un dividende`, sub: d.label, stat: "" },
     coupon: { tag: "Coupon", tagBg: "rgba(240,203,123,0.1)", tagColor: "#F0CB7B", title: `${name} a reçu un coupon`, sub: d.label, stat: "" },
-    versement: { tag: "Versement", tagBg: "rgba(159,225,203,0.1)", tagColor: "#9FE1CB", title: `${name} a effectué un versement`, sub: d.broker, stat: "" },
+    versement: { tag: "Versement", tagBg: T.accentBg, tagColor: T.accent, title: `${name} a effectué un versement`, sub: d.broker, stat: "" },
     retrait: { tag: "Retrait", tagBg: "rgba(240,153,123,0.1)", tagColor: "#F0997B", title: `${name} a effectué un retrait`, sub: d.broker, stat: "" },
     rebalancement: { tag: "Rééquilibrage", tagBg: "rgba(240,203,123,0.1)", tagColor: "#F0CB7B", title: `${name} a rééquilibré son portefeuille`, sub: "", stat: "" },
     suppression_position: { tag: "Position supprimée", tagBg: "rgba(128,128,128,0.1)", tagColor: "#888", title: `${name} a supprimé une position`, sub: d.label, stat: "" },
@@ -145,7 +145,7 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
             />
             {postInput.trim() && (
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-                <button onClick={publishPost} disabled={posting} style={{ background: T.accent, border: "none", borderRadius: 999, padding: "6px 18px", fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+                <button onClick={publishPost} disabled={posting} style={{ background: T.accent, border: "none", borderRadius: 999, padding: "6px 18px", fontSize: 13, fontWeight: 700, color: T.text, cursor: "pointer", fontFamily: "inherit" }}>
                   {posting ? "…" : "Publier"}
                 </button>
               </div>
