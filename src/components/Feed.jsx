@@ -3,6 +3,7 @@ import { supabase } from "../supabase";
 import { T, T as TLive, avatarColors } from "../theme";
 import { badgeFromData } from "../badges";
 import { MOMENTS, MOMENT_TYPES, isMoment, momentSentence } from "../moments";
+import { tradeTexts } from "../trades";
 
 function Avatar({ name, size = 36 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
@@ -25,6 +26,11 @@ function getActivityMeta(activity) {
   const d = activity.data || {};
   const name = activity.author?.full_name || "Quelqu'un";
   const badge = badgeFromData(d);
+  const trade = tradeTexts(activity.type, d);
+  if (trade) {
+    const up = activity.type === "renforcement";
+    return { tag: { renforcement: "Renforcement", allegement: "Allègement", vente: "Vente" }[activity.type], tagBg: up ? T.accentBg : "rgba(240,153,123,0.1)", tagColor: up ? T.accent : T.orange, title: `${name} ${trade.sentence}`, sub: trade.detail, stat: trade.stat };
+  }
   if (isMoment(activity.type)) {
     const m = MOMENTS[activity.type];
     return { tag: m.tag, tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: momentSentence(activity.type, d, name), sub: m.sub?.(d) || "", stat: m.stat?.(d) || "" };
