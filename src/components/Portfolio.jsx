@@ -2,6 +2,7 @@ import { useState, useEffect, useEffectEvent, useRef } from "react";
 import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
 import { syncBadges } from "../badges";
+import ShareCard from "./ShareCard";
 
 const VEHICULES = ["ETF", "Action directe", "Fonds actif", "Obligation directe", "SCPI", "Crypto", "Autre"];
 const EXPOSITIONS = ["Actions", "Obligations", "Immobilier", "Multi-actifs", "Monétaire", "Crypto", "Matières premières"];
@@ -82,6 +83,7 @@ export default function Portfolio({ session, T: TProp }) {
   const [editFetchingPrice, setEditFetchingPrice] = useState(false);
   const [editPriceHint, setEditPriceHint] = useState(null);
   const hasRefreshed = useRef(false);
+  const [sharing, setSharing] = useState(false);
 
   function applyEntries(data) {
     setEntries(data || []);
@@ -194,9 +196,16 @@ export default function Portfolio({ session, T: TProp }) {
       <div style={card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
           <div style={{ fontSize: 13, color: T.textMuted }}>Valeur du portefeuille</div>
+          <div style={{ display: "flex", gap: 6 }}>
+          {entries.length > 0 && (
+            <button onClick={() => setSharing(true)} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>
+              📤 Partager
+            </button>
+          )}
           <button onClick={() => refreshAllPrices(entries)} disabled={refreshing || entries.filter(e => e.isin).length === 0} style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "4px 10px", fontSize: 11, color: refreshing ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
             {refreshing ? "⟳ Mise à jour…" : "⟳ Actualiser"}
           </button>
+          </div>
         </div>
         <div style={{ fontSize: 36, fontWeight: 700, color: T.text, letterSpacing: -1.5, marginBottom: 6 }}>
           {hasValeur ? formatEur(valeurTotale) : "— €"}
@@ -209,6 +218,17 @@ export default function Portfolio({ session, T: TProp }) {
         </div>
         <HistoryPlaceholder T={T} />
       </div>
+
+      {sharing && (
+        <ShareCard
+          session={session}
+          T={T}
+          perf={perfGlobale}
+          allocation={Object.entries(byExpo).sort((a, b) => b[1] - a[1]).map(([label, pct]) => ({ label, pct, color: EXP_COLORS[label] || "#888" }))}
+          positions={[...entries].sort((a, b) => Number(b.percentage) - Number(a.percentage)).map(e => ({ label: e.label, pct: Number(e.percentage), perf: e.performance === null ? null : Number(e.performance) }))}
+          onClose={() => setSharing(false)}
+        />
+      )}
 
       {/* 2. ALLOCATION */}
       {Object.keys(byExpo).length > 0 && (
