@@ -40,103 +40,23 @@ async function fetchPrixViaISIN(isin) {
   } catch { return null; }
 }
 
-// Données d'exemple du graphique (pas encore d'historique réel)
-const CHART_DATASETS = {
-  "1J": [7200,7220,7180,7250,7300,7280,7350,7400,7475],
-  "1M": [6800,6900,7000,7050,7100,7200,7300,7400,7475],
-  "3M": [6200,6400,6600,6700,6900,7100,7300,7475],
-  "6M": [5800,6000,6200,6500,6700,7000,7200,7475],
-  "YTD": [6500,6600,6700,6900,7100,7200,7350,7475],
-  "1A": [5500,5800,6100,6400,6700,7000,7200,7475],
-  "5A": [2000,3000,4000,5000,5500,6000,6800,7475],
-  "DEBUT": [1000,2000,3500,5000,6000,6800,7200,7475],
-};
-const CHART_LABELS = {
-  "1J": ["9h","11h","12h","13h","14h","15h","16h","17h","Maint."],
-  "1M": ["S1","S2","S3","S4","S5","S6","S7","S8","Auj."],
-  "3M": ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Auj."],
-  "6M": ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Auj."],
-  "YTD": ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Auj."],
-  "1A": ["Juil 24","Sep","Nov","Jan 25","Mar","Mai","Jun","Auj."],
-  "5A": ["2021","2022","2023","2024","2025","2025","2026","Auj."],
-  "DEBUT": ["","","","","","","","Auj."],
-};
-
 // Mes positions, montants compris (fonction Supabase réservée au propriétaire)
 async function fetchMyEntries() {
   const { data } = await supabase.rpc("get_my_portfolio_entries");
   return data || [];
 }
 
-function MiniChart({ perfGlobale, investingSince, T }) {
-  const canvasRef = useRef(null);
-  const [period, setPeriod] = useState("1M");
-  const isUp = perfGlobale === null || perfGlobale >= 0;
-
-  // Années depuis le début
-  const yearsInvesting = investingSince ? new Date().getFullYear() - Number(investingSince) : 7;
-
-  // Périodes disponibles selon l'ancienneté
-  const allPeriods = [
-    { id: "1J", label: "1J" },
-    { id: "1M", label: "1M" },
-    { id: "3M", label: "3M" },
-    { id: "6M", label: "6M" },
-    { id: "YTD", label: "YTD" },
-    { id: "1A", label: "1A" },
-    { id: "5A", label: "5A", minYears: 5 },
-    { id: "DEBUT", label: "Début" },
-  ];
-  const periods = allPeriods.filter(p => !p.minYears || yearsInvesting >= p.minYears);
-
-  // Perf calculée pour la période affichée
-  function getPerfPeriod() {
-    const d = CHART_DATASETS[period];
-    if (!d || d.length < 2) return null;
-    return ((d[d.length - 1] - d[0]) / d[0]) * 100;
-  }
-  const perfPeriod = getPerfPeriod();
-
-  const { accent, red, textFaint } = T;
-  const debutLabel = String(investingSince || 2019);
-
-  useEffect(() => {
-    if (!canvasRef.current || !window.Chart) return;
-    const chartLabels = period === "DEBUT" ? [debutLabel, ...CHART_LABELS.DEBUT.slice(1)] : CHART_LABELS[period];
-    const ctx = canvasRef.current.getContext("2d");
-    const color = isUp ? accent : red;
-    const g = ctx.createLinearGradient(0, 0, 0, 120);
-    g.addColorStop(0, isUp ? "rgba(159,225,203,0.2)" : "rgba(240,128,128,0.2)");
-    g.addColorStop(1, "rgba(0,0,0,0)");
-    const chart = new window.Chart(ctx, {
-      type: "line",
-      data: { labels: chartLabels, datasets: [{ data: CHART_DATASETS[period], borderColor: color, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: color, fill: true, backgroundColor: g, tension: 0.4 }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { mode: "index", intersect: false, callbacks: { label: c => c.parsed.y.toLocaleString("fr-FR") + " €" } } }, scales: { x: { grid: { display: false }, ticks: { color: textFaint, font: { size: 10 } }, border: { display: false } }, y: { display: false } } },
-    });
-    return () => chart.destroy();
-  }, [period, isUp, accent, red, textFaint, debutLabel]);
-
+// Pas encore d'historique de valeur : on l'annonce plutôt que d'afficher une courbe inventée
+function HistoryPlaceholder({ T }) {
   return (
-    <div>
-      {/* Perf période */}
-      {perfPeriod !== null && (
-        <div style={{ fontSize: 12, color: perfPeriod >= 0 ? "rgba(159,225,203,0.7)" : "rgba(240,128,128,0.7)", marginBottom: 8 }}>
-          {perfPeriod >= 0 ? "+" : ""}{perfPeriod.toFixed(2)}% sur la période
-        </div>
-      )}
-      <div style={{ position: "relative", width: "100%", height: 120, marginBottom: 10 }}>
-        <canvas ref={canvasRef} role="img" aria-label="Évolution du portefeuille"></canvas>
-      </div>
-      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-        {periods.map(p => (
-          <button key={p.id} onClick={() => setPeriod(p.id)} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${period === p.id ? T.accent : T.border}`, background: period === p.id ? T.accentBg : "none", color: period === p.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{p.label}</button>
-        ))}
-      </div>
+    <div style={{ height: 90, borderRadius: 10, border: `0.5px dashed ${T.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, marginBottom: 10 }}>
+      <div style={{ fontSize: 13, color: T.textMuted }}>📈 Historique disponible bientôt</div>
+      <div style={{ fontSize: 11, color: T.textFaint }}>La courbe se construira jour après jour</div>
     </div>
   );
 }
 
-export default function Portfolio({ session, profile, T: TProp }) {
+export default function Portfolio({ session, T: TProp }) {
   const T = TProp || TLive;
   const inp = { width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.input.border}`, background: T.input.background, color: T.input.color, fontFamily: "inherit", marginBottom: 10, display: "block" };
   const btn = { background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 };
@@ -154,7 +74,6 @@ export default function Portfolio({ session, profile, T: TProp }) {
   const [editForm, setEditForm] = useState({});
   const [editSaving, setEditSaving] = useState(false);
   const [knownBrokers, setKnownBrokers] = useState([]);
-  const [chartLoaded, setChartLoaded] = useState(() => Boolean(window.Chart));
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(null);
   const [fetchingPrice, setFetchingPrice] = useState(false);
@@ -187,14 +106,6 @@ export default function Portfolio({ session, profile, T: TProp }) {
     let ignore = false;
     fetchMyEntries().then(data => { if (!ignore) onInitialEntries(data); });
     return () => { ignore = true; };
-  }, []);
-
-  useEffect(() => {
-    if (window.Chart) return;
-    const s = document.createElement("script");
-    s.src = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js";
-    s.onload = () => setChartLoaded(true);
-    document.head.appendChild(s);
   }, []);
 
   async function refreshAllPrices(entriesList) {
@@ -294,7 +205,7 @@ export default function Portfolio({ session, profile, T: TProp }) {
           {!hasValeur && <span style={{ fontSize: 13, color: T.textFaint }}>Ajoute le nombre de parts pour voir la valeur</span>}
           {lastRefresh && <span style={{ fontSize: 11, color: T.textFaint }}>· {lastRefresh.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>}
         </div>
-        {chartLoaded && <MiniChart perfGlobale={perfGlobale} investingSince={profile?.investing_since} T={T} />}
+        <HistoryPlaceholder T={T} />
       </div>
 
       {/* 2. ALLOCATION */}
