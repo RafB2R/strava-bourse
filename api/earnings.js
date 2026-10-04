@@ -18,7 +18,7 @@ function parseCSVLine(line) {
   return result;
 }
 
-export default async function handler(req) {
+export default async function handler() {
   const apiKey = process.env.ALPHA_VANTAGE_KEY;
   if (!apiKey) return new Response(JSON.stringify([]), {
     headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
@@ -49,7 +49,7 @@ export default async function handler(req) {
     return new Response(JSON.stringify(rows), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
-  } catch (e) {
+  } catch {
     return new Response(JSON.stringify([]), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });

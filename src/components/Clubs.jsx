@@ -133,10 +133,7 @@ function ClubRanking({ clubId, session }) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("performance");
 
-  useEffect(() => { loadRanking(); }, [clubId]);
-
   async function loadRanking() {
-    setLoading(true);
     const { data: memberships } = await supabase
       .from("club_members")
       .select("user_id, profiles!club_members_user_id_fkey(full_name, username, streak_mois)")
@@ -167,6 +164,9 @@ function ClubRanking({ clubId, session }) {
     setMembers(enriched);
     setLoading(false);
   }
+  // Le parent remonte ce composant (key=clubId) quand le club change
+  useEffect(() => { loadRanking(); }, [clubId]);
+
 
   const sorted = [...members].sort((a, b) => {
     if (filter === "performance") return (b.perf ?? -Infinity) - (a.perf ?? -Infinity);
@@ -300,7 +300,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
       {/* Classement */}
       {clubTab === "classement" && (
         <div style={card(T)}>
-          <ClubRanking clubId={club.id} session={session} />
+          <ClubRanking key={club.id} clubId={club.id} session={session} />
         </div>
       )}
 

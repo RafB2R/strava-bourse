@@ -25,10 +25,7 @@ export default function Classements({ session , T: TProp }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scope, setScope] = useState("amis");
-  const [friendIds, setFriendIds] = useState([]);
-
-  useEffect(() => { loadFriends(); }, []);
-  useEffect(() => { loadRanking(); }, [filter, scope, friendIds]);
+  const [friendIds, setFriendIds] = useState(null);
 
   async function loadFriends() {
     const { data } = await supabase.from("friendships").select("requester_id, receiver_id").eq("status", "accepted").or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`);
@@ -38,7 +35,6 @@ export default function Classements({ session , T: TProp }) {
   }
 
   async function loadRanking() {
-    setLoading(true);
     let query = supabase.from("profiles").select("id, full_name, username, city, strategy, streak_mois, investing_since");
     if (scope === "amis" && friendIds.length > 0) query = query.in("id", friendIds);
     const { data: profiles } = await query.limit(50);
@@ -73,18 +69,22 @@ export default function Classements({ session , T: TProp }) {
       };
     }));
 
-    const sorted = [...enriched].sort((a, b) => {
-      if (filter === "performance") return (b.perf ?? -Infinity) - (a.perf ?? -Infinity);
-      if (filter === "regularite") return b.streak - a.streak;
-      if (filter === "diversification") return b.scoreDiversif - a.scoreDiversif;
-      if (filter === "contribution") return b.contribution - a.contribution;
-      if (filter === "badges") return b.nbBadges - a.nbBadges;
-      return 0;
-    });
-
-    setUsers(sorted);
+    setUsers(enriched);
     setLoading(false);
   }
+
+  useEffect(() => { loadFriends(); }, []);
+  // Le tri dépend seulement de `filter` : pas besoin de recharger quand il change
+  useEffect(() => { if (friendIds) loadRanking(); }, [scope, friendIds]);
+
+  const sorted = [...users].sort((a, b) => {
+    if (filter === "performance") return (b.perf ?? -Infinity) - (a.perf ?? -Infinity);
+    if (filter === "regularite") return b.streak - a.streak;
+    if (filter === "diversification") return b.scoreDiversif - a.scoreDiversif;
+    if (filter === "contribution") return b.contribution - a.contribution;
+    if (filter === "badges") return b.nbBadges - a.nbBadges;
+    return 0;
+  });
 
   const rankIcon = i => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
 
@@ -104,7 +104,7 @@ export default function Classements({ session , T: TProp }) {
       {/* Scope */}
       <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
         {[["amis", "👥 Amis"], ["global", "🌍 Global"]].map(([id, label]) => (
-          <button key={id} onClick={() => setScope(id)} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${scope === id ? T.accent : T.border}`, background: scope === id ? T.accentBg : "none", color: scope === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
+          <button key={id} onClick={() => { if (id !== scope) { setLoading(true); setScope(id); } }} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${scope === id ? T.accent : T.border}`, background: scope === id ? T.accentBg : "none", color: scope === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
             {label}
           </button>
         ))}
@@ -128,7 +128,7 @@ export default function Classements({ session , T: TProp }) {
           </div>
         )}
 
-        {users.map((u, i) => {
+        {sorted.map((u, i) => {
           const { val, color } = getValue(u);
           return (
             <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}`, background: u.isMe ? T.accentBg : "none", borderRadius: 8, paddingLeft: u.isMe ? 8 : 0 }}>
