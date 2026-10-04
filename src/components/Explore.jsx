@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import ProfilPublic from "./ProfilPublic";
 import Marches from "./Marches";
 import Clubs from "./Clubs";
 import { supabase } from "../supabase";
@@ -65,7 +64,7 @@ async function searchExplore(query, searchTab, userId) {
   return data || [];
 }
 
-export default function Explore({ session , T: TProp }) {
+export default function Explore({ session , T: TProp, onViewProfile }) {
   const T = TProp || TLive;
   const [query, setQuery] = useState("");
   const [searchTab, setSearchTab] = useState("users");
@@ -77,7 +76,6 @@ export default function Explore({ session , T: TProp }) {
   const [pendingIds, setPendingIds] = useState([]);
   const [myClubIds, setMyClubIds] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
   const [selectedClub, setSelectedClub] = useState(null);
   const [section, setSection] = useState("marches");
   const [filterCat, setFilterCat] = useState("Tous");
@@ -148,7 +146,6 @@ export default function Explore({ session , T: TProp }) {
 
   const filteredClubs = filterCat === "Tous" ? allClubs : allClubs.filter(c => c.category === filterCat);
 
-  if (selectedUser) return <ProfilPublic userId={selectedUser} session={session} onBack={() => setSelectedUser(null)} />;
   if (selectedClub) return <Clubs session={session} T={T} initialClub={selectedClub} onBack={() => setSelectedClub(null)} />;
 
   return (
@@ -174,7 +171,7 @@ export default function Explore({ session , T: TProp }) {
           {loading && <div style={{ fontSize: 13, color: T.textFaint, padding: "1rem 0" }}>Recherche…</div>}
 
           {!loading && searchTab === "users" && users.map(u => (
-            <div key={u.id} onClick={() => setSelectedUser(u.id)} style={{ ...card(T), display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+            <div key={u.id} onClick={() => onViewProfile && onViewProfile(u.id)} style={{ ...card(T), display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
               <Avatar name={u.full_name} size={40} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}</div>

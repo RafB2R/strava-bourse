@@ -174,6 +174,13 @@ export default function App() {
     setCompareData(null);
   }
 
+  // Ouvre le profil d'un membre ; son propre nom mène à l'onglet Profil
+  function viewProfile(userId) {
+    if (userId === session?.user.id) goToTab("profil");
+    else { setPublicUserId(userId); setCompareData(null); }
+    window.scrollTo(0, 0);
+  }
+
   async function handleLogout() { await supabase.auth.signOut(); }
 
   const loadingScreen = (
@@ -211,10 +218,10 @@ export default function App() {
         <ProfilPublic key={publicUserId} userId={publicUserId} session={session} T={T} onBack={() => { setPublicUserId(null); setCompareData(null); }} onCompareData={setCompareData} />
       ) : (
         <>
-          {tab === "feed" && <Feed session={session} T={T} onViewProfile={setPublicUserId} />}
-          {tab === "explore" && <Explore session={session} T={T} onViewProfile={setPublicUserId} />}
+          {tab === "feed" && <Feed session={session} T={T} onViewProfile={viewProfile} />}
+          {tab === "explore" && <Explore session={session} T={T} onViewProfile={viewProfile} />}
           {tab === "portfolio" && <Portfolio session={session} T={T} />}
-          {tab === "profil" && <Profil profile={profile} session={session} T={T} onViewProfile={setPublicUserId} />}
+          {tab === "profil" && <Profil profile={profile} session={session} T={T} onViewProfile={viewProfile} />}
         </>
       )}
     </Suspense>
@@ -245,7 +252,7 @@ export default function App() {
               <div style={{ width: 30, height: 30, borderRadius: "50%", background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
                 {profile.full_name[0]}
               </div>
-              <div style={{ flex: 1, fontSize: 12, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.full_name}</div>
+              <button onClick={() => goToTab("profil")} title="Mon profil" style={{ flex: 1, minWidth: 0, textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.full_name}</button>
               <button onClick={handleLogout} style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 16 }} title="Déconnexion">↩</button>
             </div>
           )}

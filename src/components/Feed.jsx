@@ -292,7 +292,7 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
                     <Avatar name={c.author?.full_name} size={26} />
                     <div style={{ background: T.bgSubtle, borderRadius: 8, padding: "7px 10px", flex: 1 }}>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, cursor: "pointer" }} onClick={() => onViewProfile && c.user_id !== userId && onViewProfile(c.user_id)}>{c.author?.full_name || "Investisseur"}</div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(c.user_id)}>{c.author?.full_name || "Investisseur"}</div>
                         <div style={{ fontSize: 11, color: T.textFaint, flex: 1 }}>{timeAgo(c.created_at)}</div>
                         {(c.user_id === userId || isMe) && (
                           <button onClick={() => deleteComment(activity.id, c.id)} title="Supprimer" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, padding: 0 }}>✕</button>
