@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
+import { syncBadges } from "../badges";
 import { T, T as TLive } from "../theme";
 
 const CATEGORIES = {
@@ -401,12 +402,14 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
     const { data, error: err } = await supabase.from("clubs").insert({ name: form.name.trim(), description: form.description.trim(), category: form.category, subcategory: form.subcategory, creator_id: session.user.id }).select().single();
     if (err) { setError(err.message); setSaving(false); return; }
     await supabase.from("club_members").insert({ club_id: data.id, user_id: session.user.id });
+    syncBadges();
     setForm({ name: "", description: "", category: "", subcategory: "" });
     setShowForm(false); setReloadKey(k => k + 1); setSaving(false);
   }
 
   async function joinClub(clubId) {
     await supabase.from("club_members").insert({ club_id: clubId, user_id: session.user.id });
+    syncBadges();
     setMyClubs(p => [...p, clubId]);
     setMemberCounts(p => ({ ...p, [clubId]: (p[clubId] || 0) + 1 }));
   }
