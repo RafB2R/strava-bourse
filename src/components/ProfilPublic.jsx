@@ -4,6 +4,8 @@ import { T as TLive } from "../theme";
 
 const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB","rgba(240,153,123,0.12)|#F0997B","rgba(175,169,236,0.12)|#AFA9EC","rgba(123,184,240,0.12)|#7BB8F0"];
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
+// Colonnes visibles par les autres membres : jamais prix_achat ni nombre_parts
+const PUBLIC_ENTRY_COLUMNS = "id, label, type, exposition, percentage, performance, broker";
 const MEDAL_COLORS = { "🥉": "#CD7F32", "🥈": "#C0C0C0", "🥇": "#FFD700", "💎": "#B9F2FF" };
 
 
@@ -135,7 +137,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   async function loadAll() {
     const [{ data: p }, { data: e }, { data: a }, { data: b }, { data: f }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", userId).single(),
-      supabase.from("portfolio_entries").select("*").eq("user_id", userId).order("percentage", { ascending: false }),
+      supabase.from("portfolio_entries").select(PUBLIC_ENTRY_COLUMNS).eq("user_id", userId).order("percentage", { ascending: false }),
       supabase.from("activities").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
       supabase.from("user_badges").select("badge_id, unlocked_at").eq("user_id", userId),
       supabase.from("friendships").select("*").or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`).or(`requester_id.eq.${userId},receiver_id.eq.${userId}`),
