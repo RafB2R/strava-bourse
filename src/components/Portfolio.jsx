@@ -62,7 +62,7 @@ export default function Portfolio({ session, T: TProp }) {
   const inp = { width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.input.border}`, background: T.input.background, color: T.input.color, fontFamily: "inherit", marginBottom: 10, display: "block" };
   const btn = { background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 };
   const btnSm = { background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 10px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
-  const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 14 };
+  const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 14 };
   const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" };
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -183,7 +183,7 @@ export default function Portfolio({ session, T: TProp }) {
   const scorePos = Math.min(entries.length * 3, 15);
   const scoreDiversif = scoreExpo + scoreBroker + scoreConc + scorePos;
   const volPonderee = entries.reduce((s, e) => { const vol = EXP_VOLATILITY[e.exposition] || EXP_VOLATILITY[e.type] || 0.12; return s + vol * (Number(e.percentage) / 100); }, 0);
-  const profilRisque = volPonderee < 0.06 ? { label: "Défensif", color: "#7BB8F0", icon: "🛡️" } : volPonderee < 0.12 ? { label: "Équilibré", color: T.accent, icon: "⚖️" } : volPonderee < 0.20 ? { label: "Dynamique", color: "#F0CB7B", icon: "🚀" } : { label: "Agressif", color: T.red, icon: "⚡" };
+  const profilRisque = volPonderee < 0.06 ? { label: "Défensif", color: T.blue, icon: "🛡️" } : volPonderee < 0.12 ? { label: "Équilibré", color: T.accent, icon: "⚖️" } : volPonderee < 0.20 ? { label: "Dynamique", color: T.yellow, icon: "🚀" } : { label: "Agressif", color: T.red, icon: "⚡" };
 
   const formValeur = form.prix_actuel && form.nombre_parts ? Number(form.prix_actuel) * Number(form.nombre_parts) : null;
   const formValeurAchat = form.prix_achat && form.nombre_parts ? Number(form.prix_achat) * Number(form.nombre_parts) : null;
@@ -203,7 +203,7 @@ export default function Portfolio({ session, T: TProp }) {
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 16 }}>
           {perfGlobale !== null && <span style={{ fontSize: 17, fontWeight: 600, color: perfGlobale >= 0 ? T.accent : T.red }}>{perfGlobale >= 0 ? "+" : ""}{perfGlobale.toFixed(2)}%</span>}
-          {gainTotal !== null && <span style={{ fontSize: 14, color: gainTotal >= 0 ? "rgba(159,225,203,0.6)" : "rgba(240,128,128,0.6)" }}>{gainTotal >= 0 ? "+" : ""}{formatEur(gainTotal)}</span>}
+          {gainTotal !== null && <span style={{ fontSize: 14, color: gainTotal >= 0 ? T.accent : T.red }}>{gainTotal >= 0 ? "+" : ""}{formatEur(gainTotal)}</span>}
           {!hasValeur && <span style={{ fontSize: 13, color: T.textFaint }}>Ajoute le nombre de parts pour voir la valeur</span>}
           {lastRefresh && <span style={{ fontSize: 11, color: T.textFaint }}>· {lastRefresh.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>}
         </div>
@@ -216,7 +216,7 @@ export default function Portfolio({ session, T: TProp }) {
           <div style={sectionLabel}>Exposition réelle</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
             {Object.entries(vehiculeCounts).map(([v, count]) => (
-              <span key={v} style={{ padding: "3px 10px", borderRadius: 999, fontSize: 12, background: T.bgCard, color: T.textMuted }}>{count} {v}</span>
+              <span key={v} style={{ padding: "3px 10px", borderRadius: 999, fontSize: 12, background: T.bgSubtle, color: T.textMuted }}>{count} {v}</span>
             ))}
           </div>
           {Object.entries(byExpo).sort((a, b) => b[1] - a[1]).map(([expo, pct]) => (
@@ -241,7 +241,7 @@ export default function Portfolio({ session, T: TProp }) {
         </div>
 
         {showForm && (
-          <div style={{ background: T.bgCard, borderRadius: 10, padding: "1rem", marginBottom: 14 }}>
+          <div style={{ background: T.bgSubtle, borderRadius: 10, padding: "1rem", marginBottom: 14 }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: T.text }}>Nouvelle position</div>
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Nom</label>
             <input style={inp} placeholder="ex: MSCI World ETF" value={form.label} onChange={e => setForm({ ...form, label: e.target.value })} />
@@ -276,7 +276,7 @@ export default function Portfolio({ session, T: TProp }) {
               </div>
             </div>
             {formValeur !== null && (
-              <div style={{ background: T.accentBg, border: "0.5px solid rgba(159,225,203,0.15)", borderRadius: 8, padding: "10px 12px", marginBottom: 10 }}>
+              <div style={{ background: T.accentBg, border: `0.5px solid ${T.accentBorder}`, borderRadius: 8, padding: "10px 12px", marginBottom: 10 }}>
                 <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>Valeur de la position</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: T.accent }}>{formatEur(formValeur)}</div>
                 {formValeurAchat && (() => { const p = calcPerf(Number(form.prix_achat), Number(form.prix_actuel)); return p !== null ? <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Achat : {formatEur(formValeurAchat)} · <span style={{ color: p >= 0 ? T.accent : T.red }}>{p >= 0 ? "+" : ""}{p.toFixed(2)}%</span></div> : null; })()}
@@ -290,7 +290,7 @@ export default function Portfolio({ session, T: TProp }) {
         )}
 
         {editingId && (
-          <div style={{ background: T.accentBg, border: "0.5px solid rgba(159,225,203,0.2)", borderRadius: 10, padding: "1rem", marginBottom: 14 }}>
+          <div style={{ background: T.accentBg, border: `0.5px solid ${T.accentBorder}`, borderRadius: 10, padding: "1rem", marginBottom: 14 }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: T.accent }}>✏️ Modifier la position</div>
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Nom</label>
             <input style={inp} value={editForm.label} onChange={e => setEditForm({ ...editForm, label: e.target.value })} />
@@ -356,7 +356,7 @@ export default function Portfolio({ session, T: TProp }) {
               <div style={{ fontSize: 16, color: T.textFaint, transition: "transform 0.2s", transform: openDetail[e.id] ? "rotate(90deg)" : "none" }}>›</div>
             </div>
             {openDetail[e.id] && (
-              <div style={{ background: T.bgCard, borderRadius: 10, padding: "12px 14px", marginBottom: 8 }}>
+              <div style={{ background: T.bgSubtle, borderRadius: 10, padding: "12px 14px", marginBottom: 8 }}>
                 {e.nombre_parts && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>Nombre de parts</span><span style={{ color: T.text, fontWeight: 500 }}>{e.nombre_parts}</span></div>}
                 {e.prix_achat && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>Prix d'achat</span><span style={{ color: T.text, fontWeight: 500 }}>{e.prix_achat} €</span></div>}
                 {e.prix_actuel && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>Prix actuel</span><span style={{ color: T.text, fontWeight: 500 }}>{e.prix_actuel} €</span></div>}
@@ -411,17 +411,17 @@ export default function Portfolio({ session, T: TProp }) {
             );
           })}
 
-          <div style={{ marginTop: 14, padding: "10px 12px", background: T.bgCard, borderRadius: 8, fontSize: 12, color: T.textFaint, lineHeight: 1.6 }}>
+          <div style={{ marginTop: 14, padding: "10px 12px", background: T.bgSubtle, borderRadius: 8, fontSize: 12, color: T.textFaint, lineHeight: 1.6 }}>
             ⚠️ Projection indicative basée sur ta performance actuelle. Les rendements passés ne préjugent pas des rendements futurs.
           </div>
 
-          <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", background: T.accentBg, border: "0.5px solid rgba(159,225,203,0.15)", borderRadius: 10 }}>
+          <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", background: T.accentBg, border: `0.5px solid ${T.accentBorder}`, borderRadius: 10 }}>
             <span style={{ fontSize: 16 }}>✨</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: T.accent }}>Verio Plus</div>
               <div style={{ fontSize: 12, color: T.textMuted }}>Ajuste le rendement, l'apport mensuel et l'horizon</div>
             </div>
-            <span style={{ fontSize: 11, color: T.accent, fontWeight: 600, padding: "2px 8px", borderRadius: 999, border: "0.5px solid rgba(159,225,203,0.3)" }}>🔒</span>
+            <span style={{ fontSize: 11, color: T.accent, fontWeight: 600, padding: "2px 8px", borderRadius: 999, border: `0.5px solid ${T.accentBorder}` }}>🔒</span>
           </div>
         </div>
       )}
@@ -431,12 +431,12 @@ export default function Portfolio({ session, T: TProp }) {
         <div style={card}>
           <div style={sectionLabel}>Analyse gratuite</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-            <div style={{ background: T.bgCard, borderRadius: 10, padding: 14, textAlign: "center" }}>
+            <div style={{ background: T.bgSubtle, borderRadius: 10, padding: 14, textAlign: "center" }}>
               <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 6 }}>Score diversification</div>
-              <div style={{ fontSize: 32, fontWeight: 700, color: scoreDiversif >= 70 ? T.accent : scoreDiversif >= 40 ? "#F0CB7B" : T.red }}>{scoreDiversif}</div>
+              <div style={{ fontSize: 32, fontWeight: 700, color: scoreDiversif >= 70 ? T.accent : scoreDiversif >= 40 ? T.yellow : T.red }}>{scoreDiversif}</div>
               <div style={{ fontSize: 11, color: T.textFaint }}>/ 100</div>
             </div>
-            <div style={{ background: T.bgCard, borderRadius: 10, padding: 14, textAlign: "center" }}>
+            <div style={{ background: T.bgSubtle, borderRadius: 10, padding: 14, textAlign: "center" }}>
               <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 6 }}>Profil de risque</div>
               <div style={{ fontSize: 24, marginBottom: 4 }}>{profilRisque.icon}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: profilRisque.color }}>{profilRisque.label}</div>
@@ -447,7 +447,7 @@ export default function Portfolio({ session, T: TProp }) {
 
       {/* 5. ANALYSE AVANCÉE — PAYWALL */}
       {entries.length > 0 && (
-        <div style={{ ...card, border: "0.5px solid rgba(159,225,203,0.15)" }}>
+        <div style={{ ...card, border: `0.5px solid ${T.accentBorder}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div style={sectionLabel}>Analyse avancée</div>
             <span style={{ background: T.accent, color: T.onAccent, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 999 }}>PLUS</span>
@@ -474,7 +474,7 @@ export default function Portfolio({ session, T: TProp }) {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontSize: 13 }}>🔒</span>
-                <span style={{ fontSize: 11, color: T.accent, fontWeight: 500, padding: "2px 8px", borderRadius: 999, border: "0.5px solid rgba(159,225,203,0.3)", background: T.accentBg }}>Plus</span>
+                <span style={{ fontSize: 11, color: T.accent, fontWeight: 500, padding: "2px 8px", borderRadius: 999, border: `0.5px solid ${T.accentBorder}`, background: T.accentBg }}>Plus</span>
               </div>
             </div>
           ))}

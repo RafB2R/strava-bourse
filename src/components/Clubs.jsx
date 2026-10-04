@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import { syncBadges } from "../badges";
-import { T, T as TLive } from "../theme";
+import { T, T as TLive, avatarColors } from "../theme";
 
 const CATEGORIES = {
   "📈 Actions": ["Actions France", "Actions Europe", "Actions USA", "Actions Monde", "Actions Émergents", "Small Caps", "Value Investing", "Growth Investing", "Dividendes", "Stock Picking"],
@@ -16,16 +16,15 @@ const CATEGORIES = {
 const REACTIONS = ["👍", "🔥", "💡"];
 const PAGE_SIZE = 10;
 
-const card = (T) => ({ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 });
+const card = (T) => ({ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 });
 const inp = (T) => ({ width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: T.text, fontFamily: "inherit", marginBottom: 10, display: "block" });
 const btn = (T) => ({ background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 });
 const btnSm = (T) => ({ background: "transparent", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" });
 const lbl = (T) => ({ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" });
 
-const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB","rgba(240,153,123,0.12)|#F0997B","rgba(175,169,236,0.12)|#AFA9EC","rgba(123,184,240,0.12)|#7BB8F0","rgba(240,203,123,0.12)|#F0CB7B"];
 function Avatar({ name, size = 32 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
-  const [bg, color] = PALETTE[name?.charCodeAt(0) % PALETTE.length || 0].split("|");
+  const [bg, color] = avatarColors(name);
   return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
 }
 
@@ -89,7 +88,7 @@ function Post({ post, session, isMember, onReact, onDelete }) {
           <div style={{ fontSize: 14, color: T.text, lineHeight: 1.6, marginBottom: 10, wordBreak: "break-word" }}>{post.content}</div>
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
             {REACTIONS.map(r => (
-              <button key={r} onClick={() => isMember && onReact(post.id, r)} style={{ background: myReactions.includes(r) ? T.accentBg : T.bgCard, border: `0.5px solid ${myReactions.includes(r) ? "rgba(159,225,203,0.3)" : T.border}`, borderRadius: 999, padding: "3px 10px", fontSize: 12, color: myReactions.includes(r) ? T.accent : T.textMuted, cursor: isMember ? "pointer" : "default", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
+              <button key={r} onClick={() => isMember && onReact(post.id, r)} style={{ background: myReactions.includes(r) ? T.accentBg : T.bgCard, border: `0.5px solid ${myReactions.includes(r) ? T.accentBorder : T.border}`, borderRadius: 999, padding: "3px 10px", fontSize: 12, color: myReactions.includes(r) ? T.accent : T.textMuted, cursor: isMember ? "pointer" : "default", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
                 {r} {reactionCounts[r] > 0 && <span style={{ fontSize: 11 }}>{reactionCounts[r]}</span>}
               </button>
             ))}
@@ -112,7 +111,7 @@ function Post({ post, session, isMember, onReact, onDelete }) {
                   <span style={{ fontSize: 11, color: T.textFaint }}>{timeAgo(reply.created_at)}</span>
                   {reply.user_id === session.user.id && <button onClick={() => deleteReply(reply.id)} style={{ marginLeft: "auto", background: "transparent", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 11, fontFamily: "inherit" }}>✕</button>}
                 </div>
-                <div style={{ fontSize: 13, color: T.text, lineHeight: 1.5, background: T.bgCard, borderRadius: 8, padding: "7px 10px", wordBreak: "break-word" }}>{reply.content}</div>
+                <div style={{ fontSize: 13, color: T.text, lineHeight: 1.5, background: T.bgSubtle, borderRadius: 8, padding: "7px 10px", wordBreak: "break-word" }}>{reply.content}</div>
               </div>
             </div>
           ))}
@@ -218,7 +217,7 @@ function ClubRanking({ clubId, session }) {
         const val = filter === "performance" ? (m.perf !== null ? `${m.perf >= 0 ? "+" : ""}${m.perf.toFixed(1)}%` : "—")
           : filter === "regularite" ? (m.streak > 0 ? `🔥 ${m.streak} mois` : "—")
           : `🏅 ${m.nbBadges}`;
-        const color = filter === "performance" ? (m.perf === null ? T.textFaint : m.perf >= 0 ? T.accent : T.red) : filter === "regularite" ? "#F0CB7B" : "#FFD700";
+        const color = filter === "performance" ? (m.perf === null ? T.textFaint : m.perf >= 0 ? T.accent : T.red) : filter === "regularite" ? T.yellow : T.gold;
         return (
           <div key={m.user_id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}` }}>
             <div style={{ fontSize: 16, minWidth: 28, textAlign: "center" }}>
@@ -295,12 +294,12 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
 
       <div style={card(T)}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 12, background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: T.text, marginBottom: 4 }}>{club.name}</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{club.subcategory}</span>
-              <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgCard, color: T.textMuted }}>👥 {memberCount} membre{memberCount > 1 ? "s" : ""}</span>
+              <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted }}>👥 {memberCount} membre{memberCount > 1 ? "s" : ""}</span>
             </div>
             {club.description && <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5, marginTop: 6 }}>{club.description}</div>}
           </div>
@@ -361,6 +360,21 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
       )}
     </div>
   );
+}
+
+// Met en couleur les occurrences de la recherche, sans injecter de HTML
+function highlight(text, query, color) {
+  if (!query) return text;
+  const lower = text.toLowerCase(), q = query.toLowerCase();
+  const parts = [];
+  let from = 0, at;
+  while (q && (at = lower.indexOf(q, from)) !== -1) {
+    if (at > from) parts.push(text.slice(from, at));
+    parts.push(<span key={at} style={{ color }}>{text.slice(at, at + q.length)}</span>);
+    from = at + q.length;
+  }
+  parts.push(text.slice(from));
+  return parts;
 }
 
 export default function Clubs({ session, initialClub = null, onBack = null , T: TProp }) {
@@ -510,14 +524,14 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
           {filteredClubs.map(club => (
             <div key={club.id} style={{ ...card(T), cursor: "pointer" }} onClick={() => setSelectedClub(club)}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 4 }}>
-                    {searchQuery ? <span dangerouslySetInnerHTML={{ __html: club.name.replace(new RegExp(`(${searchQuery})`, "gi"), '<span style="color:#9FE1CB">$1</span>') }} /> : club.name}
+                    {highlight(club.name, searchQuery, T.accent)}
                   </div>
                   <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
                     <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{club.subcategory}</span>
-                    <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgCard, color: T.textMuted }}>👥 {memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
+                    <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted }}>👥 {memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
                     {myClubs.includes(club.id) && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>✓ Membre</span>}
                   </div>
                   {club.description && <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5 }}>{club.description}</div>}
@@ -535,12 +549,12 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
           {myClubsData.map(club => (
             <div key={club.id} style={{ ...card(T), cursor: "pointer" }} onClick={() => setSelectedClub(club)}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{club.name}</div>
                   <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
                     <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{club.subcategory}</span>
-                    <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgCard, color: T.textMuted }}>👥 {memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
+                    <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted }}>👥 {memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
                   </div>
                 </div>
                 <div style={{ fontSize: 18, color: T.textFaint }}>›</div>

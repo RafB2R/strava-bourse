@@ -52,7 +52,7 @@ function MarketWidget({ T }) {
   }, []);
 
   return (
-    <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
+    <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: 16, marginBottom: 16 }}>
       <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 12 }}>📈 Marchés</div>
       {INDICES.map(({ label }) => {
         const d = data[label];
@@ -103,7 +103,7 @@ function ComparisonWidget({ data, T }) {
   const { profile, mine, theirs } = data;
 
   return (
-    <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
+    <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: 16, marginBottom: 16 }}>
       <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>⚖️ Comparaison</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, marginBottom: 4 }}>
         <div style={{ textAlign: "right", fontSize: 12, fontWeight: 700, color: T.text }}>Moi</div>
@@ -255,7 +255,7 @@ export default function App() {
           <ComparisonWidget data={compareData} T={T} />
         ) : (
           <>
-            <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16, marginBottom: 16, position: "relative", zIndex: 50 }}>
+            <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: 16, marginBottom: 16, position: "relative", zIndex: 50 }}>
               <Notifications session={session} T={T} />
             </div>
             <MarketWidget T={T} />
