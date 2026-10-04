@@ -37,7 +37,7 @@ async function fetchPrixViaISIN(isin) {
     const prix = data2?.chart?.result?.[0]?.meta?.regularMarketPrice;
     if (!prix) return null;
     return { prix: Math.round(prix * 100) / 100, nom, symbol };
-  } catch (e) { return null; }
+  } catch { return null; }
 }
 
 function MiniChart({ perfGlobale, investingSince, T }) {
@@ -230,7 +230,6 @@ export default function Portfolio({ session, profile, T: TProp }) {
   }
 
   // Calculs
-  const totalPct = entries.reduce((s, e) => s + Number(e.percentage), 0);
   const avecPerf = entries.filter(e => e.performance !== null);
   const totalPctPerf = avecPerf.reduce((s, e) => s + Number(e.percentage), 0);
   const perfGlobale = totalPctPerf > 0 ? avecPerf.reduce((s, e) => s + Number(e.performance) * Number(e.percentage) / totalPctPerf, 0) : null;

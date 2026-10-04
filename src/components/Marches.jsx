@@ -52,7 +52,7 @@ function QuoteCard({ symbol, name, flag, unit, T }) {
     fetchQuote(symbol).then(d => { setData(d); setLoading(false); });
   }, [symbol]);
 
-  const formatPrice = (p, currency) => {
+  const formatPrice = (p) => {
     if (!p) return "—";
     if (p > 1000) return p.toLocaleString("fr-FR", { maximumFractionDigits: 0 });
     if (p > 10) return p.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
@@ -92,10 +92,7 @@ export default function Marches({ T: TProp }) {
   const [loadingSecteurs, setLoadingSecteurs] = useState(true);
   const [loadingEarnings, setLoadingEarnings] = useState(true);
 
-  useEffect(() => { loadSecteurs(); loadEarnings(); }, []);
-
   async function loadSecteurs() {
-    setLoadingSecteurs(true);
     try {
       const res = await fetch('/api/sectors');
       const data = await res.json();
@@ -105,7 +102,6 @@ export default function Marches({ T: TProp }) {
   }
 
   async function loadEarnings() {
-    setLoadingEarnings(true);
     try {
       const res = await fetch('/api/earnings');
       const data = await res.json();
@@ -114,8 +110,12 @@ export default function Marches({ T: TProp }) {
     setLoadingEarnings(false);
   }
 
+  useEffect(() => { loadSecteurs(); loadEarnings(); }, []);
+
   function refresh() {
     setLastUpdate(new Date());
+    setLoadingSecteurs(true);
+    setLoadingEarnings(true);
     loadSecteurs();
     loadEarnings();
   }

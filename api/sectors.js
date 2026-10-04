@@ -28,7 +28,7 @@ async function fetchChange(symbol) {
   } catch { return null; }
 }
 
-export default async function handler(req) {
+export default async function handler() {
   try {
     const results = await Promise.all(
       SECTOR_ETFS.map(async s => ({

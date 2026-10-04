@@ -3,7 +3,6 @@ import { T as TLive } from "../theme";
 import { supabase } from "../supabase";
 import Badges from "./Badges";
 import KYC from "./KYC";
-import ProfilPublicEmbed from "./ProfilPublic";
 
 const STRATEGIES = ["ETF passif", "Stock picking", "Dividendes", "Value investing", "DCA", "Mixte"];
 
@@ -82,13 +81,6 @@ const BADGE_CATEGORIES = [
   },
 ];
 
-const LEVEL_COLORS = {
-  bronze: { bg: "rgba(205,127,50,0.12)", color: "#CD7F32", border: "rgba(205,127,50,0.3)" },
-  argent: { bg: "rgba(192,192,192,0.12)", color: "#C0C0C0", border: "rgba(192,192,192,0.3)" },
-  or: { bg: "rgba(255,215,0,0.12)", color: "#FFD700", border: "rgba(255,215,0,0.3)" },
-  diamant: { bg: "rgba(185,242,255,0.12)", color: "#B9F2FF", border: "rgba(185,242,255,0.3)" },
-};
-
 const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB", "rgba(240,153,123,0.12)|#F0997B", "rgba(175,169,236,0.12)|#AFA9EC", "rgba(123,184,240,0.12)|#7BB8F0", "rgba(240,203,123,0.12)|#F0CB7B"];
 function Avatar({ name, size = 36 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
@@ -99,8 +91,6 @@ function Avatar({ name, size = 36 }) {
 function StatsSection({ profile, session, friends, perf, T, onViewProfile }) {
   const [friendPerfs, setFriendPerfs] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => { if (friends.length > 0) loadFriendPerfs(); }, [friends]);
 
   async function loadFriendPerfs() {
     setLoading(true);
@@ -117,6 +107,8 @@ function StatsSection({ profile, session, friends, perf, T, onViewProfile }) {
     setFriendPerfs(perfs);
     setLoading(false);
   }
+
+  useEffect(() => { if (friends.length > 0) loadFriendPerfs(); }, [friends]);
 
   const ranking = [{ id: session.user.id, name: profile?.full_name, perf, me: true }, ...friendPerfs]
     .sort((a, b) => (b.perf ?? -Infinity) - (a.perf ?? -Infinity));
@@ -153,33 +145,6 @@ function StatsSection({ profile, session, friends, perf, T, onViewProfile }) {
 // btnRed style sera généré dynamiquement avec T
 // sectionLabel style sera généré dynamiquement avec T
 
-function getUnlockedLevel(category, current) {
-  if (current === null) return null;
-  let unlocked = null;
-  for (const l of category.levels) {
-    if (current >= l.target) unlocked = l;
-    else break;
-  }
-  return unlocked;
-}
-
-function getNextLevel(category, current) {
-  if (current === null) return category.levels[0];
-  for (const l of category.levels) {
-    if (current < l.target) return l;
-  }
-  return null;
-}
-
-function getProgress(category, current) {
-  if (current === null) return 0;
-  const next = getNextLevel(category, current);
-  if (!next) return 100;
-  const prev = category.levels[category.levels.indexOf(next) - 1];
-  const from = prev ? prev.target : 0;
-  return Math.min(((current - from) / (next.target - from)) * 100, 100);
-}
-
 export default function Profil({ profile: initialProfile, session, T: TProp, onViewProfile }) {
   const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
@@ -192,13 +157,11 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
   const [profile, setProfile] = useState(initialProfile || {});
   const [section, setSection] = useState("stats");
   const [editing, setEditing] = useState(false);
-  const [streakMois, setStreakMois] = useState(profile?.streak_mois || 0);
   const [showKYC, setShowKYC] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [stats, setStats] = useState({ positions: 0, perfPonderee: null, types: 0, brokers: 0, totalPct: 0 });
-  const [selectedCat, setSelectedCat] = useState(null);
   const [friends, setFriends] = useState([]);
 
   const [pending, setPending] = useState([]);
@@ -265,8 +228,6 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
         streak_derniere_date: now.toISOString().split("T")[0],
       }).eq("id", session.user.id);
     }
-
-    setStreakMois(streak);
   }
 
   async function loadFriendships() {

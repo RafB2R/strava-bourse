@@ -266,7 +266,7 @@ export default function Explore({ session , T: TProp }) {
               <div style={{ fontSize: 13, color: T.textFaint, marginBottom: 16, lineHeight: 1.6 }}>
                 Suis les positions des plus grands investisseurs mondiaux via les déclarations 13F publiques.
               </div>
-              {SUPER_INVESTORS.map((inv, i) => (
+              {SUPER_INVESTORS.map(inv => (
                 <div key={inv.handle} style={{ ...card(T) }}>
                   <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                     <div style={{ width: 52, height: 52, borderRadius: 14, background: T.bgCard, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>{inv.icon}</div>

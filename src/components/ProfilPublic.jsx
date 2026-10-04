@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
 
@@ -15,6 +15,7 @@ const POSITION_COLORS = [
 
 function PieChart({ data, T }) {
   // data = [{ label, value, color }]
+  const [hovered, setHovered] = useState(null);
   const total = data.reduce((s, d) => s + d.value, 0);
   if (total === 0) return null;
 
@@ -23,14 +24,12 @@ function PieChart({ data, T }) {
   const cy = size / 2;
   const r = 58;
   const innerR = 32;
-  const [hovered, setHovered] = React.useState(null);
 
-  let angle = -Math.PI / 2;
   const slices = data.map((d, i) => {
     const pct = d.value / total;
-    const startAngle = angle;
-    const endAngle = angle + pct * 2 * Math.PI;
-    angle = endAngle;
+    const before = data.slice(0, i).reduce((s, x) => s + x.value, 0) / total;
+    const startAngle = -Math.PI / 2 + before * 2 * Math.PI;
+    const endAngle = startAngle + pct * 2 * Math.PI;
     const x1 = cx + r * Math.cos(startAngle);
     const y1 = cy + r * Math.sin(startAngle);
     const x2 = cx + r * Math.cos(endAngle);
@@ -121,8 +120,6 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   const [isPending, setIsPending] = useState(false);
   const [myPerf, setMyPerf] = useState(null);
 
-  useEffect(() => { loadAll(); loadMyPerf(); }, [userId]);
-
   async function loadMyPerf() {
     const { data } = await supabase.from("portfolio_entries").select("performance, percentage").eq("user_id", session.user.id);
     if (data && data.length > 0) {
@@ -133,8 +130,9 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
     }
   }
 
+  // Le parent remonte ce composant (key=userId) à chaque changement de profil,
+  // donc l'état repart de zéro sans reset manuel.
   async function loadAll() {
-    setLoading(true);
     const [{ data: p }, { data: e }, { data: a }, { data: b }, { data: f }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", userId).single(),
       supabase.from("portfolio_entries").select("*").eq("user_id", userId).order("percentage", { ascending: false }),
@@ -157,6 +155,8 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
     setLoading(false);
   }
 
+  useEffect(() => { loadAll(); loadMyPerf(); }, [userId]);
+
   async function sendRequest() {
     const { data: me } = await supabase.from("profiles").select("full_name").eq("id", session.user.id).single();
     await supabase.from("friendships").insert({ requester_id: session.user.id, receiver_id: userId, status: "pending" });
@@ -167,7 +167,6 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   const avecPerf = entries.filter(e => e.performance !== null);
   const totalPctPerf = avecPerf.reduce((s, e) => s + Number(e.percentage), 0);
   const perfGlobale = totalPctPerf > 0 ? avecPerf.reduce((s, e) => s + Number(e.performance) * Number(e.percentage) / totalPctPerf, 0) : null;
-  const byExpo = entries.reduce((acc, e) => { const k = e.exposition || e.type || "Autre"; acc[k] = (acc[k] || 0) + Number(e.percentage); return acc; }, {});
 
   // Envoyer les données de comparaison vers App
   useEffect(() => {

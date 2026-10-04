@@ -17,5 +17,17 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Les écrans chargent leurs données Supabase dans un useEffect ; la règle
+      // signale ce pattern partout. On le garde visible en warning en attendant
+      // une vraie couche de data-fetching (ex. TanStack Query).
+      'react-hooks/set-state-in-effect': 'warn',
+    },
+  },
+  {
+    files: ['api/**/*.js'],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
   },
 ])

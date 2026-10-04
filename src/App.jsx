@@ -1,15 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { supabase } from "./supabase";
 import { themes, getThemeKey } from "./theme";
-import Landing from "./Landing";
-import Auth from "./components/Auth";
-import Profil from "./components/Profil";
-import Portfolio from "./components/Portfolio";
-import Feed from "./components/Feed";
-import Explore from "./components/Explore";
 import Notifications from "./components/Notifications";
-import KYC from "./components/KYC";
-import ProfilPublic from "./components/ProfilPublic";
+
+// Écrans chargés à la demande pour alléger le bundle initial
+const Landing = lazy(() => import("./Landing"));
+const Auth = lazy(() => import("./components/Auth"));
+const Profil = lazy(() => import("./components/Profil"));
+const Portfolio = lazy(() => import("./components/Portfolio"));
+const Feed = lazy(() => import("./components/Feed"));
+const Explore = lazy(() => import("./components/Explore"));
+const KYC = lazy(() => import("./components/KYC"));
+const ProfilPublic = lazy(() => import("./components/ProfilPublic"));
 
 const TABS = [
   { id: "feed", label: "Fil", icon: "🏠" },
@@ -25,8 +27,6 @@ function getGreeting(name) {
   if (hour < 18) return `Bon après-midi ${firstName} 👋`;
   return `Bonsoir ${firstName} 🌙`;
 }
-
-export { themes } from "./theme";
 
 // Indices pour le widget desktop
 const INDICES = [
@@ -44,7 +44,9 @@ function MarketWidget({ T }) {
         const res = await fetch(`/api/quote?symbol=${encodeURIComponent(symbol)}`);
         const d = await res.json();
         if (d.price) setData(prev => ({ ...prev, [label]: d }));
-      } catch {}
+      } catch {
+        // indice indisponible : on garde "—"
+      }
     });
   }, []);
 
@@ -69,6 +71,21 @@ function MarketWidget({ T }) {
 }
 
 
+function ComparisonRow({ label, mine, theirs, higherBetter = true, T }) {
+  const meBetter = higherBetter ? mine > theirs : mine < theirs;
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, padding: "8px 0", borderTop: `0.5px solid ${T.border}`, alignItems: "center" }}>
+      <div style={{ textAlign: "right", fontSize: 13, fontWeight: 700, color: meBetter ? T.accent : T.text }}>
+        {mine !== null ? `${mine >= 0 ? "+" : ""}${Number(mine).toFixed(1)}%` : "—"}
+      </div>
+      <div style={{ textAlign: "center", fontSize: 10, color: T.textFaint, minWidth: 70 }}>{label}</div>
+      <div style={{ textAlign: "left", fontSize: 13, fontWeight: 700, color: !meBetter ? T.accent : T.text }}>
+        {theirs !== null ? `${theirs >= 0 ? "+" : ""}${Number(theirs).toFixed(1)}%` : "—"}
+      </div>
+    </div>
+  );
+}
+
 function ComparisonWidget({ data, T }) {
   if (!data) return null;
   const { profile, perfGlobale: theirPerf, myPerf } = data;
@@ -76,21 +93,6 @@ function ComparisonWidget({ data, T }) {
   const myVol = 8.7;
   const theirDD = -18.2;
   const myDD = -11.4;
-
-  function Row({ label, mine, theirs, higherBetter = true }) {
-    const meBetter = higherBetter ? mine > theirs : mine < theirs;
-    return (
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, padding: "8px 0", borderTop: `0.5px solid ${T.border}`, alignItems: "center" }}>
-        <div style={{ textAlign: "right", fontSize: 13, fontWeight: 700, color: meBetter ? T.accent : T.text }}>
-          {mine !== null ? `${mine >= 0 ? "+" : ""}${Number(mine).toFixed(1)}%` : "—"}
-        </div>
-        <div style={{ textAlign: "center", fontSize: 10, color: T.textFaint, minWidth: 70 }}>{label}</div>
-        <div style={{ textAlign: "left", fontSize: 13, fontWeight: 700, color: !meBetter ? T.accent : T.text }}>
-          {theirs !== null ? `${theirs >= 0 ? "+" : ""}${Number(theirs).toFixed(1)}%` : "—"}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
@@ -100,9 +102,9 @@ function ComparisonWidget({ data, T }) {
         <div style={{ minWidth: 70 }} />
         <div style={{ textAlign: "left", fontSize: 12, fontWeight: 700, color: T.text }}>{profile.full_name?.split(" ")[0]}</div>
       </div>
-      <Row label="Perf. totale" mine={myPerf} theirs={theirPerf} higherBetter={true} />
-      <Row label="Volatilité" mine={myVol} theirs={theirVol} higherBetter={false} />
-      <Row label="Max drawdown" mine={myDD} theirs={theirDD} higherBetter={false} />
+      <ComparisonRow T={T} label="Perf. totale" mine={myPerf} theirs={theirPerf} higherBetter={true} />
+      <ComparisonRow T={T} label="Volatilité" mine={myVol} theirs={theirVol} higherBetter={false} />
+      <ComparisonRow T={T} label="Max drawdown" mine={myDD} theirs={theirDD} higherBetter={true} />
       <div style={{ fontSize: 10, color: T.textFaint, marginTop: 8, textAlign: "center" }}>Vol. et drawdown indicatifs</div>
     </div>
   );
@@ -140,11 +142,12 @@ export default function App() {
       if (session) loadProfile(session.user.id);
       else setLoading(false);
     });
-    supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) loadProfile(session.user.id);
       else { setProfile(null); setLoading(false); setShowAuth(false); }
     });
+    return () => subscription.unsubscribe();
   }, []);
 
   async function loadProfile(userId) {
@@ -155,14 +158,19 @@ export default function App() {
 
   async function handleLogout() { await supabase.auth.signOut(); }
 
-  if (loading) return (
+  const loadingScreen = (
     <div style={{ minHeight: "100vh", background: T.bg, display: "flex", alignItems: "center", justifyContent: "center", color: T.textMuted, fontFamily: "system-ui" }}>
       Chargement…
     </div>
   );
 
-  if (!session && !showAuth) return <Landing onStart={() => setShowAuth(true)} />;
-  if (!session && showAuth) return <Auth T={T} />;
+  if (loading) return loadingScreen;
+
+  if (!session) return (
+    <Suspense fallback={loadingScreen}>
+      {showAuth ? <Auth T={T} /> : <Landing onStart={() => setShowAuth(true)} />}
+    </Suspense>
+  );
 
   const kyc = profile && !profile.kyc_complete && !showKYC;
   const kycBanner = kyc ? (
@@ -172,17 +180,17 @@ export default function App() {
         <div style={{ fontSize: 13, fontWeight: 600, color: T.accent }}>Complète ton profil investisseur</div>
         <div style={{ fontSize: 12, color: T.textMuted }}>Personnalise ton expérience en 2 minutes</div>
       </div>
-      <button onClick={() => setShowKYC(true)} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+      <button onClick={() => setShowKYC(true)} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>
         Commencer →
       </button>
     </div>
   ) : null;
 
   const content = (
-    <>
+    <Suspense fallback={<div style={{ color: T.textFaint, fontSize: 13, textAlign: "center", padding: "2rem" }}>Chargement…</div>}>
       {showKYC && <KYC session={session} profile={profile} T={T} onComplete={() => { setShowKYC(false); loadProfile(session.user.id); }} onSkip={() => setShowKYC(false)} />}
       {publicUserId ? (
-        <ProfilPublic userId={publicUserId} session={session} T={T} onBack={() => { setPublicUserId(null); setCompareData(null); }} onCompareData={setCompareData} />
+        <ProfilPublic key={publicUserId} userId={publicUserId} session={session} T={T} onBack={() => { setPublicUserId(null); setCompareData(null); }} onCompareData={setCompareData} />
       ) : (
         <>
           {tab === "feed" && <Feed session={session} T={T} onViewProfile={setPublicUserId} />}
@@ -191,7 +199,7 @@ export default function App() {
           {tab === "profil" && <Profil profile={profile} session={session} T={T} onViewProfile={setPublicUserId} />}
         </>
       )}
-    </>
+    </Suspense>
   );
 
   // ── DESKTOP ──

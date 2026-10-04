@@ -117,8 +117,6 @@ export default function Badges({ session, profile , T: TProp }) {
   const [unlockedBadgeIds, setUnlockedBadgeIds] = useState([]);
   const [activeTab, setActiveTab] = useState("trophees");
 
-  useEffect(() => { loadData(); }, []);
-
   async function loadData() {
     const { data: entries } = await supabase.from("portfolio_entries").select("performance, percentage, type, broker").eq("user_id", session.user.id);
     const { count: clubCount } = await supabase.from("club_members").select("*", { count: "exact", head: true }).eq("user_id", session.user.id);
@@ -224,6 +222,8 @@ export default function Badges({ session, profile , T: TProp }) {
     }
     setUnlockedBadgeIds([...unlockedIds]);
   }
+
+  useEffect(() => { loadData(); }, []);
 
   function toggle(id) { setFlipped(p => ({ ...p, [id]: !p[id] })); }
 
