@@ -170,7 +170,7 @@ export default function Portfolio({ session, profile, T: TProp }) {
 
   async function loadEntries() {
     setLoading(true);
-    const { data } = await supabase.from("portfolio_entries").select("*").eq("user_id", session.user.id).order("percentage", { ascending: false });
+    const { data } = await supabase.rpc("get_my_portfolio_entries");
     setEntries(data || []);
     if (data) setKnownBrokers([...new Set(data.filter(e => e.broker).map(e => e.broker))]);
     setLoading(false);
@@ -190,7 +190,7 @@ export default function Portfolio({ session, profile, T: TProp }) {
     }
     setLastRefresh(new Date());
     setRefreshing(false);
-    const { data } = await supabase.from("portfolio_entries").select("*").eq("user_id", session.user.id).order("percentage", { ascending: false });
+    const { data } = await supabase.rpc("get_my_portfolio_entries");
     setEntries(data || []);
   }
 
