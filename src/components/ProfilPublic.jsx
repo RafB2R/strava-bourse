@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase, PUBLIC_PROFILE_COLUMNS } from "../supabase";
 import { T as TLive, avatarColors } from "../theme";
 import { getBadgeInfo, badgeFromData } from "../badges";
+import { isMoment, momentSentence } from "../moments";
 
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
 // Colonnes visibles par les autres membres : jamais prix_achat ni nombre_parts
@@ -207,14 +208,11 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
 
   function getActivityText(a) {
     const d = a.data || {};
+    if (isMoment(a.type)) return momentSentence(a.type, d);
+    if (a.type === "post") return d.content || "A publié un message";
     switch (a.type) {
       case "new_position": return `A ajouté ${d.label || "une position"}${d.broker ? ` sur ${d.broker}` : ""}`;
       case "renforcement": return `A renforcé ${d.label || "une position"}`;
-      case "portfolio_complete": return "A complété son portefeuille à 100%";
-      case "dca_1m": return "1 mois d'investissement régulier 🔥";
-      case "dca_3m": return "3 mois d'investissement régulier 🔥";
-      case "dca_6m": return "6 mois d'investissement régulier 🔥";
-      case "dca_1a": return "1 an d'investissement régulier 🏆";
       case "badge": { const info = badgeFromData(d); return `A débloqué le badge ${info.medal} ${info.name}`; }
       case "new_broker": return `A ajouté ${d.broker || "un broker"}`;
       default: return "Activité";
@@ -314,7 +312,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
           {activities.map(a => (
             <div key={a.id} style={{ ...card, display: "flex", gap: 12, alignItems: "flex-start" }}>
               <div style={{ width: 36, height: 36, borderRadius: "50%", background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
-                {a.type === "badge" ? "🏅" : a.type.includes("dca") ? "🔥" : a.type === "new_position" ? "📈" : "⚡"}
+                {a.type === "badge" ? "🏅" : a.type.startsWith("anniversaire") ? "🎂" : a.type.includes("dca") ? "🔥" : isMoment(a.type) ? "🌟" : a.type === "new_position" ? "📈" : a.type === "post" ? "💬" : "⚡"}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, color: T.text, lineHeight: 1.4 }}>{getActivityText(a)}</div>

@@ -2,6 +2,7 @@ import { useState, useEffect, useEffectEvent, useRef } from "react";
 import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
 import { syncBadges } from "../badges";
+import { syncMoments } from "../moments";
 import ShareCard from "./ShareCard";
 
 const VEHICULES = ["ETF", "Action directe", "Fonds actif", "Obligation directe", "SCPI", "Crypto", "Autre"];
@@ -151,11 +152,12 @@ export default function Portfolio({ session, T: TProp }) {
     const { error: err } = await supabase.from("portfolio_entries").insert({ user_id: session.user.id, label: form.label.trim(), isin: form.isin.trim().toUpperCase() || null, type: form.vehicule, exposition: form.exposition, percentage: Number(form.percentage), performance: perf, prix_achat: form.prix_achat ? Number(form.prix_achat) : null, prix_actuel: form.prix_actuel ? Number(form.prix_actuel) : null, nombre_parts: form.nombre_parts ? Number(form.nombre_parts) : null, broker: form.broker.trim() || null });
     if (err) { setError(err.message); setSaving(false); return; }
     await createActivity(session.user.id, "new_position", { label: form.label.trim(), vehicule: form.vehicule, exposition: form.exposition, broker: form.broker.trim() || null, percentage: Number(form.percentage) });
-    if (total === 100) await createActivity(session.user.id, "portfolio_complete", {});
     if (form.broker.trim() && !knownBrokers.includes(form.broker.trim())) await createActivity(session.user.id, "new_broker", { broker: form.broker.trim() });
     setForm({ label: "", isin: "", vehicule: "ETF", exposition: "Actions", percentage: "", prix_achat: "", prix_actuel: "", nombre_parts: "", broker: "" });
     setShowForm(false); loadEntries(); setSaving(false);
+    // Badges et moments (premier ETF, portefeuille complet…) calculés côté serveur
     syncBadges();
+    syncMoments();
   }
 
   async function deleteEntry(id) {
