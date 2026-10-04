@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useEffectEvent, useRef } from "react";
 import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
 
@@ -40,9 +40,36 @@ async function fetchPrixViaISIN(isin) {
   } catch { return null; }
 }
 
+// Données d'exemple du graphique (pas encore d'historique réel)
+const CHART_DATASETS = {
+  "1J": [7200,7220,7180,7250,7300,7280,7350,7400,7475],
+  "1M": [6800,6900,7000,7050,7100,7200,7300,7400,7475],
+  "3M": [6200,6400,6600,6700,6900,7100,7300,7475],
+  "6M": [5800,6000,6200,6500,6700,7000,7200,7475],
+  "YTD": [6500,6600,6700,6900,7100,7200,7350,7475],
+  "1A": [5500,5800,6100,6400,6700,7000,7200,7475],
+  "5A": [2000,3000,4000,5000,5500,6000,6800,7475],
+  "DEBUT": [1000,2000,3500,5000,6000,6800,7200,7475],
+};
+const CHART_LABELS = {
+  "1J": ["9h","11h","12h","13h","14h","15h","16h","17h","Maint."],
+  "1M": ["S1","S2","S3","S4","S5","S6","S7","S8","Auj."],
+  "3M": ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Auj."],
+  "6M": ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Auj."],
+  "YTD": ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Auj."],
+  "1A": ["Juil 24","Sep","Nov","Jan 25","Mar","Mai","Jun","Auj."],
+  "5A": ["2021","2022","2023","2024","2025","2025","2026","Auj."],
+  "DEBUT": ["","","","","","","","Auj."],
+};
+
+// Mes positions, montants compris (fonction Supabase réservée au propriétaire)
+async function fetchMyEntries() {
+  const { data } = await supabase.rpc("get_my_portfolio_entries");
+  return data || [];
+}
+
 function MiniChart({ perfGlobale, investingSince, T }) {
   const canvasRef = useRef(null);
-  const chartRef = useRef(null);
   const [period, setPeriod] = useState("1M");
   const isUp = perfGlobale === null || perfGlobale >= 0;
 
@@ -62,49 +89,32 @@ function MiniChart({ perfGlobale, investingSince, T }) {
   ];
   const periods = allPeriods.filter(p => !p.minYears || yearsInvesting >= p.minYears);
 
-  const datasets = {
-    "1J": [7200,7220,7180,7250,7300,7280,7350,7400,7475],
-    "1M": [6800,6900,7000,7050,7100,7200,7300,7400,7475],
-    "3M": [6200,6400,6600,6700,6900,7100,7300,7475],
-    "6M": [5800,6000,6200,6500,6700,7000,7200,7475],
-    "YTD": [6500,6600,6700,6900,7100,7200,7350,7475],
-    "1A": [5500,5800,6100,6400,6700,7000,7200,7475],
-    "5A": [2000,3000,4000,5000,5500,6000,6800,7475],
-    "DEBUT": [1000,2000,3500,5000,6000,6800,7200,7475],
-  };
-  const labels = {
-    "1J": ["9h","11h","12h","13h","14h","15h","16h","17h","Maint."],
-    "1M": ["S1","S2","S3","S4","S5","S6","S7","S8","Auj."],
-    "3M": ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Auj."],
-    "6M": ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Auj."],
-    "YTD": ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Auj."],
-    "1A": ["Juil 24","Sep","Nov","Jan 25","Mar","Mai","Jun","Auj."],
-    "5A": ["2021","2022","2023","2024","2025","2025","2026","Auj."],
-    "DEBUT": [String(investingSince || 2019),"","","","","","","Auj."],
-  };
-
   // Perf calculée pour la période affichée
   function getPerfPeriod() {
-    const d = datasets[period];
+    const d = CHART_DATASETS[period];
     if (!d || d.length < 2) return null;
     return ((d[d.length - 1] - d[0]) / d[0]) * 100;
   }
   const perfPeriod = getPerfPeriod();
 
+  const { accent, red, textFaint } = T;
+  const debutLabel = String(investingSince || 2019);
+
   useEffect(() => {
     if (!canvasRef.current || !window.Chart) return;
-    if (chartRef.current) chartRef.current.destroy();
+    const chartLabels = period === "DEBUT" ? [debutLabel, ...CHART_LABELS.DEBUT.slice(1)] : CHART_LABELS[period];
     const ctx = canvasRef.current.getContext("2d");
-    const color = isUp ? T.accent : T.red;
+    const color = isUp ? accent : red;
     const g = ctx.createLinearGradient(0, 0, 0, 120);
     g.addColorStop(0, isUp ? "rgba(159,225,203,0.2)" : "rgba(240,128,128,0.2)");
     g.addColorStop(1, "rgba(0,0,0,0)");
-    chartRef.current = new window.Chart(ctx, {
+    const chart = new window.Chart(ctx, {
       type: "line",
-      data: { labels: labels[period], datasets: [{ data: datasets[period], borderColor: color, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: color, fill: true, backgroundColor: g, tension: 0.4 }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { mode: "index", intersect: false, callbacks: { label: c => c.parsed.y.toLocaleString("fr-FR") + " €" } } }, scales: { x: { grid: { display: false }, ticks: { color: T.textFaint, font: { size: 10 } }, border: { display: false } }, y: { display: false } } },
+      data: { labels: chartLabels, datasets: [{ data: CHART_DATASETS[period], borderColor: color, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: color, fill: true, backgroundColor: g, tension: 0.4 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { mode: "index", intersect: false, callbacks: { label: c => c.parsed.y.toLocaleString("fr-FR") + " €" } } }, scales: { x: { grid: { display: false }, ticks: { color: textFaint, font: { size: 10 } }, border: { display: false } }, y: { display: false } } },
     });
-  }, [period]);
+    return () => chart.destroy();
+  }, [period, isUp, accent, red, textFaint, debutLabel]);
 
   return (
     <div>
@@ -144,7 +154,7 @@ export default function Portfolio({ session, profile, T: TProp }) {
   const [editForm, setEditForm] = useState({});
   const [editSaving, setEditSaving] = useState(false);
   const [knownBrokers, setKnownBrokers] = useState([]);
-  const [chartLoaded, setChartLoaded] = useState(false);
+  const [chartLoaded, setChartLoaded] = useState(() => Boolean(window.Chart));
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(null);
   const [fetchingPrice, setFetchingPrice] = useState(false);
@@ -153,29 +163,39 @@ export default function Portfolio({ session, profile, T: TProp }) {
   const [editPriceHint, setEditPriceHint] = useState(null);
   const hasRefreshed = useRef(false);
 
-  useEffect(() => {
-    loadEntries().then(data => {
-      if (data && data.length > 0 && !hasRefreshed.current) {
-        hasRefreshed.current = true;
-        refreshAllPrices(data);
-      }
-    });
-    if (!window.Chart) {
-      const s = document.createElement("script");
-      s.src = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js";
-      s.onload = () => setChartLoaded(true);
-      document.head.appendChild(s);
-    } else { setChartLoaded(true); }
-  }, []);
-
-  async function loadEntries() {
-    setLoading(true);
-    const { data } = await supabase.rpc("get_my_portfolio_entries");
+  function applyEntries(data) {
     setEntries(data || []);
     if (data) setKnownBrokers([...new Set(data.filter(e => e.broker).map(e => e.broker))]);
     setLoading(false);
-    return data;
   }
+
+  async function loadEntries() {
+    setLoading(true);
+    applyEntries(await fetchMyEntries());
+  }
+
+  // Au premier chargement : afficher les positions puis rafraîchir une fois les cours
+  const onInitialEntries = useEffectEvent(data => {
+    applyEntries(data);
+    if (data && data.length > 0 && !hasRefreshed.current) {
+      hasRefreshed.current = true;
+      refreshAllPrices(data);
+    }
+  });
+
+  useEffect(() => {
+    let ignore = false;
+    fetchMyEntries().then(data => { if (!ignore) onInitialEntries(data); });
+    return () => { ignore = true; };
+  }, []);
+
+  useEffect(() => {
+    if (window.Chart) return;
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js";
+    s.onload = () => setChartLoaded(true);
+    document.head.appendChild(s);
+  }, []);
 
   async function refreshAllPrices(entriesList) {
     const withISIN = entriesList.filter(e => e.isin);
@@ -190,8 +210,7 @@ export default function Portfolio({ session, profile, T: TProp }) {
     }
     setLastRefresh(new Date());
     setRefreshing(false);
-    const { data } = await supabase.rpc("get_my_portfolio_entries");
-    setEntries(data || []);
+    setEntries(await fetchMyEntries());
   }
 
   async function startEdit(e) {

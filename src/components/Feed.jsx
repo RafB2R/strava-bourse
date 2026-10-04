@@ -60,6 +60,20 @@ const FILTERS = [
   { id: "badges", label: "Badges 🏅" },
 ];
 
+// Amis acceptés (moi inclus) et activités à afficher selon le périmètre
+async function fetchFeed(userId, scope) {
+  const { data: friendships } = await supabase.from("friendships").select("requester_id, receiver_id").eq("status", "accepted").or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
+  const ids = [userId];
+  if (friendships) friendships.forEach(f => {
+    if (f.requester_id !== userId) ids.push(f.requester_id);
+    if (f.receiver_id !== userId) ids.push(f.receiver_id);
+  });
+  let query = supabase.from("activities").select("*, author:profiles!activities_user_id_fkey(full_name, username)").order("created_at", { ascending: false }).limit(100);
+  if (scope === "amis") query = query.in("user_id", ids);
+  const { data } = await query;
+  return { ids, activities: data || [] };
+}
+
 export default function Feed({ session, T: TProp, onViewProfile }) {
   const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
@@ -78,29 +92,26 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
   const [posting, setPosting] = useState(false);
   const [profile, setProfile] = useState(null);
 
-  useEffect(() => { loadProfile(); loadFriendsAndActivities(); }, []);
-  useEffect(() => { loadFriendsAndActivities(); }, [scope]);
+  const [reloadKey, setReloadKey] = useState(0);
+  const userId = session.user.id;
 
-  async function loadProfile() {
-    const { data } = await supabase.from("profiles").select("full_name").eq("id", session.user.id).single();
-    setProfile(data);
-  }
+  useEffect(() => {
+    let ignore = false;
+    supabase.from("profiles").select("full_name").eq("id", userId).single()
+      .then(({ data }) => { if (!ignore) setProfile(data); });
+    return () => { ignore = true; };
+  }, [userId]);
 
-  async function loadFriendsAndActivities() {
-    setLoading(true);
-    const { data: friendships } = await supabase.from("friendships").select("requester_id, receiver_id").eq("status", "accepted").or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`);
-    const ids = [session.user.id];
-    if (friendships) friendships.forEach(f => {
-      if (f.requester_id !== session.user.id) ids.push(f.requester_id);
-      if (f.receiver_id !== session.user.id) ids.push(f.receiver_id);
+  useEffect(() => {
+    let ignore = false;
+    fetchFeed(userId, scope).then(({ ids, activities }) => {
+      if (ignore) return;
+      setFriendIds(ids);
+      setActivities(activities);
+      setLoading(false);
     });
-    setFriendIds(ids);
-    let query = supabase.from("activities").select("*, author:profiles!activities_user_id_fkey(full_name, username)").order("created_at", { ascending: false }).limit(100);
-    if (scope === "amis") query = query.in("user_id", ids);
-    const { data } = await query;
-    setActivities(data || []);
-    setLoading(false);
-  }
+    return () => { ignore = true; };
+  }, [userId, scope, reloadKey]);
 
   async function publishPost() {
     if (!postInput.trim() || posting) return;
@@ -108,7 +119,7 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
     await supabase.from("activities").insert({ user_id: session.user.id, type: "post", data: { content: postInput.trim() } });
     setPostInput("");
     setPosting(false);
-    loadFriendsAndActivities();
+    setReloadKey(k => k + 1);
   }
 
   function toggleLike(id) { setLikes(p => ({ ...p, [id]: !p[id] })); }
@@ -157,7 +168,7 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
       {/* Scope */}
       <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
         {[["amis", "👥 Amis"], ["verio", "🌍 Verio"]].map(([id, label]) => (
-          <button key={id} onClick={() => setScope(id)} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${scope === id ? T.accent : T.border}`, background: scope === id ? T.accentBg : "none", color: scope === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
+          <button key={id} onClick={() => { if (id !== scope) { setLoading(true); setScope(id); } }} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${scope === id ? T.accent : T.border}`, background: scope === id ? T.accentBg : "none", color: scope === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
             {label}
           </button>
         ))}

@@ -33,6 +33,38 @@ const CATEGORIES = {
   "₿ Crypto": ["Bitcoin","Altcoins","DeFi","NFT & Web3"],
 };
 
+// Amis, demandes en attente, mes clubs et tous les clubs avec leur nombre de membres
+async function fetchExploreContext(userId) {
+  const { data: f } = await supabase.from("friendships").select("requester_id, receiver_id, status").or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
+  const friendIds = [], pendingIds = [];
+  if (f) f.forEach(fr => {
+    const otherId = fr.requester_id === userId ? fr.receiver_id : fr.requester_id;
+    if (fr.status === "accepted") friendIds.push(otherId);
+    else pendingIds.push(otherId);
+  });
+
+  const { data: m } = await supabase.from("club_members").select("club_id").eq("user_id", userId);
+  const { data: c } = await supabase.from("clubs").select("*").order("created_at", { ascending: false });
+  const counts = {};
+  for (const club of c || []) {
+    const { count } = await supabase.from("club_members").select("*", { count: "exact", head: true }).eq("club_id", club.id);
+    counts[club.id] = count || 0;
+  }
+  return { friendIds, pendingIds, myClubIds: (m || []).map(x => x.club_id), clubs: c || [], counts };
+}
+
+async function searchExplore(query, searchTab, userId) {
+  // Retire les caractères qui ont un sens dans la syntaxe de filtre PostgREST
+  const q = query.replace(/[,()%*\\]/g, " ").trim();
+  if (!q) return [];
+  if (searchTab === "users") {
+    const { data } = await supabase.from("profiles").select("id, full_name, username, city, strategy, streak_mois").or(`full_name.ilike.%${q}%,username.ilike.%${q}%`).neq("id", userId).limit(10);
+    return data || [];
+  }
+  const { data } = await supabase.from("clubs").select("*").ilike("name", `%${q}%`).limit(10);
+  return data || [];
+}
+
 export default function Explore({ session , T: TProp }) {
   const T = TProp || TLive;
   const [query, setQuery] = useState("");
@@ -54,51 +86,35 @@ export default function Explore({ session , T: TProp }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => { loadContext(); }, []);
-
-  async function loadContext() {
-    const { data: f } = await supabase.from("friendships").select("requester_id, receiver_id, status").or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`);
-    const fIds = [], pIds = [];
-    if (f) f.forEach(fr => {
-      const otherId = fr.requester_id === session.user.id ? fr.receiver_id : fr.requester_id;
-      if (fr.status === "accepted") fIds.push(otherId);
-      else pIds.push(otherId);
-    });
-    setFriendIds(fIds);
-    setPendingIds(pIds);
-
-    const { data: m } = await supabase.from("club_members").select("club_id").eq("user_id", session.user.id);
-    setMyClubIds((m || []).map(x => x.club_id));
-
-    const { data: c } = await supabase.from("clubs").select("*").order("created_at", { ascending: false });
-    setAllClubs(c || []);
-    if (c) {
-      const counts = {};
-      for (const club of c) {
-        const { count } = await supabase.from("club_members").select("*", { count: "exact", head: true }).eq("club_id", club.id);
-        counts[club.id] = count || 0;
-      }
-      setMemberCounts(counts);
-    }
-  }
+  const [reloadKey, setReloadKey] = useState(0);
+  const myId = session.user.id;
 
   useEffect(() => {
-    if (query.length < 2) { setUsers([]); setClubs([]); return; }
-    const t = setTimeout(() => search(), 300);
-    return () => clearTimeout(t);
-  }, [query, searchTab]);
+    let ignore = false;
+    fetchExploreContext(myId).then(ctx => {
+      if (ignore) return;
+      setFriendIds(ctx.friendIds);
+      setPendingIds(ctx.pendingIds);
+      setMyClubIds(ctx.myClubIds);
+      setAllClubs(ctx.clubs);
+      setMemberCounts(ctx.counts);
+    });
+    return () => { ignore = true; };
+  }, [myId, reloadKey]);
 
-  async function search() {
-    setLoading(true);
-    if (searchTab === "users") {
-      const { data } = await supabase.from("profiles").select("id, full_name, username, city, strategy, streak_mois").or(`full_name.ilike.%${query}%,username.ilike.%${query}%`).neq("id", session.user.id).limit(10);
-      setUsers(data || []);
-    } else {
-      const { data } = await supabase.from("clubs").select("*").ilike("name", `%${query}%`).limit(10);
-      setClubs(data || []);
-    }
-    setLoading(false);
-  }
+  // Recherche avec un délai de 300 ms ; sous 2 caractères les résultats ne sont pas affichés
+  useEffect(() => {
+    if (query.length < 2) return;
+    let ignore = false;
+    const t = setTimeout(async () => {
+      setLoading(true);
+      const results = await searchExplore(query, searchTab, myId);
+      if (ignore) return;
+      if (searchTab === "users") setUsers(results); else setClubs(results);
+      setLoading(false);
+    }, 300);
+    return () => { ignore = true; clearTimeout(t); };
+  }, [query, searchTab, myId]);
 
   async function sendRequest(userId) {
     const { data: me } = await supabase.from("profiles").select("full_name").eq("id", session.user.id).single();
@@ -124,7 +140,7 @@ export default function Explore({ session , T: TProp }) {
     await supabase.from("club_members").insert({ club_id: data.id, user_id: session.user.id });
     setForm({ name: "", description: "", category: "", subcategory: "" });
     setShowForm(false);
-    loadContext();
+    setReloadKey(k => k + 1);
     setSaving(false);
   }
 

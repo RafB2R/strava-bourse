@@ -28,18 +28,26 @@ export default function Notifications({ session, T: TProp }) {
   const [unread, setUnread] = useState(0);
   const ref = useRef(null);
 
+  const [reloadKey, setReloadKey] = useState(0);
+  const userId = session.user.id;
+
   useEffect(() => {
-    loadNotifs();
     function handleClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  async function loadNotifs() {
-    const { data } = await supabase.from("notifications").select("*").eq("user_id", session.user.id).order("created_at", { ascending: false }).limit(20);
-    setNotifs(data || []);
-    setUnread((data || []).filter(n => !n.read).length);
-  }
+  // Recharge au montage et à chaque ouverture du panneau (reloadKey)
+  useEffect(() => {
+    let ignore = false;
+    supabase.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(20)
+      .then(({ data }) => {
+        if (ignore) return;
+        setNotifs(data || []);
+        setUnread((data || []).filter(n => !n.read).length);
+      });
+    return () => { ignore = true; };
+  }, [userId, reloadKey]);
 
   async function markAllRead() {
     await supabase.from("notifications").update({ read: true }).eq("user_id", session.user.id).eq("read", false);
@@ -56,7 +64,7 @@ export default function Notifications({ session, T: TProp }) {
   return (
     <div ref={ref} style={{ position: "relative" }}>
       <button
-        onClick={() => { setOpen(p => !p); if (!open) loadNotifs(); }}
+        onClick={() => { setOpen(p => !p); if (!open) setReloadKey(k => k + 1); }}
         style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer", position: "relative", display: "flex", alignItems: "center", gap: 4 }}
       >
         <span style={{ fontSize: 16 }}>🔔</span>

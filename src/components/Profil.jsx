@@ -88,22 +88,97 @@ function Avatar({ name, size = 36 }) {
   return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
 }
 
-function StatsSection({ profile, session, friends, perf, T, onViewProfile }) {
-  const [friendPerfs, setFriendPerfs] = useState([]);
-  const [loading, setLoading] = useState(false);
+// Mes stats de portefeuille (colonnes publiques uniquement), ou null sans position
+async function fetchOwnStats(userId) {
+  const { data } = await supabase.from("portfolio_entries").select("performance, percentage, type, broker").eq("user_id", userId);
+  if (data && data.length > 0) {
+    const avecPerf = data.filter(d => d.performance !== null);
+    const totalPct = avecPerf.reduce((s, d) => s + Number(d.percentage), 0);
+    const perf = totalPct > 0 ? avecPerf.reduce((s, d) => s + (Number(d.performance) * Number(d.percentage)) / totalPct, 0) : null;
+    const types = new Set(data.map(d => d.type)).size;
+    const brokers = new Set(data.filter(d => d.broker).map(d => d.broker)).size;
+    const allPct = data.reduce((s, d) => s + Number(d.percentage), 0);
+    return { positions: data.length, perfPonderee: perf, types, brokers, totalPct: allPct };
+  }
+  return null;
+}
 
-  async function loadFriendPerfs() {
-    setLoading(true);
-    const { data } = await supabase.from("member_stats").select("id, perf").in("id", friends.map(f => f.friend.id));
-    const perfById = Object.fromEntries((data || []).map(d => [d.id, d.perf === null ? null : Number(d.perf)]));
-    const perfs = friends.map(f => ({ id: f.friend.id, name: f.friend.full_name, perf: perfById[f.friend.id] ?? null, me: false }));
-    setFriendPerfs(perfs);
-    setLoading(false);
+// Recalcule la série de mois investis et la met à jour en base si elle a changé
+async function syncStreak(userId, savedStreak) {
+  // Récupère toutes les activités d'investissement
+  const { data: acts } = await supabase
+    .from("activities")
+    .select("created_at")
+    .eq("user_id", userId)
+    .in("type", ["new_position", "renforcement", "rebalancement"])
+    .order("created_at", { ascending: false });
+
+  if (!acts || acts.length === 0) return;
+
+  // Grouper par mois
+  const moisInvestis = new Set(acts.map(a => {
+    const d = new Date(a.created_at);
+    return `${d.getFullYear()}-${d.getMonth()}`;
+  }));
+
+  // Calculer le streak depuis maintenant en remontant mois par mois
+  let streak = 0;
+  const now = new Date();
+  let current = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  while (true) {
+    const key = `${current.getFullYear()}-${current.getMonth()}`;
+    if (moisInvestis.has(key)) {
+      streak++;
+      current.setMonth(current.getMonth() - 1);
+    } else {
+      break;
+    }
   }
 
-  useEffect(() => { if (friends.length > 0) loadFriendPerfs(); }, [friends]);
+  // Mettre à jour en base si changé
+  if (streak !== savedStreak) {
+    await supabase.from("profiles").update({
+      streak_mois: streak,
+      streak_derniere_date: now.toISOString().split("T")[0],
+    }).eq("id", userId);
+  }
+}
 
-  const ranking = [{ id: session.user.id, name: profile?.full_name, perf, me: true }, ...friendPerfs]
+async function fetchFriendships(userId) {
+  const { data } = await supabase.from("friendships").select(`id, status, requester_id, receiver_id, requester:profiles!friendships_requester_id_fkey(id, full_name, username, city, strategy), receiver:profiles!friendships_receiver_id_fkey(id, full_name, username, city, strategy)`).or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
+  if (!data) return null;
+  return {
+    friends: data.filter(f => f.status === "accepted").map(f => ({ ...f, friend: f.requester_id === userId ? f.receiver : f.requester })),
+    pending: data.filter(f => f.status === "pending" && f.requester_id === userId).map(f => ({ ...f, friend: f.receiver })),
+    received: data.filter(f => f.status === "pending" && f.receiver_id === userId).map(f => ({ ...f, friend: f.requester })),
+  };
+}
+
+async function fetchClubCount(userId) {
+  const { count } = await supabase.from("club_members").select("*", { count: "exact", head: true }).eq("user_id", userId);
+  return count || 0;
+}
+
+// Performance pondérée de chaque ami (vue member_stats)
+async function fetchFriendPerfs(friends) {
+  const { data } = await supabase.from("member_stats").select("id, perf").in("id", friends.map(f => f.friend.id));
+  const perfById = Object.fromEntries((data || []).map(d => [d.id, d.perf === null ? null : Number(d.perf)]));
+  return friends.map(f => ({ id: f.friend.id, name: f.friend.full_name, perf: perfById[f.friend.id] ?? null, me: false }));
+}
+
+function StatsSection({ profile, session, friends, perf, T, onViewProfile }) {
+  const [friendPerfs, setFriendPerfs] = useState(null);
+  const loading = friends.length > 0 && friendPerfs === null;
+
+  useEffect(() => {
+    if (friends.length === 0) return;
+    let ignore = false;
+    fetchFriendPerfs(friends).then(perfs => { if (!ignore) setFriendPerfs(perfs); });
+    return () => { ignore = true; };
+  }, [friends]);
+
+  const ranking = [{ id: session.user.id, name: profile?.full_name, perf, me: true }, ...(friendPerfs || [])]
     .sort((a, b) => (b.perf ?? -Infinity) - (a.perf ?? -Infinity));
 
 
@@ -165,82 +240,47 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
   const [searching, setSearching] = useState(false);
   const [message, setMessage] = useState("");
 
-  useEffect(() => { if (initialProfile) setProfile(initialProfile); }, [initialProfile]);
-  useEffect(() => { loadStats(); loadFriendships(); loadClubs(); updateStreak(); }, []);
-
-  async function loadStats() {
-    const { data } = await supabase.from("portfolio_entries").select("performance, percentage, type, broker").eq("user_id", session.user.id);
-    if (data && data.length > 0) {
-      const avecPerf = data.filter(d => d.performance !== null);
-      const totalPct = avecPerf.reduce((s, d) => s + Number(d.percentage), 0);
-      const perf = totalPct > 0 ? avecPerf.reduce((s, d) => s + (Number(d.performance) * Number(d.percentage)) / totalPct, 0) : null;
-      const types = new Set(data.map(d => d.type)).size;
-      const brokers = new Set(data.filter(d => d.broker).map(d => d.broker)).size;
-      const allPct = data.reduce((s, d) => s + Number(d.percentage), 0);
-      setStats({ positions: data.length, perfPonderee: perf, types, brokers, totalPct: allPct });
-    }
+  // Resynchronise le profil quand App en fournit une nouvelle version
+  const [prevInitialProfile, setPrevInitialProfile] = useState(initialProfile);
+  if (initialProfile !== prevInitialProfile) {
+    setPrevInitialProfile(initialProfile);
+    if (initialProfile) setProfile(initialProfile);
   }
 
+  const userId = session.user.id;
+  const savedStreak = profile?.streak_mois;
+  const [friendsKey, setFriendsKey] = useState(0);
+  const reloadFriendships = () => setFriendsKey(k => k + 1);
 
-  async function updateStreak() {
-    // Récupère toutes les activités d'investissement
-    const { data: acts } = await supabase
-      .from("activities")
-      .select("created_at")
-      .eq("user_id", session.user.id)
-      .in("type", ["new_position", "renforcement", "rebalancement"])
-      .order("created_at", { ascending: false });
+  useEffect(() => {
+    let ignore = false;
+    Promise.all([fetchOwnStats(userId), fetchClubCount(userId)]).then(([ownStats, clubCount]) => {
+      if (ignore) return;
+      if (ownStats) setStats(ownStats);
+      setMyClubs(clubCount);
+    });
+    return () => { ignore = true; };
+  }, [userId]);
 
-    if (!acts || acts.length === 0) return;
+  useEffect(() => {
+    let ignore = false;
+    fetchFriendships(userId).then(result => {
+      if (ignore || !result) return;
+      setFriends(result.friends);
+      setPending(result.pending);
+      setReceived(result.received);
+    });
+    return () => { ignore = true; };
+  }, [userId, friendsKey]);
 
-    // Grouper par mois
-    const moisInvestis = new Set(acts.map(a => {
-      const d = new Date(a.created_at);
-      return `${d.getFullYear()}-${d.getMonth()}`;
-    }));
-
-    // Calculer le streak depuis maintenant en remontant mois par mois
-    let streak = 0;
-    const now = new Date();
-    let current = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    while (true) {
-      const key = `${current.getFullYear()}-${current.getMonth()}`;
-      if (moisInvestis.has(key)) {
-        streak++;
-        current.setMonth(current.getMonth() - 1);
-      } else {
-        break;
-      }
-    }
-
-    // Mettre à jour en base si changé
-    if (streak !== profile?.streak_mois) {
-      await supabase.from("profiles").update({
-        streak_mois: streak,
-        streak_derniere_date: now.toISOString().split("T")[0],
-      }).eq("id", session.user.id);
-    }
-  }
-
-  async function loadFriendships() {
-    const { data } = await supabase.from("friendships").select(`id, status, requester_id, receiver_id, requester:profiles!friendships_requester_id_fkey(id, full_name, username, city, strategy), receiver:profiles!friendships_receiver_id_fkey(id, full_name, username, city, strategy)`).or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`);
-    if (data) {
-      setFriends(data.filter(f => f.status === "accepted").map(f => ({ ...f, friend: f.requester_id === session.user.id ? f.receiver : f.requester })));
-      setPending(data.filter(f => f.status === "pending" && f.requester_id === session.user.id).map(f => ({ ...f, friend: f.receiver })));
-      setReceived(data.filter(f => f.status === "pending" && f.receiver_id === session.user.id).map(f => ({ ...f, friend: f.requester })));
-    }
-  }
-
-  async function loadClubs() {
-    const { count } = await supabase.from("club_members").select("*", { count: "exact", head: true }).eq("user_id", session.user.id);
-    setMyClubs(count || 0);
-  }
+  useEffect(() => { syncStreak(userId, savedStreak); }, [userId, savedStreak]);
 
   async function searchUsers(q) {
     if (q.length < 2) { setSearchResults([]); return; }
     setSearching(true);
-    const { data } = await supabase.from("profiles").select("id, full_name, username, city, strategy").neq("id", session.user.id).or(`username.ilike.%${q}%,full_name.ilike.%${q}%`).limit(5);
+    // Retire les caractères qui ont un sens dans la syntaxe de filtre PostgREST
+    const safe = q.replace(/[,()%*\\]/g, " ").trim();
+    const { data } = await supabase.from("profiles").select("id, full_name, username, city, strategy").neq("id", session.user.id).or(`username.ilike.%${safe}%,full_name.ilike.%${safe}%`).limit(5);
     setSearchResults(data || []);
     setSearching(false);
   }
@@ -248,12 +288,12 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
   async function sendRequest(receiverId) {
     const { error } = await supabase.from("friendships").insert({ requester_id: session.user.id, receiver_id: receiverId, status: "pending" });
     if (error) setMessage("Demande déjà envoyée.");
-    else { setMessage("Demande envoyée ✅"); setSearch(""); setSearchResults([]); loadFriendships(); }
+    else { setMessage("Demande envoyée ✅"); setSearch(""); setSearchResults([]); reloadFriendships(); }
     setTimeout(() => setMessage(""), 3000);
   }
 
-  async function acceptRequest(id) { await supabase.from("friendships").update({ status: "accepted" }).eq("id", id); loadFriendships(); }
-  async function declineRequest(id) { await supabase.from("friendships").delete().eq("id", id); loadFriendships(); }
+  async function acceptRequest(id) { await supabase.from("friendships").update({ status: "accepted" }).eq("id", id); reloadFriendships(); }
+  async function declineRequest(id) { await supabase.from("friendships").delete().eq("id", id); reloadFriendships(); }
 
   function startEdit() {
     setForm({ full_name: profile.full_name || "", username: profile.username || "", city: profile.city || "", bio: profile.bio || "", strategy: profile.strategy || "ETF passif", investing_since: profile.investing_since || "" });

@@ -128,35 +128,70 @@ function Post({ post, session, isMember, onReact, onDelete }) {
   );
 }
 
+// Classement des membres d'un club (vue member_stats)
+async function fetchClubRanking(clubId, userId) {
+  const { data: memberships } = await supabase.from("club_members").select("user_id").eq("club_id", clubId);
+  if (!memberships) return [];
+  const { data: stats } = await supabase
+    .from("member_stats")
+    .select("id, full_name, username, streak_mois, perf, nb_badges")
+    .in("id", memberships.map(m => m.user_id));
+  return (stats || []).map(s => ({
+    user_id: s.id,
+    name: s.full_name || "Investisseur",
+    username: s.username,
+    streak: Number(s.streak_mois),
+    perf: s.perf === null ? null : Number(s.perf),
+    nbBadges: Number(s.nb_badges),
+    isMe: s.id === userId,
+  }));
+}
+
+// Une page de posts d'un club avec réactions et nombre de réponses, ou null en cas d'erreur
+async function fetchClubPosts(clubId, sort, page) {
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+  const { data: postsData, count } = await supabase.from("club_posts").select("*, author:profiles!club_posts_user_id_fkey(full_name, username)", { count: "exact" }).eq("club_id", clubId).order("created_at", { ascending: sort === "date" ? false : true }).range(from, to);
+  if (!postsData) return null;
+  const postsWithData = await Promise.all(postsData.map(async post => {
+    const { data: reactions } = await supabase.from("club_reactions").select("*").eq("post_id", post.id);
+    const { count: replyCount } = await supabase.from("club_replies").select("*", { count: "exact", head: true }).eq("post_id", post.id);
+    return { ...post, reactions: reactions || [], reply_count: replyCount || 0, score: (reactions || []).length + (replyCount || 0) };
+  }));
+  const posts = sort === "popularite" ? [...postsWithData].sort((a, b) => b.score - a.score) : postsWithData;
+  return { posts, total: count || 0 };
+}
+
+// Tous les clubs, leur nombre de membres et les clubs dont je suis membre
+async function fetchClubs(userId) {
+  const { data: allClubs } = await supabase.from("clubs").select("*, creator:profiles!clubs_creator_id_fkey(full_name, username)").order("created_at", { ascending: false });
+  const { data: memberships } = await supabase.from("club_members").select("club_id").eq("user_id", userId);
+  const counts = {};
+  if (allClubs) {
+    for (const club of allClubs) {
+      const { count } = await supabase.from("club_members").select("*", { count: "exact", head: true }).eq("club_id", club.id);
+      counts[club.id] = count || 0;
+    }
+  }
+  return { clubs: allClubs, counts, myClubIds: memberships ? memberships.map(m => m.club_id) : null };
+}
+
 function ClubRanking({ clubId, session }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("performance");
 
-  async function loadRanking() {
-    const { data: memberships } = await supabase.from("club_members").select("user_id").eq("club_id", clubId);
-    if (!memberships) { setLoading(false); return; }
+  const userId = session.user.id;
 
-    const { data: stats } = await supabase
-      .from("member_stats")
-      .select("id, full_name, username, streak_mois, perf, nb_badges")
-      .in("id", memberships.map(m => m.user_id));
-
-    const enriched = (stats || []).map(s => ({
-      user_id: s.id,
-      name: s.full_name || "Investisseur",
-      username: s.username,
-      streak: Number(s.streak_mois),
-      perf: s.perf === null ? null : Number(s.perf),
-      nbBadges: Number(s.nb_badges),
-      isMe: s.id === session.user.id,
-    }));
-
-    setMembers(enriched);
-    setLoading(false);
-  }
-  // Le parent remonte ce composant (key=clubId) quand le club change
-  useEffect(() => { loadRanking(); }, [clubId]);
+  useEffect(() => {
+    let ignore = false;
+    fetchClubRanking(clubId, userId).then(list => {
+      if (ignore) return;
+      setMembers(list);
+      setLoading(false);
+    });
+    return () => { ignore = true; };
+  }, [clubId, userId]);
 
 
   const sorted = [...members].sort((a, b) => {
@@ -212,34 +247,27 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
   const [total, setTotal] = useState(0);
   const [clubTab, setClubTab] = useState("discussion");
 
-  useEffect(() => { loadPosts(); }, [club.id, sort, page]);
+  const [reloadKey, setReloadKey] = useState(0);
+  const reloadPosts = () => setReloadKey(k => k + 1);
 
-  async function loadPosts() {
-    setLoading(true);
-    const from = (page - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
-    const { data: postsData, count } = await supabase.from("club_posts").select("*, author:profiles!club_posts_user_id_fkey(full_name, username)", { count: "exact" }).eq("club_id", club.id).order("created_at", { ascending: sort === "date" ? false : true }).range(from, to);
-    if (postsData) {
-      const postsWithData = await Promise.all(postsData.map(async post => {
-        const { data: reactions } = await supabase.from("club_reactions").select("*").eq("post_id", post.id);
-        const { count: replyCount } = await supabase.from("club_replies").select("*", { count: "exact", head: true }).eq("post_id", post.id);
-        return { ...post, reactions: reactions || [], reply_count: replyCount || 0, score: (reactions || []).length + (replyCount || 0) };
-      }));
-      const sorted = sort === "popularite" ? [...postsWithData].sort((a, b) => b.score - a.score) : postsWithData;
-      setPosts(sorted);
-      setTotal(count || 0);
-    }
-    setLoading(false);
-  }
+  useEffect(() => {
+    let ignore = false;
+    fetchClubPosts(club.id, sort, page).then(result => {
+      if (ignore) return;
+      if (result) { setPosts(result.posts); setTotal(result.total); }
+      setLoading(false);
+    });
+    return () => { ignore = true; };
+  }, [club.id, sort, page, reloadKey]);
 
   async function sendPost() {
     if (!input.trim() || sending) return;
     setSending(true);
     await supabase.from("club_posts").insert({ club_id: club.id, user_id: session.user.id, content: input.trim() });
-    setInput(""); setSending(false); setPage(1); loadPosts();
+    setInput(""); setSending(false); setPage(1); reloadPosts();
   }
 
-  async function deletePost(id) { await supabase.from("club_posts").delete().eq("id", id); loadPosts(); }
+  async function deletePost(id) { await supabase.from("club_posts").delete().eq("id", id); reloadPosts(); }
 
   async function handleReact(postId, type) {
     const post = posts.find(p => p.id === postId);
@@ -255,7 +283,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
         await supabase.from("notifications").insert({ user_id: post.user_id, type: "post_reaction", data: { from_name: me?.full_name, reaction: type, post_id: postId } });
       }
     }
-    loadPosts();
+    reloadPosts();
   }
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -310,7 +338,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
             <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>{total} post{total > 1 ? "s" : ""}</div>
             <div style={{ display: "flex", gap: 6 }}>
               {[["date", "🕐 Récents"], ["popularite", "🔥 Populaires"]].map(([id, label]) => (
-                <button key={id} onClick={() => { setSort(id); setPage(1); }} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${sort === id ? T.accent : T.border}`, background: sort === id ? T.accentBg : "none", color: sort === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{label}</button>
+                <button key={id} onClick={() => { if (id !== sort) { setLoading(true); setSort(id); setPage(1); } }} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${sort === id ? T.accent : T.border}`, background: sort === id ? T.accentBg : "none", color: sort === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{label}</button>
               ))}
             </div>
           </div>
@@ -323,9 +351,9 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
 
           {totalPages > 1 && (
             <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16 }}>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ ...btnSm(T), opacity: page === 1 ? 0.3 : 1 }}>← Préc.</button>
+              <button onClick={() => { setLoading(true); setPage(p => Math.max(1, p - 1)); }} disabled={page === 1} style={{ ...btnSm(T), opacity: page === 1 ? 0.3 : 1 }}>← Préc.</button>
               <span style={{ fontSize: 13, color: T.textMuted, padding: "5px 12px" }}>{page} / {totalPages}</span>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ ...btnSm(T), opacity: page === totalPages ? 0.3 : 1 }}>Suiv. →</button>
+              <button onClick={() => { setLoading(true); setPage(p => Math.min(totalPages, p + 1)); }} disabled={page === totalPages} style={{ ...btnSm(T), opacity: page === totalPages ? 0.3 : 1 }}>Suiv. →</button>
             </div>
           )}
         </div>
@@ -350,24 +378,19 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
   const [selectedClub, setSelectedClub] = useState(initialClub);
   const [form, setForm] = useState({ name: "", description: "", category: "", subcategory: "" });
 
-  useEffect(() => { loadClubs(); }, []);
+  const [reloadKey, setReloadKey] = useState(0);
+  const userId = session.user.id;
 
-  async function loadClubs() {
-    setLoading(true);
-    const { data: allClubs } = await supabase.from("clubs").select("*, creator:profiles!clubs_creator_id_fkey(full_name, username)").order("created_at", { ascending: false });
-    const { data: memberships } = await supabase.from("club_members").select("club_id").eq("user_id", session.user.id);
-    if (allClubs) {
-      setClubs(allClubs);
-      const counts = {};
-      for (const club of allClubs) {
-        const { count } = await supabase.from("club_members").select("*", { count: "exact", head: true }).eq("club_id", club.id);
-        counts[club.id] = count || 0;
-      }
-      setMemberCounts(counts);
-    }
-    if (memberships) setMyClubs(memberships.map(m => m.club_id));
-    setLoading(false);
-  }
+  useEffect(() => {
+    let ignore = false;
+    fetchClubs(userId).then(({ clubs, counts, myClubIds }) => {
+      if (ignore) return;
+      if (clubs) { setClubs(clubs); setMemberCounts(counts); }
+      if (myClubIds) setMyClubs(myClubIds);
+      setLoading(false);
+    });
+    return () => { ignore = true; };
+  }, [userId, reloadKey]);
 
   async function createClub() {
     setError("");
@@ -379,7 +402,7 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
     if (err) { setError(err.message); setSaving(false); return; }
     await supabase.from("club_members").insert({ club_id: data.id, user_id: session.user.id });
     setForm({ name: "", description: "", category: "", subcategory: "" });
-    setShowForm(false); loadClubs(); setSaving(false);
+    setShowForm(false); setReloadKey(k => k + 1); setSaving(false);
   }
 
   async function joinClub(clubId) {
