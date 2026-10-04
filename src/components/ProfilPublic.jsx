@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../supabase";
+import { supabase, PUBLIC_PROFILE_COLUMNS } from "../supabase";
 import { T as TLive } from "../theme";
 import { getBadgeInfo, badgeFromData, MEDAL_COLORS } from "../badges";
 
@@ -110,7 +110,7 @@ function timeAgo(date) {
 // Profil, positions (colonnes publiques), activités, badges et lien d'amitié avec moi
 async function fetchPublicProfile(userId, myId) {
   const [{ data: p }, { data: e }, { data: a }, { data: b }, { data: f }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", userId).single(),
+    supabase.from("profiles").select(PUBLIC_PROFILE_COLUMNS).eq("id", userId).single(),
     supabase.from("portfolio_entries").select(PUBLIC_ENTRY_COLUMNS).eq("user_id", userId).order("percentage", { ascending: false }),
     supabase.from("activities").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
     supabase.from("user_badges").select("badge_id, unlocked_at").eq("user_id", userId),

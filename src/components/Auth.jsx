@@ -34,11 +34,13 @@ export default function Auth({ T: TProp }) {
     } else {
       if (!fullName.trim()) { setError("Entre ton prénom et nom."); setLoading(false); return; }
       if (!username.trim()) { setError("Entre un nom d'utilisateur."); setLoading(false); return; }
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      // Le profil est créé côté serveur à partir de ces métadonnées (trigger verio_create_profile)
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: fullName.trim(), username: username.trim().toLowerCase() } },
+      });
       if (error) { setError(error.message); setLoading(false); return; }
-      if (data.user) {
-        await supabase.from("profiles").upsert({ id: data.user.id, full_name: fullName.trim(), username: username.trim().toLowerCase(), email });
-      }
       setSuccess("Compte créé ! Vérifie ton email pour confirmer.");
     }
     setLoading(false);

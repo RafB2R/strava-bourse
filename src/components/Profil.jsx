@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { T as TLive } from "../theme";
-import { supabase } from "../supabase";
+import { supabase, PUBLIC_PROFILE_COLUMNS } from "../supabase";
 import Badges from "./Badges";
 import { syncBadges } from "../badges";
 import KYC from "./KYC";
@@ -181,8 +181,8 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
 
   async function saveProfile() {
     setSaving(true);
-    const { data, error } = await supabase.from("profiles").update({ full_name: form.full_name, username: form.username.toLowerCase().trim(), city: form.city, bio: form.bio, strategy: form.strategy, investing_since: form.investing_since || null }).eq("id", session.user.id).select().single();
-    if (!error && data) { setProfile(data); setSaved(true); setTimeout(() => setSaved(false), 2000); }
+    const { data, error } = await supabase.from("profiles").update({ full_name: form.full_name, username: form.username.toLowerCase().trim(), city: form.city, bio: form.bio, strategy: form.strategy, investing_since: form.investing_since || null }).eq("id", session.user.id).select(PUBLIC_PROFILE_COLUMNS).single();
+    if (!error && data) { setProfile(p => ({ ...p, ...data })); setSaved(true); setTimeout(() => setSaved(false), 2000); }
     setEditing(false); setSaving(false);
   }
 
