@@ -71,28 +71,35 @@ function MarketWidget({ T }) {
 }
 
 
-function ComparisonRow({ label, mine, theirs, higherBetter = true, T }) {
-  const meBetter = higherBetter ? mine > theirs : mine < theirs;
+const fmtPerf = v => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
+
+function ComparisonRow({ label, mine, theirs, format, T }) {
+  const comparable = mine != null && theirs != null && mine !== theirs;
+  const meBetter = comparable && mine > theirs;
+  const theyBetter = comparable && theirs > mine;
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, padding: "8px 0", borderTop: `0.5px solid ${T.border}`, alignItems: "center" }}>
       <div style={{ textAlign: "right", fontSize: 13, fontWeight: 700, color: meBetter ? T.accent : T.text }}>
-        {mine !== null ? `${mine >= 0 ? "+" : ""}${Number(mine).toFixed(1)}%` : "—"}
+        {mine != null ? format(mine) : "—"}
       </div>
       <div style={{ textAlign: "center", fontSize: 10, color: T.textFaint, minWidth: 70 }}>{label}</div>
-      <div style={{ textAlign: "left", fontSize: 13, fontWeight: 700, color: !meBetter ? T.accent : T.text }}>
-        {theirs !== null ? `${theirs >= 0 ? "+" : ""}${Number(theirs).toFixed(1)}%` : "—"}
+      <div style={{ textAlign: "left", fontSize: 13, fontWeight: 700, color: theyBetter ? T.accent : T.text }}>
+        {theirs != null ? format(theirs) : "—"}
       </div>
     </div>
   );
 }
 
+const COMPARISON_ROWS = [
+  { key: "perf", label: "Perf. totale", format: fmtPerf },
+  { key: "diversif", label: "Diversification", format: v => `${v}/100` },
+  { key: "streak", label: "Régularité", format: v => `${v} mois` },
+  { key: "badges", label: "Badges", format: v => `${v}` },
+];
+
 function ComparisonWidget({ data, T }) {
   if (!data) return null;
-  const { profile, perfGlobale: theirPerf, myPerf } = data;
-  const theirVol = 12.4;
-  const myVol = 8.7;
-  const theirDD = -18.2;
-  const myDD = -11.4;
+  const { profile, mine, theirs } = data;
 
   return (
     <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
@@ -102,10 +109,9 @@ function ComparisonWidget({ data, T }) {
         <div style={{ minWidth: 70 }} />
         <div style={{ textAlign: "left", fontSize: 12, fontWeight: 700, color: T.text }}>{profile.full_name?.split(" ")[0]}</div>
       </div>
-      <ComparisonRow T={T} label="Perf. totale" mine={myPerf} theirs={theirPerf} higherBetter={true} />
-      <ComparisonRow T={T} label="Volatilité" mine={myVol} theirs={theirVol} higherBetter={false} />
-      <ComparisonRow T={T} label="Max drawdown" mine={myDD} theirs={theirDD} higherBetter={true} />
-      <div style={{ fontSize: 10, color: T.textFaint, marginTop: 8, textAlign: "center" }}>Vol. et drawdown indicatifs</div>
+      {COMPARISON_ROWS.map(r => (
+        <ComparisonRow key={r.key} T={T} label={r.label} mine={mine?.[r.key]} theirs={theirs?.[r.key]} format={r.format} />
+      ))}
     </div>
   );
 }
