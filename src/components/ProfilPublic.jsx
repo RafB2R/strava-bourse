@@ -107,6 +107,47 @@ function timeAgo(date) {
   return `il y a ${Math.floor(diff / 86400)} j`;
 }
 
+// Profil, positions (colonnes publiques), activités, badges et lien d'amitié avec moi
+async function fetchPublicProfile(userId, myId) {
+  const [{ data: p }, { data: e }, { data: a }, { data: b }, { data: f }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", userId).single(),
+    supabase.from("portfolio_entries").select(PUBLIC_ENTRY_COLUMNS).eq("user_id", userId).order("percentage", { ascending: false }),
+    supabase.from("activities").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+    supabase.from("user_badges").select("badge_id, unlocked_at").eq("user_id", userId),
+    supabase.from("friendships").select("*").or(`requester_id.eq.${myId},receiver_id.eq.${myId}`).or(`requester_id.eq.${userId},receiver_id.eq.${userId}`),
+  ]);
+  const rel = (f || []).find(fr =>
+    (fr.requester_id === myId && fr.receiver_id === userId) ||
+    (fr.requester_id === userId && fr.receiver_id === myId)
+  );
+  return {
+    profile: p,
+    entries: e || [],
+    activities: a || [],
+    badges: b || [],
+    relation: rel ? (rel.status === "accepted" ? "accepted" : "pending") : null,
+  };
+}
+
+// Stats côte à côte (moi / ce membre) pour le widget de comparaison du desktop
+async function fetchCompareStats(myId, userId) {
+  const { data } = await supabase
+    .from("member_stats")
+    .select("id, perf, score_diversif, streak_mois, nb_badges")
+    .in("id", [myId, userId]);
+  if (!data) return null;
+  const toStats = row => row && {
+    perf: row.perf === null ? null : Number(row.perf),
+    diversif: Number(row.score_diversif),
+    streak: Number(row.streak_mois),
+    badges: Number(row.nb_badges),
+  };
+  return {
+    mine: toStats(data.find(d => d.id === myId)),
+    theirs: toStats(data.find(d => d.id === userId)),
+  };
+}
+
 export default function ProfilPublic({ userId, session, onBack, T: TProp, onCompareData }) {
   const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
@@ -122,52 +163,25 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   const [isPending, setIsPending] = useState(false);
   const [compareStats, setCompareStats] = useState(null);
 
-  // Stats côte à côte (moi / ce membre) pour le widget de comparaison du desktop
-  async function loadCompareStats() {
-    const { data } = await supabase
-      .from("member_stats")
-      .select("id, perf, score_diversif, streak_mois, nb_badges")
-      .in("id", [session.user.id, userId]);
-    if (!data) return;
-    const toStats = row => row && {
-      perf: row.perf === null ? null : Number(row.perf),
-      diversif: Number(row.score_diversif),
-      streak: Number(row.streak_mois),
-      badges: Number(row.nb_badges),
-    };
-    setCompareStats({
-      mine: toStats(data.find(d => d.id === session.user.id)),
-      theirs: toStats(data.find(d => d.id === userId)),
-    });
-  }
-
+  const myId = session.user.id;
 
   // Le parent remonte ce composant (key=userId) à chaque changement de profil,
   // donc l'état repart de zéro sans reset manuel.
-  async function loadAll() {
-    const [{ data: p }, { data: e }, { data: a }, { data: b }, { data: f }] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", userId).single(),
-      supabase.from("portfolio_entries").select(PUBLIC_ENTRY_COLUMNS).eq("user_id", userId).order("percentage", { ascending: false }),
-      supabase.from("activities").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
-      supabase.from("user_badges").select("badge_id, unlocked_at").eq("user_id", userId),
-      supabase.from("friendships").select("*").or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`).or(`requester_id.eq.${userId},receiver_id.eq.${userId}`),
-    ]);
-    setProfile(p);
-    setEntries(e || []);
-    setActivities(a || []);
-    setBadges(b || []);
-    if (f) {
-      const rel = f.find(fr =>
-        (fr.requester_id === session.user.id && fr.receiver_id === userId) ||
-        (fr.requester_id === userId && fr.receiver_id === session.user.id)
-      );
-      if (rel?.status === "accepted") setIsFriend(true);
-      else if (rel) setIsPending(true);
-    }
-    setLoading(false);
-  }
-
-  useEffect(() => { loadAll(); loadCompareStats(); }, [userId]);
+  useEffect(() => {
+    let ignore = false;
+    fetchPublicProfile(userId, myId).then(r => {
+      if (ignore) return;
+      setProfile(r.profile);
+      setEntries(r.entries);
+      setActivities(r.activities);
+      setBadges(r.badges);
+      setIsFriend(r.relation === "accepted");
+      setIsPending(r.relation === "pending");
+      setLoading(false);
+    });
+    fetchCompareStats(myId, userId).then(stats => { if (!ignore && stats) setCompareStats(stats); });
+    return () => { ignore = true; };
+  }, [userId, myId]);
 
   async function sendRequest() {
     const { data: me } = await supabase.from("profiles").select("full_name").eq("id", session.user.id).single();
@@ -185,12 +199,12 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
     if (profile && compareStats && onCompareData) {
       onCompareData({ profile, ...compareStats });
     }
-  }, [profile, compareStats]);
+  }, [profile, compareStats, onCompareData]);
 
   // Nettoyer à la fermeture
   useEffect(() => {
     return () => { if (onCompareData) onCompareData(null); };
-  }, []);
+  }, [onCompareData]);
 
   function getActivityText(a) {
     const d = a.data || {};

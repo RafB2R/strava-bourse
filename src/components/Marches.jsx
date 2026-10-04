@@ -82,6 +82,17 @@ function QuoteCard({ symbol, name, flag, unit, T }) {
   );
 }
 
+// Liste JSON renvoyée par nos routes /api, ou [] en cas d'erreur
+async function fetchJsonList(url) {
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function Marches({ T: TProp }) {
   const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
@@ -92,32 +103,20 @@ export default function Marches({ T: TProp }) {
   const [loadingSecteurs, setLoadingSecteurs] = useState(true);
   const [loadingEarnings, setLoadingEarnings] = useState(true);
 
-  async function loadSecteurs() {
-    try {
-      const res = await fetch('/api/sectors');
-      const data = await res.json();
-      setSecteurs(Array.isArray(data) ? data : []);
-    } catch { setSecteurs([]); }
-    setLoadingSecteurs(false);
-  }
+  const [reloadKey, setReloadKey] = useState(0);
 
-  async function loadEarnings() {
-    try {
-      const res = await fetch('/api/earnings');
-      const data = await res.json();
-      setEarnings(Array.isArray(data) ? data : []);
-    } catch { setEarnings([]); }
-    setLoadingEarnings(false);
-  }
-
-  useEffect(() => { loadSecteurs(); loadEarnings(); }, []);
+  useEffect(() => {
+    let ignore = false;
+    fetchJsonList("/api/sectors").then(list => { if (!ignore) { setSecteurs(list); setLoadingSecteurs(false); } });
+    fetchJsonList("/api/earnings").then(list => { if (!ignore) { setEarnings(list); setLoadingEarnings(false); } });
+    return () => { ignore = true; };
+  }, [reloadKey]);
 
   function refresh() {
     setLastUpdate(new Date());
     setLoadingSecteurs(true);
     setLoadingEarnings(true);
-    loadSecteurs();
-    loadEarnings();
+    setReloadKey(k => k + 1);
   }
 
   return (

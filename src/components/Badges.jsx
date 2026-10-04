@@ -110,6 +110,113 @@ function getProgress(cat, val) {
   return Math.min(((val - prev) / (next.target - prev)) * 100, 100);
 }
 
+// Calcule les stats de badges et synchronise en base les badges nouvellement débloqués
+async function loadBadgeData(userId, dateNaissance, investingSince) {
+  const { data: entries } = await supabase.from("portfolio_entries").select("performance, percentage, type, broker").eq("user_id", userId);
+  const { count: clubCount } = await supabase.from("club_members").select("*", { count: "exact", head: true }).eq("user_id", userId);
+
+  // Charger badges débloqués
+  const { data: unlockedBadges } = await supabase.from("user_badges").select("badge_id, unlocked_at").eq("user_id", userId);
+  const unlockedIds = (unlockedBadges || []).map(b => b.badge_id);
+
+  // Vérifier Birthday
+  if (dateNaissance && !unlockedIds.includes("birthday")) {
+    const today = new Date();
+    const birth = new Date(dateNaissance);
+    if (today.getDate() === birth.getDate() && today.getMonth() === birth.getMonth()) {
+      await supabase.from("user_badges").insert({ user_id: userId, badge_id: "birthday" });
+      unlockedIds.push("birthday");
+      await supabase.from("activities").insert({ user_id: userId, type: "badge", data: { badge_id: "birthday", badge_name: "Birthday Investor", badge_medal: "🎂" } });
+    }
+  }
+
+
+
+
+  let perf = null, types = 0, positions = 0, brokers = 0, totalPct = 0;
+
+  if (entries && entries.length > 0) {
+    positions = entries.length;
+    types = new Set(entries.map(e => e.type)).size;
+    brokers = new Set(entries.filter(e => e.broker).map(e => e.broker)).size;
+    totalPct = entries.reduce((s, e) => s + Number(e.percentage), 0);
+    const avecPerf = entries.filter(e => e.performance !== null);
+    const tPct = avecPerf.reduce((s, e) => s + Number(e.percentage), 0);
+    if (tPct > 0) perf = avecPerf.reduce((s, e) => s + Number(e.performance) * Number(e.percentage) / tPct, 0);
+  }
+
+  const years = investingSince ? new Date().getFullYear() - Number(investingSince) : null;
+
+  // Calculer streak réel depuis les activités
+  const { data: acts } = await supabase
+    .from("activities")
+    .select("created_at")
+    .eq("user_id", userId)
+    .in("type", ["new_position", "renforcement", "rebalancement"])
+    .order("created_at", { ascending: false });
+
+  let streakMois = 0;
+  if (acts && acts.length > 0) {
+    const moisInvestis = new Set(acts.map(a => {
+      const d = new Date(a.created_at);
+      return `${d.getFullYear()}-${d.getMonth()}`;
+    }));
+    const now = new Date();
+    let current = new Date(now.getFullYear(), now.getMonth(), 1);
+    while (true) {
+      const key = `${current.getFullYear()}-${current.getMonth()}`;
+      if (moisInvestis.has(key)) { streakMois++; current.setMonth(current.getMonth() - 1); }
+      else break;
+    }
+  }
+
+  const stats = { perf, types, positions, clubs: clubCount || 0, years, brokers, totalPct, dcaMonths: streakMois };
+
+  // Synchroniser les badges débloqués en base
+  const vals = {
+    milestones: years,
+    builder: positions,
+    explorer: types,
+    climber: perf,
+    diversification: positions,
+    community: clubCount || 0,
+    dca: streakMois,
+  };
+  const CATS_SYNC = [
+    { id: "milestones", levels: [{ target: 1, medal: "🥉" }, { target: 5, medal: "🥈" }, { target: 10, medal: "🥇" }, { target: 25, medal: "💎" }] },
+    { id: "builder", levels: [{ target: 1, medal: "🥉" }, { target: 10, medal: "🥈" }, { target: 50, medal: "🥇" }, { target: 100, medal: "💎" }] },
+    { id: "explorer", levels: [{ target: 1, medal: "🥉" }, { target: 3, medal: "🥈" }, { target: 5, medal: "🥇" }, { target: 8, medal: "💎" }] },
+    { id: "climber", levels: [{ target: 10, medal: "🥉" }, { target: 50, medal: "🥈" }, { target: 100, medal: "🥇" }, { target: 1000, medal: "💎" }] },
+    { id: "diversification", levels: [{ target: 3, medal: "🥉" }, { target: 5, medal: "🥈" }, { target: 8, medal: "🥇" }, { target: 10, medal: "💎" }] },
+    { id: "community", levels: [{ target: 1, medal: "🥉" }, { target: 3, medal: "🥈" }, { target: 5, medal: "🥇" }, { target: 10, medal: "💎" }] },
+    { id: "dca", levels: [{ target: 3, medal: "🥉" }, { target: 12, medal: "🥈" }, { target: 36, medal: "🥇" }, { target: 120, medal: "💎" }] },
+  ];
+
+  const toSync = [];
+  for (const cat of CATS_SYNC) {
+    const val = vals[cat.id];
+    if (val === null || val === undefined) continue;
+    for (const level of cat.levels) {
+      if (val >= level.target) {
+        const badgeId = `${cat.id}_${level.medal}`;
+        if (!unlockedIds.includes(badgeId)) toSync.push({ user_id: userId, badge_id: badgeId });
+      }
+    }
+  }
+  if (toSync.length > 0) {
+    await supabase.from("user_badges").upsert(toSync, { onConflict: "user_id,badge_id" });
+    toSync.forEach(b => unlockedIds.push(b.badge_id));
+    // Notifier pour chaque nouveau badge
+    const notifBadges = toSync.map(b => ({
+      user_id: userId,
+      type: "badge_unlocked",
+      data: { badge_id: b.badge_id, badge_name: b.badge_id.split("_")[0], badge_medal: b.badge_id.split("_")[1] }
+    }));
+    if (notifBadges.length > 0) await supabase.from("notifications").insert(notifBadges);
+  }
+  return { stats, unlockedIds: [...unlockedIds] };
+}
+
 export default function Badges({ session, profile , T: TProp }) {
   const T = TProp || TLive;
   const [data, setData] = useState({ perf: null, types: 0, positions: 0, clubs: 0, years: null, brokers: 0, totalPct: 0 });
@@ -117,113 +224,19 @@ export default function Badges({ session, profile , T: TProp }) {
   const [unlockedBadgeIds, setUnlockedBadgeIds] = useState([]);
   const [activeTab, setActiveTab] = useState("trophees");
 
-  async function loadData() {
-    const { data: entries } = await supabase.from("portfolio_entries").select("performance, percentage, type, broker").eq("user_id", session.user.id);
-    const { count: clubCount } = await supabase.from("club_members").select("*", { count: "exact", head: true }).eq("user_id", session.user.id);
+  const userId = session.user.id;
+  const dateNaissance = profile?.date_naissance;
+  const investingSince = profile?.investing_since;
 
-    // Charger badges débloqués
-    const { data: unlockedBadges } = await supabase.from("user_badges").select("badge_id, unlocked_at").eq("user_id", session.user.id);
-    const unlockedIds = (unlockedBadges || []).map(b => b.badge_id);
-
-    // Vérifier Birthday
-    if (profile?.date_naissance && !unlockedIds.includes("birthday")) {
-      const today = new Date();
-      const birth = new Date(profile.date_naissance);
-      if (today.getDate() === birth.getDate() && today.getMonth() === birth.getMonth()) {
-        await supabase.from("user_badges").insert({ user_id: session.user.id, badge_id: "birthday" });
-        unlockedIds.push("birthday");
-        await supabase.from("activities").insert({ user_id: session.user.id, type: "badge", data: { badge_id: "birthday", badge_name: "Birthday Investor", badge_medal: "🎂" } });
-      }
-    }
-
-
-
-
-    let perf = null, types = 0, positions = 0, brokers = 0, totalPct = 0;
-
-    if (entries && entries.length > 0) {
-      positions = entries.length;
-      types = new Set(entries.map(e => e.type)).size;
-      brokers = new Set(entries.filter(e => e.broker).map(e => e.broker)).size;
-      totalPct = entries.reduce((s, e) => s + Number(e.percentage), 0);
-      const avecPerf = entries.filter(e => e.performance !== null);
-      const tPct = avecPerf.reduce((s, e) => s + Number(e.percentage), 0);
-      if (tPct > 0) perf = avecPerf.reduce((s, e) => s + Number(e.performance) * Number(e.percentage) / tPct, 0);
-    }
-
-    const years = profile?.investing_since ? new Date().getFullYear() - Number(profile.investing_since) : null;
-
-    // Calculer streak réel depuis les activités
-    const { data: acts } = await supabase
-      .from("activities")
-      .select("created_at")
-      .eq("user_id", session.user.id)
-      .in("type", ["new_position", "renforcement", "rebalancement"])
-      .order("created_at", { ascending: false });
-
-    let streakMois = 0;
-    if (acts && acts.length > 0) {
-      const moisInvestis = new Set(acts.map(a => {
-        const d = new Date(a.created_at);
-        return `${d.getFullYear()}-${d.getMonth()}`;
-      }));
-      const now = new Date();
-      let current = new Date(now.getFullYear(), now.getMonth(), 1);
-      while (true) {
-        const key = `${current.getFullYear()}-${current.getMonth()}`;
-        if (moisInvestis.has(key)) { streakMois++; current.setMonth(current.getMonth() - 1); }
-        else break;
-      }
-    }
-
-    setData({ perf, types, positions, clubs: clubCount || 0, years, brokers, totalPct, dcaMonths: streakMois });
-
-    // Synchroniser les badges débloqués en base
-    const vals = {
-      milestones: years,
-      builder: positions,
-      explorer: types,
-      climber: perf,
-      diversification: positions,
-      community: clubCount || 0,
-      dca: streakMois,
-    };
-    const CATS_SYNC = [
-      { id: "milestones", levels: [{ target: 1, medal: "🥉" }, { target: 5, medal: "🥈" }, { target: 10, medal: "🥇" }, { target: 25, medal: "💎" }] },
-      { id: "builder", levels: [{ target: 1, medal: "🥉" }, { target: 10, medal: "🥈" }, { target: 50, medal: "🥇" }, { target: 100, medal: "💎" }] },
-      { id: "explorer", levels: [{ target: 1, medal: "🥉" }, { target: 3, medal: "🥈" }, { target: 5, medal: "🥇" }, { target: 8, medal: "💎" }] },
-      { id: "climber", levels: [{ target: 10, medal: "🥉" }, { target: 50, medal: "🥈" }, { target: 100, medal: "🥇" }, { target: 1000, medal: "💎" }] },
-      { id: "diversification", levels: [{ target: 3, medal: "🥉" }, { target: 5, medal: "🥈" }, { target: 8, medal: "🥇" }, { target: 10, medal: "💎" }] },
-      { id: "community", levels: [{ target: 1, medal: "🥉" }, { target: 3, medal: "🥈" }, { target: 5, medal: "🥇" }, { target: 10, medal: "💎" }] },
-      { id: "dca", levels: [{ target: 3, medal: "🥉" }, { target: 12, medal: "🥈" }, { target: 36, medal: "🥇" }, { target: 120, medal: "💎" }] },
-    ];
-
-    const toSync = [];
-    for (const cat of CATS_SYNC) {
-      const val = vals[cat.id];
-      if (val === null || val === undefined) continue;
-      for (const level of cat.levels) {
-        if (val >= level.target) {
-          const badgeId = `${cat.id}_${level.medal}`;
-          if (!unlockedIds.includes(badgeId)) toSync.push({ user_id: session.user.id, badge_id: badgeId });
-        }
-      }
-    }
-    if (toSync.length > 0) {
-      await supabase.from("user_badges").upsert(toSync, { onConflict: "user_id,badge_id" });
-      toSync.forEach(b => unlockedIds.push(b.badge_id));
-      // Notifier pour chaque nouveau badge
-      const notifBadges = toSync.map(b => ({
-        user_id: session.user.id,
-        type: "badge_unlocked",
-        data: { badge_id: b.badge_id, badge_name: b.badge_id.split("_")[0], badge_medal: b.badge_id.split("_")[1] }
-      }));
-      if (notifBadges.length > 0) await supabase.from("notifications").insert(notifBadges);
-    }
-    setUnlockedBadgeIds([...unlockedIds]);
-  }
-
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    let ignore = false;
+    loadBadgeData(userId, dateNaissance, investingSince).then(({ stats, unlockedIds }) => {
+      if (ignore) return;
+      setData(stats);
+      setUnlockedBadgeIds(unlockedIds);
+    });
+    return () => { ignore = true; };
+  }, [userId, dateNaissance, investingSince]);
 
   function toggle(id) { setFlipped(p => ({ ...p, [id]: !p[id] })); }
 

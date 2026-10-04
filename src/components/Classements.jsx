@@ -19,46 +19,47 @@ function Avatar({ name, size = 36 }) {
 
 const card = (T) => ({ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 });
 
+// Stats de classement (vue member_stats, une seule requête) pour mes amis et moi,
+// ou pour tous les membres selon le périmètre
+async function fetchRanking(userId, scope) {
+  let query = supabase.from("member_stats").select("id, full_name, username, city, strategy, investing_since, streak_mois, perf, score_diversif, nb_badges, contribution");
+  if (scope === "amis") {
+    const { data } = await supabase.from("friendships").select("requester_id, receiver_id").eq("status", "accepted").or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
+    const ids = [userId];
+    if (data) data.forEach(f => { if (f.requester_id !== userId) ids.push(f.requester_id); if (f.receiver_id !== userId) ids.push(f.receiver_id); });
+    query = query.in("id", ids);
+  }
+  const { data: stats } = await query.limit(50);
+  return (stats || []).map(s => ({
+    ...s,
+    perf: s.perf === null ? null : Number(s.perf),
+    scoreDiversif: Number(s.score_diversif),
+    streak: Number(s.streak_mois),
+    nbBadges: Number(s.nb_badges),
+    contribution: Number(s.contribution),
+    isMe: s.id === userId,
+  }));
+}
+
 export default function Classements({ session , T: TProp }) {
   const T = TProp || TLive;
   const [filter, setFilter] = useState("performance");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scope, setScope] = useState("amis");
-  const [friendIds, setFriendIds] = useState(null);
+  const userId = session.user.id;
 
-  async function loadFriends() {
-    const { data } = await supabase.from("friendships").select("requester_id, receiver_id").eq("status", "accepted").or(`requester_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`);
-    const ids = [session.user.id];
-    if (data) data.forEach(f => { if (f.requester_id !== session.user.id) ids.push(f.requester_id); if (f.receiver_id !== session.user.id) ids.push(f.receiver_id); });
-    setFriendIds(ids);
-  }
+  useEffect(() => {
+    let ignore = false;
+    fetchRanking(userId, scope).then(list => {
+      if (ignore) return;
+      setUsers(list);
+      setLoading(false);
+    });
+    return () => { ignore = true; };
+  }, [userId, scope]);
 
-  async function loadRanking() {
-    // Stats calculées côté base par la vue member_stats : une seule requête
-    let query = supabase.from("member_stats").select("id, full_name, username, city, strategy, investing_since, streak_mois, perf, score_diversif, nb_badges, contribution");
-    if (scope === "amis") query = query.in("id", friendIds);
-    const { data: stats } = await query.limit(50);
-    if (!stats) { setLoading(false); return; }
-
-    const enriched = stats.map(s => ({
-      ...s,
-      perf: s.perf === null ? null : Number(s.perf),
-      scoreDiversif: Number(s.score_diversif),
-      streak: Number(s.streak_mois),
-      nbBadges: Number(s.nb_badges),
-      contribution: Number(s.contribution),
-      isMe: s.id === session.user.id,
-    }));
-
-    setUsers(enriched);
-    setLoading(false);
-  }
-
-  useEffect(() => { loadFriends(); }, []);
   // Le tri dépend seulement de `filter` : pas besoin de recharger quand il change
-  useEffect(() => { if (friendIds) loadRanking(); }, [scope, friendIds]);
-
   const sorted = [...users].sort((a, b) => {
     if (filter === "performance") return (b.perf ?? -Infinity) - (a.perf ?? -Infinity);
     if (filter === "regularite") return b.streak - a.streak;
