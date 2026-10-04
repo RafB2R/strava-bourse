@@ -201,7 +201,7 @@ export default function App() {
         <>
           {tab === "feed" && <Feed session={session} T={T} onViewProfile={setPublicUserId} />}
           {tab === "explore" && <Explore session={session} T={T} onViewProfile={setPublicUserId} />}
-          {tab === "portfolio" && <Portfolio session={session} profile={profile} T={T} />}
+          {tab === "portfolio" && <Portfolio session={session} T={T} />}
           {tab === "profil" && <Profil profile={profile} session={session} T={T} onViewProfile={setPublicUserId} />}
         </>
       )}
