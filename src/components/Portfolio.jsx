@@ -1,6 +1,7 @@
 import { useState, useEffect, useEffectEvent, useRef } from "react";
 import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
+import { syncBadges } from "../badges";
 
 const VEHICULES = ["ETF", "Action directe", "Fonds actif", "Obligation directe", "SCPI", "Crypto", "Autre"];
 const EXPOSITIONS = ["Actions", "Obligations", "Immobilier", "Multi-actifs", "Monétaire", "Crypto", "Matières premières"];
@@ -152,6 +153,7 @@ export default function Portfolio({ session, T: TProp }) {
     if (form.broker.trim() && !knownBrokers.includes(form.broker.trim())) await createActivity(session.user.id, "new_broker", { broker: form.broker.trim() });
     setForm({ label: "", isin: "", vehicule: "ETF", exposition: "Actions", percentage: "", prix_achat: "", prix_actuel: "", nombre_parts: "", broker: "" });
     setShowForm(false); loadEntries(); setSaving(false);
+    syncBadges();
   }
 
   async function deleteEntry(id) {

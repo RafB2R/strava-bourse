@@ -2,84 +2,10 @@ import { useState, useEffect } from "react";
 import { T as TLive } from "../theme";
 import { supabase } from "../supabase";
 import Badges from "./Badges";
+import { syncBadges } from "../badges";
 import KYC from "./KYC";
 
 const STRATEGIES = ["ETF passif", "Stock picking", "Dividendes", "Value investing", "DCA", "Mixte"];
-
-const BADGE_CATEGORIES = [
-  {
-    id: "dca",
-    icon: "💰",
-    name: "DCA — Régularité",
-    levels: [
-      { level: "bronze", medal: "🥉", name: "Premiers pas", desc: "3 mois de DCA consécutifs", target: 3, unit: "mois" },
-      { level: "argent", medal: "🥈", name: "Investisseur régulier", desc: "1 an de DCA consécutif", target: 12, unit: "mois" },
-      { level: "or", medal: "🥇", name: "Discipline exemplaire", desc: "3 ans de DCA consécutif", target: 36, unit: "mois" },
-      { level: "diamant", medal: "💎", name: "Légende du DCA", desc: "10 ans de DCA consécutif", target: 120, unit: "mois" },
-    ],
-    current: 28,
-  },
-  {
-    id: "performance",
-    icon: "📈",
-    name: "Performance",
-    levels: [
-      { level: "bronze", medal: "🥉", name: "Premier pas", desc: "Premier investissement réalisé", target: 1, unit: "" },
-      { level: "argent", medal: "🥈", name: "En croissance", desc: "+10% de performance totale", target: 10, unit: "%" },
-      { level: "or", medal: "🥇", name: "Solide rendement", desc: "+50% de performance totale", target: 50, unit: "%" },
-      { level: "diamant", medal: "💎", name: "Double mise", desc: "+100% de performance totale", target: 100, unit: "%" },
-    ],
-    current: null, // sera calculé dynamiquement
-  },
-  {
-    id: "diversification",
-    icon: "🌍",
-    name: "Diversification",
-    levels: [
-      { level: "bronze", medal: "🥉", name: "Premiers actifs", desc: "3 types d'actifs différents", target: 3, unit: "types" },
-      { level: "argent", medal: "🥈", name: "Portefeuille varié", desc: "5 types d'actifs différents", target: 5, unit: "types" },
-      { level: "or", medal: "🥇", name: "Bien diversifié", desc: "8 secteurs ou plus", target: 8, unit: "secteurs" },
-      { level: "diamant", medal: "💎", name: "Diversification parfaite", desc: "10 types d'actifs + multi-broker", target: 10, unit: "types" },
-    ],
-    current: null,
-  },
-  {
-    id: "discipline",
-    icon: "🧊",
-    name: "Discipline — Ne pas vendre",
-    levels: [
-      { level: "bronze", medal: "🥉", name: "Tiens bon", desc: "6 mois sans vendre", target: 6, unit: "mois" },
-      { level: "argent", medal: "🥈", name: "Investisseur patient", desc: "1 an sans vendre", target: 12, unit: "mois" },
-      { level: "or", medal: "🥇", name: "Mains de diamant", desc: "3 ans sans vendre", target: 36, unit: "mois" },
-      { level: "diamant", medal: "💎", name: "Légende", desc: "5 ans sans vendre", target: 60, unit: "mois" },
-    ],
-    current: 8,
-  },
-  {
-    id: "portefeuille",
-    icon: "💼",
-    name: "Portefeuille",
-    levels: [
-      { level: "bronze", medal: "🥉", name: "Premier placement", desc: "1ère position ajoutée", target: 1, unit: "position" },
-      { level: "argent", medal: "🥈", name: "Portefeuille construit", desc: "5 positions différentes", target: 5, unit: "positions" },
-      { level: "or", medal: "🥇", name: "Pleinement investi", desc: "Portefeuille alloué à 100%", target: 100, unit: "%" },
-      { level: "diamant", medal: "💎", name: "Multi-broker", desc: "3 brokers ou plus", target: 3, unit: "brokers" },
-    ],
-    current: null,
-  },
-  {
-    id: "communaute",
-    icon: "👥",
-    name: "Communauté",
-    levels: [
-      { level: "bronze", medal: "🥉", name: "Première contribution", desc: "Premier message posté dans un club", target: 1, unit: "message" },
-      { level: "argent", medal: "🥈", name: "Membre actif", desc: "Membre de 3 clubs différents", target: 3, unit: "clubs" },
-      { level: "or", medal: "🥇", name: "Fondateur", desc: "Créateur d'un club", target: 1, unit: "club créé" },
-      { level: "diamant", medal: "💎", name: "Leader", desc: "Fondateur d'un club avec 100 membres", target: 100, unit: "membres" },
-    ],
-    current: null,
-  },
-];
 
 const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB", "rgba(240,153,123,0.12)|#F0997B", "rgba(175,169,236,0.12)|#AFA9EC", "rgba(123,184,240,0.12)|#7BB8F0", "rgba(240,203,123,0.12)|#F0CB7B"];
 function Avatar({ name, size = 36 }) {
@@ -103,48 +29,6 @@ async function fetchOwnStats(userId) {
   return null;
 }
 
-// Recalcule la série de mois investis et la met à jour en base si elle a changé
-async function syncStreak(userId, savedStreak) {
-  // Récupère toutes les activités d'investissement
-  const { data: acts } = await supabase
-    .from("activities")
-    .select("created_at")
-    .eq("user_id", userId)
-    .in("type", ["new_position", "renforcement", "rebalancement"])
-    .order("created_at", { ascending: false });
-
-  if (!acts || acts.length === 0) return;
-
-  // Grouper par mois
-  const moisInvestis = new Set(acts.map(a => {
-    const d = new Date(a.created_at);
-    return `${d.getFullYear()}-${d.getMonth()}`;
-  }));
-
-  // Calculer le streak depuis maintenant en remontant mois par mois
-  let streak = 0;
-  const now = new Date();
-  let current = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  while (true) {
-    const key = `${current.getFullYear()}-${current.getMonth()}`;
-    if (moisInvestis.has(key)) {
-      streak++;
-      current.setMonth(current.getMonth() - 1);
-    } else {
-      break;
-    }
-  }
-
-  // Mettre à jour en base si changé
-  if (streak !== savedStreak) {
-    await supabase.from("profiles").update({
-      streak_mois: streak,
-      streak_derniere_date: now.toISOString().split("T")[0],
-    }).eq("id", userId);
-  }
-}
-
 async function fetchFriendships(userId) {
   const { data } = await supabase.from("friendships").select(`id, status, requester_id, receiver_id, requester:profiles!friendships_requester_id_fkey(id, full_name, username, city, strategy), receiver:profiles!friendships_receiver_id_fkey(id, full_name, username, city, strategy)`).or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
   if (!data) return null;
@@ -153,11 +37,6 @@ async function fetchFriendships(userId) {
     pending: data.filter(f => f.status === "pending" && f.requester_id === userId).map(f => ({ ...f, friend: f.receiver })),
     received: data.filter(f => f.status === "pending" && f.receiver_id === userId).map(f => ({ ...f, friend: f.requester })),
   };
-}
-
-async function fetchClubCount(userId) {
-  const { count } = await supabase.from("club_members").select("*", { count: "exact", head: true }).eq("user_id", userId);
-  return count || 0;
 }
 
 // Performance pondérée de chaque ami (vue member_stats)
@@ -234,7 +113,6 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
 
   const [pending, setPending] = useState([]);
   const [received, setReceived] = useState([]);
-  const [myClubs, setMyClubs] = useState(0);
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -248,17 +126,12 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
   }
 
   const userId = session.user.id;
-  const savedStreak = profile?.streak_mois;
   const [friendsKey, setFriendsKey] = useState(0);
   const reloadFriendships = () => setFriendsKey(k => k + 1);
 
   useEffect(() => {
     let ignore = false;
-    Promise.all([fetchOwnStats(userId), fetchClubCount(userId)]).then(([ownStats, clubCount]) => {
-      if (ignore) return;
-      if (ownStats) setStats(ownStats);
-      setMyClubs(clubCount);
-    });
+    fetchOwnStats(userId).then(ownStats => { if (!ignore && ownStats) setStats(ownStats); });
     return () => { ignore = true; };
   }, [userId]);
 
@@ -273,7 +146,13 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
     return () => { ignore = true; };
   }, [userId, friendsKey]);
 
-  useEffect(() => { syncStreak(userId, savedStreak); }, [userId, savedStreak]);
+  // Badges : calcul et attribution côté serveur, série de mois comprise
+  const [badgeState, setBadgeState] = useState(null);
+  useEffect(() => {
+    let ignore = false;
+    syncBadges().then(result => { if (!ignore && result) setBadgeState(result); });
+    return () => { ignore = true; };
+  }, [userId]);
 
   async function searchUsers(q) {
     if (q.length < 2) { setSearchResults([]); return; }
@@ -307,24 +186,11 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
     setEditing(false); setSaving(false);
   }
 
-  // Calcul des valeurs actuelles pour chaque catégorie
-  const categoryValues = {
-    dca: 28, // statique pour l'instant
-    performance: stats.perfPonderee,
-    diversification: stats.types,
-    discipline: 8, // statique pour l'instant
-    portefeuille: stats.positions === 0 ? 0 : stats.positions >= 5 ? (stats.totalPct === 100 ? (stats.brokers >= 3 ? stats.brokers : 100) : stats.positions) : stats.positions,
-    communaute: myClubs,
-  };
-
   const initials = profile.full_name ? profile.full_name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
   const perf = stats.perfPonderee;
   const alreadyIds = [...friends, ...pending, ...received].map(f => f.friend?.id).filter(Boolean);
 
-  const unlockedCount = BADGE_CATEGORIES.reduce((sum, cat) => {
-    const val = categoryValues[cat.id];
-    return sum + cat.levels.filter(l => val !== null && val >= l.target).length;
-  }, 0);
+  const unlockedCount = badgeState ? badgeState.badges.length : 0;
 
   return (
     <div>
@@ -410,7 +276,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
       )}
 
       {section === "badges" && (
-        <Badges session={session} T={T} profile={profile} />
+        <Badges badgeState={badgeState} T={T} />
       )}
 
       {section === "reseau" && (

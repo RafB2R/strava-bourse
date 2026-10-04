@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
+import { getBadgeInfo, badgeFromData, MEDAL_COLORS } from "../badges";
 
 const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB","rgba(240,153,123,0.12)|#F0997B","rgba(175,169,236,0.12)|#AFA9EC","rgba(123,184,240,0.12)|#7BB8F0"];
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
 // Colonnes visibles par les autres membres : jamais prix_achat ni nombre_parts
 const PUBLIC_ENTRY_COLUMNS = "id, label, type, exposition, percentage, performance, broker";
-const MEDAL_COLORS = { "🥉": "#CD7F32", "🥈": "#C0C0C0", "🥇": "#FFD700", "💎": "#B9F2FF" };
 
 
 // Palette de couleurs distinctes pour les positions individuelles
@@ -216,7 +216,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       case "dca_3m": return "3 mois d'investissement régulier 🔥";
       case "dca_6m": return "6 mois d'investissement régulier 🔥";
       case "dca_1a": return "1 an d'investissement régulier 🏆";
-      case "badge": return `A débloqué le badge ${d.badge_medal || ""} ${d.badge_name || ""}`;
+      case "badge": { const info = badgeFromData(d); return `A débloqué le badge ${info.medal} ${info.name}`; }
       case "new_broker": return `A ajouté ${d.broker || "un broker"}`;
       default: return "Activité";
     }
@@ -331,11 +331,12 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
           {badges.length === 0 && <div style={{ ...card, textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>Aucun badge débloqué</div>}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
             {badges.map(b => {
-              const [cat, medal] = b.badge_id.split("_");
+              const info = getBadgeInfo(b.badge_id);
               return (
                 <div key={b.badge_id} style={{ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 12, padding: "14px 10px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                  <div style={{ fontSize: 22 }}>{medal || "🏅"}</div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: MEDAL_COLORS[medal] || T.accent, textAlign: "center", lineHeight: 1.3 }}>{cat}</div>
+                  <div style={{ fontSize: 22 }}>{info.medal}</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: MEDAL_COLORS[info.medal] || T.accent, textAlign: "center", lineHeight: 1.3 }}>{info.name}</div>
+                  {info.category && <div style={{ fontSize: 10, color: T.textFaint, textAlign: "center" }}>{info.icon} {info.category}</div>}
                 </div>
               );
             })}

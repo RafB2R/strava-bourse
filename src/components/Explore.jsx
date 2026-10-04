@@ -3,6 +3,7 @@ import ProfilPublic from "./ProfilPublic";
 import Marches from "./Marches";
 import Clubs from "./Clubs";
 import { supabase } from "../supabase";
+import { syncBadges } from "../badges";
 import { T as TLive } from "../theme";
 
 const card = (T) => ({ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 });
@@ -125,6 +126,7 @@ export default function Explore({ session , T: TProp }) {
 
   async function joinClub(clubId) {
     await supabase.from("club_members").insert({ club_id: clubId, user_id: session.user.id });
+    syncBadges();
     setMyClubIds(p => [...p, clubId]);
     setMemberCounts(p => ({ ...p, [clubId]: (p[clubId] || 0) + 1 }));
   }
@@ -138,6 +140,7 @@ export default function Explore({ session , T: TProp }) {
     const { data, error: err } = await supabase.from("clubs").insert({ name: form.name.trim(), description: form.description.trim(), category: form.category, subcategory: form.subcategory, creator_id: session.user.id }).select().single();
     if (err) { setError(err.message); setSaving(false); return; }
     await supabase.from("club_members").insert({ club_id: data.id, user_id: session.user.id });
+    syncBadges();
     setForm({ name: "", description: "", category: "", subcategory: "" });
     setShowForm(false);
     setReloadKey(k => k + 1);

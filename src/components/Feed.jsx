@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabase";
 import { T, T as TLive } from "../theme";
+import { badgeFromData } from "../badges";
 
 const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB","rgba(240,153,123,0.12)|#F0997B","rgba(175,169,236,0.12)|#AFA9EC","rgba(123,184,240,0.12)|#7BB8F0","rgba(240,203,123,0.12)|#F0CB7B"];
 function Avatar({ name, size = 36 }) {
@@ -24,6 +25,7 @@ const BADGE_TYPES = ["badge"];
 function getActivityMeta(activity) {
   const d = activity.data || {};
   const name = activity.author?.full_name || "Quelqu'un";
+  const badge = badgeFromData(d);
   const map = {
     new_position: { tag: "Nouvelle position", tagBg: "rgba(123,184,240,0.1)", tagColor: "#7BB8F0", title: `${name} a ajouté une nouvelle position`, sub: d.label, stat: `${d.exposition || d.vehicule || ""}${d.broker ? ` · ${d.broker}` : ""}${d.percentage ? ` · ${d.percentage}%` : ""}` },
     renforcement: { tag: "Renforcement", tagBg: T.accentBg, tagColor: T.accent, title: `${name} a renforcé une position`, sub: d.label, stat: "" },
@@ -48,7 +50,7 @@ function getActivityMeta(activity) {
     anniversaire_1a: { tag: "Anniversaire 🎂", tagBg: "rgba(240,215,0,0.1)", tagColor: "#FFD700", title: `${name} fête 1 an en tant qu'investisseur`, sub: "", stat: "1 an" },
     anniversaire_3a: { tag: "Anniversaire 🎂", tagBg: "rgba(240,215,0,0.1)", tagColor: "#FFD700", title: `${name} fête 3 ans en tant qu'investisseur`, sub: "", stat: "3 ans" },
     anniversaire_5a: { tag: "Anniversaire 🎂", tagBg: "rgba(240,215,0,0.1)", tagColor: "#FFD700", title: `${name} fête 5 ans en tant qu'investisseur`, sub: "", stat: "5 ans" },
-    badge: { tag: "Badge 🏅", tagBg: "rgba(240,215,0,0.08)", tagColor: "#FFD700", title: `${name} a débloqué un badge`, sub: d.badge_name, stat: d.badge_medal ? `${d.badge_medal} ${d.badge_name}` : "" },
+    badge: { tag: "Badge 🏅", tagBg: "rgba(240,215,0,0.08)", tagColor: "#FFD700", title: `${name} a débloqué un badge`, sub: badge.category, stat: `${badge.medal} ${badge.name}` },
   };
   return map[activity.type] || { tag: "Activité", tagBg: "rgba(128,128,128,0.1)", tagColor: "#888", title: `${name} a eu une activité`, sub: "", stat: "" };
 }

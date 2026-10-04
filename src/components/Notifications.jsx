@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
+import { badgeFromData } from "../badges";
 
 function timeAgo(date) {
   const diff = (Date.now() - new Date(date)) / 1000;
@@ -15,7 +16,7 @@ function getNotifMeta(notif) {
   switch (notif.type) {
     case "friend_request": return { icon: "👥", text: `${d.from_name} t'a envoyé une demande d'ami` };
     case "friend_accepted": return { icon: "🤝", text: `${d.from_name} a accepté ta demande d'ami` };
-    case "badge_unlocked": return { icon: d.badge_medal || "🏅", text: `Tu as débloqué le badge ${d.badge_name}` };
+    case "badge_unlocked": { const info = badgeFromData(d); return { icon: info.medal, text: `Tu as débloqué le badge ${info.name}` }; }
     case "activity_like": return { icon: "👍", text: `${d.from_name} a aimé ton activité` };
     case "activity_comment": return { icon: "💬", text: `${d.from_name} a commenté : « ${d.excerpt} »` };
     case "post_reaction": return { icon: d.reaction || "👍", text: `${d.from_name} a réagi à ton post` };

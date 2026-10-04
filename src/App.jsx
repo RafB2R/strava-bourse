@@ -1,6 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { supabase } from "./supabase";
 import { themes, getThemeKey } from "./theme";
+import { syncBadges } from "./badges";
 import Notifications from "./components/Notifications";
 
 // Écrans chargés à la demande pour alléger le bundle initial
@@ -157,6 +158,8 @@ export default function App() {
   }, []);
 
   async function loadProfile(userId) {
+    // Badges du temps qui passe (ancienneté, série, anniversaire) : attribués dès la connexion
+    syncBadges();
     const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
     setProfile(data);
     setLoading(false);
