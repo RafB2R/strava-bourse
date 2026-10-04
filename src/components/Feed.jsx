@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabase";
 import { T, T as TLive } from "../theme";
 
@@ -60,7 +60,9 @@ const FILTERS = [
   { id: "badges", label: "Badges 🏅" },
 ];
 
-// Amis acceptés (moi inclus) et activités à afficher selon le périmètre
+const COMMENT_COLUMNS = "id, activity_id, user_id, content, created_at, author:profiles!activity_comments_user_id_fkey(full_name)";
+
+// Amis acceptés (moi inclus), activités à afficher selon le périmètre, avec leurs likes et commentaires
 async function fetchFeed(userId, scope) {
   const { data: friendships } = await supabase.from("friendships").select("requester_id, receiver_id").eq("status", "accepted").or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
   const ids = [userId];
@@ -71,7 +73,24 @@ async function fetchFeed(userId, scope) {
   let query = supabase.from("activities").select("*, author:profiles!activities_user_id_fkey(full_name, username)").order("created_at", { ascending: false }).limit(100);
   if (scope === "amis") query = query.in("user_id", ids);
   const { data } = await query;
-  return { ids, activities: data || [] };
+  const activities = data || [];
+
+  // Likes et commentaires des activités affichées
+  const likes = {}, comments = {};
+  const activityIds = activities.map(a => a.id);
+  if (activityIds.length > 0) {
+    const [{ data: likeRows }, { data: commentRows }] = await Promise.all([
+      supabase.from("activity_likes").select("activity_id, user_id").in("activity_id", activityIds),
+      supabase.from("activity_comments").select(COMMENT_COLUMNS).in("activity_id", activityIds).order("created_at"),
+    ]);
+    for (const l of likeRows || []) {
+      const entry = likes[l.activity_id] ||= { count: 0, mine: false };
+      entry.count++;
+      if (l.user_id === userId) entry.mine = true;
+    }
+    for (const c of commentRows || []) (comments[c.activity_id] ||= []).push(c);
+  }
+  return { ids, activities, likes, comments };
 }
 
 export default function Feed({ session, T: TProp, onViewProfile }) {
@@ -104,10 +123,12 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
 
   useEffect(() => {
     let ignore = false;
-    fetchFeed(userId, scope).then(({ ids, activities }) => {
+    fetchFeed(userId, scope).then(({ ids, activities, likes, comments }) => {
       if (ignore) return;
       setFriendIds(ids);
       setActivities(activities);
+      setLikes(likes);
+      setComments(comments);
       setLoading(false);
     });
     return () => { ignore = true; };
@@ -122,13 +143,44 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
     setReloadKey(k => k + 1);
   }
 
-  function toggleLike(id) { setLikes(p => ({ ...p, [id]: !p[id] })); }
+  const likePending = useRef(new Set());
+
+  async function notify(toUserId, type, data) {
+    if (toUserId === userId) return;
+    await supabase.from("notifications").insert({ user_id: toUserId, type, data: { from_name: profile?.full_name, from_id: userId, ...data } });
+  }
+
+  // Mise à jour immédiate à l'écran, annulée si Supabase refuse
+  async function toggleLike(activity) {
+    const id = activity.id;
+    if (likePending.current.has(id)) return;
+    likePending.current.add(id);
+    const current = likes[id] || { count: 0, mine: false };
+    setLikes(p => ({ ...p, [id]: { count: current.count + (current.mine ? -1 : 1), mine: !current.mine } }));
+    const { error } = current.mine
+      ? await supabase.from("activity_likes").delete().eq("activity_id", id).eq("user_id", userId)
+      : await supabase.from("activity_likes").insert({ activity_id: id, user_id: userId });
+    likePending.current.delete(id);
+    if (error) { setLikes(p => ({ ...p, [id]: current })); return; }
+    if (!current.mine) notify(activity.user_id, "activity_like", { activity_id: id });
+  }
+
   function toggleComment(id) { setOpenComment(p => ({ ...p, [id]: !p[id] })); }
-  function addComment(id) {
+
+  async function addComment(activity) {
+    const id = activity.id;
     const text = (commentInputs[id] || "").trim();
     if (!text) return;
-    setComments(p => ({ ...p, [id]: [...(p[id] || []), { text, name: "Moi" }] }));
     setCommentInputs(p => ({ ...p, [id]: "" }));
+    const { data, error } = await supabase.from("activity_comments").insert({ activity_id: id, user_id: userId, content: text }).select(COMMENT_COLUMNS).single();
+    if (error) { setCommentInputs(p => ({ ...p, [id]: text })); return; }
+    setComments(p => ({ ...p, [id]: [...(p[id] || []), data] }));
+    notify(activity.user_id, "activity_comment", { activity_id: id, excerpt: text.slice(0, 80) });
+  }
+
+  async function deleteComment(activityId, commentId) {
+    const { error } = await supabase.from("activity_comments").delete().eq("id", commentId);
+    if (!error) setComments(p => ({ ...p, [activityId]: (p[activityId] || []).filter(c => c.id !== commentId) }));
   }
 
   const visible = activities.filter(a => {
@@ -202,7 +254,8 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
           ? { tag: "Post", tagBg: "rgba(175,169,236,0.1)", tagColor: "#AFA9EC", title: null, sub: null, stat: null }
           : getActivityMeta(activity);
         const isMe = activity.user_id === session.user.id;
-        const myComments = comments[activity.id] || [];
+        const activityComments = comments[activity.id] || [];
+        const like = likes[activity.id] || { count: 0, mine: false };
 
         return (
           <div key={activity.id} style={card}>
@@ -231,35 +284,42 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
             )}
 
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => toggleLike(activity.id)} style={{ ...btnAct, ...(likes[activity.id] ? { borderColor: T.accent, color: T.accent } : {}) }}>
-                👍 {likes[activity.id] ? "Liké" : "Like"}
+              <button onClick={() => toggleLike(activity)} style={{ ...btnAct, ...(like.mine ? { borderColor: T.accent, color: T.accent } : {}) }}>
+                👍 {like.mine ? "Liké" : "Like"}{like.count > 0 ? ` · ${like.count}` : ""}
               </button>
               <button onClick={() => toggleComment(activity.id)} style={btnAct}>
-                💬 {myComments.length > 0 ? myComments.length : "Commenter"}
+                💬 {activityComments.length > 0 ? activityComments.length : "Commenter"}
               </button>
             </div>
 
             {openComment[activity.id] && (
               <div style={{ marginTop: 12, borderTop: `0.5px solid ${T.border}`, paddingTop: 10 }}>
-                {myComments.map((c, i) => (
-                  <div key={i} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                    <Avatar name={c.name} size={26} />
+                {activityComments.map(c => (
+                  <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                    <Avatar name={c.author?.full_name} size={26} />
                     <div style={{ background: T.bgCard, borderRadius: 8, padding: "7px 10px", flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: T.textMuted }}>{c.name}</div>
-                      <div style={{ fontSize: 13, color: T.textMuted, marginTop: 2 }}>{c.text}</div>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, cursor: "pointer" }} onClick={() => onViewProfile && c.user_id !== userId && onViewProfile(c.user_id)}>{c.author?.full_name || "Investisseur"}</div>
+                        <div style={{ fontSize: 11, color: T.textFaint, flex: 1 }}>{timeAgo(c.created_at)}</div>
+                        {(c.user_id === userId || isMe) && (
+                          <button onClick={() => deleteComment(activity.id, c.id)} title="Supprimer" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, padding: 0 }}>✕</button>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 13, color: T.text, marginTop: 2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{c.content}</div>
                     </div>
                   </div>
                 ))}
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <Avatar name="Moi" size={26} />
+                  <Avatar name={profile?.full_name} size={26} />
                   <input
                     value={commentInputs[activity.id] || ""}
                     onChange={e => setCommentInputs(p => ({ ...p, [activity.id]: e.target.value }))}
-                    onKeyDown={e => e.key === "Enter" && addComment(activity.id)}
+                    onKeyDown={e => e.key === "Enter" && addComment(activity)}
                     placeholder="Commenter…"
+                    maxLength={1000}
                     style={{ flex: 1, padding: "7px 10px", fontSize: 13, borderRadius: 8, border: `0.5px solid ${T.border}`, background: T.bgCard, color: T.text, fontFamily: "inherit" }}
                   />
-                  <button onClick={() => addComment(activity.id)} style={{ ...btnAct, padding: "7px 12px" }}>↵</button>
+                  <button onClick={() => addComment(activity)} style={{ ...btnAct, padding: "7px 12px" }}>↵</button>
                 </div>
               </div>
             )}

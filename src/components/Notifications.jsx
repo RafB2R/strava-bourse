@@ -16,6 +16,8 @@ function getNotifMeta(notif) {
     case "friend_request": return { icon: "👥", text: `${d.from_name} t'a envoyé une demande d'ami` };
     case "friend_accepted": return { icon: "🤝", text: `${d.from_name} a accepté ta demande d'ami` };
     case "badge_unlocked": return { icon: d.badge_medal || "🏅", text: `Tu as débloqué le badge ${d.badge_name}` };
+    case "activity_like": return { icon: "👍", text: `${d.from_name} a aimé ton activité` };
+    case "activity_comment": return { icon: "💬", text: `${d.from_name} a commenté : « ${d.excerpt} »` };
     case "post_reaction": return { icon: d.reaction || "👍", text: `${d.from_name} a réagi à ton post` };
     default: return { icon: "🔔", text: "Nouvelle notification" };
   }
