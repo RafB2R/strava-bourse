@@ -3,7 +3,8 @@ import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
 import { syncBadges } from "../badges";
 import { syncMoments } from "../moments";
-import { fetchMyIncome, incomeStats, incomeTypeFor, fmtYield } from "../income";
+import { tradeActivity } from "../trades";
+import { fetchMyIncome, incomeStats, incomeTypeFor, fmtYield, fetchDividendInfo, dividendForecast } from "../income";
 import ShareCard from "./ShareCard";
 
 const VEHICULES = ["ETF", "Action directe", "Fonds actif", "Obligation directe", "SCPI", "Crypto", "Autre"];
@@ -57,6 +58,75 @@ function HistoryPlaceholder({ T }) {
     <div style={{ height: 90, borderRadius: 10, border: `0.5px dashed ${T.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, marginBottom: 10 }}>
       <div style={{ fontSize: 13, color: T.textMuted }}>📈 Historique disponible bientôt</div>
       <div style={{ fontSize: 11, color: T.textFaint }}>La courbe se construira jour après jour</div>
+    </div>
+  );
+}
+
+const DONUT_COLORS = ["#1D9E75", "#7F77DD", "#2BB3A3", "#5B8DEF", "#E0896B", "#B08AE0", "#4FB0D8", "#D9A441", "#8BC34A", "#E57399"];
+
+// Anneau des revenus annuels par titre (même logique que le portefeuille : montants privés)
+function DividendDonut({ payers, total, T }) {
+  const size = 200, stroke = 26, r = (size - stroke) / 2, c = 2 * Math.PI * r;
+  const gap = payers.length > 1 ? 3 : 0;
+  const segments = payers.map((p, i) => {
+    const before = payers.slice(0, i).reduce((s, x) => s + x.share, 0);
+    return { ...p, color: DONUT_COLORS[i % DONUT_COLORS.length], len: Math.max((p.share / 100) * c - gap, 1), offset: (before / 100) * c };
+  });
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Répartition des dividendes annuels par titre" style={{ display: "block", margin: "0 auto" }}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={T.bgSubtle} strokeWidth={stroke} />
+      {segments.map(sg => (
+        <circle key={sg.entry.id} cx={size / 2} cy={size / 2} r={r} fill="none" stroke={sg.color} strokeWidth={stroke}
+          strokeDasharray={`${sg.len} ${c - sg.len}`} strokeDashoffset={-sg.offset} transform={`rotate(-90 ${size / 2} ${size / 2})`}>
+          <title>{`${sg.entry.label} : ${sg.share.toFixed(0)} %`}</title>
+        </circle>
+      ))}
+      <text x="50%" y="47%" textAnchor="middle" fill={T.text} fontSize="22" fontWeight="800">{formatEur(total)}</text>
+      <text x="50%" y="59%" textAnchor="middle" fill={T.textMuted} fontSize="12">par an</text>
+    </svg>
+  );
+}
+
+function DividendForecast({ forecast, hasIsin, T, card }) {
+  const title = <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>💰 Prévision de dividendes</div>;
+  const note = { fontSize: 12, color: T.textFaint, lineHeight: 1.5 };
+  if (!hasIsin) return (
+    <div style={card}>{title}<div style={note}>Ajoute l'ISIN de tes positions pour estimer les dividendes que ton portefeuille te verse chaque année.</div></div>
+  );
+  if (forecast.loading) return <div style={card}>{title}<div style={note}>Calcul des dividendes de tes titres…</div></div>;
+  return (
+    <div style={card}>
+      {title}
+      {forecast.payers.length === 0 ? (
+        <div style={note}>Aucune de tes positions n'a versé de dividende sur les 12 derniers mois (ETF capitalisants, valeurs de croissance…).</div>
+      ) : (
+        <>
+          <DividendDonut payers={forecast.payers} total={forecast.total} T={T} />
+          <div style={{ textAlign: "center", margin: "14px 0 16px" }}>
+            <span style={{ display: "inline-block", padding: "6px 16px", borderRadius: 999, background: T.bgSubtle, fontSize: 13, fontWeight: 600, color: T.text }}>
+              {fmtYield(forecast.yield)} de rendement annuel
+            </span>
+          </div>
+          {forecast.payers.map((p, i) => (
+            <div key={p.entry.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderTop: `0.5px solid ${T.border}` }}>
+              <div style={{ width: 10, height: 10, borderRadius: 3, background: DONUT_COLORS[i % DONUT_COLORS.length], flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.entry.label}</div>
+                <div style={{ fontSize: 11, color: T.textMuted }}>Rendement {fmtYield(p.yield)} · {p.payments.length} versement{p.payments.length > 1 ? "s" : ""} sur 12 mois</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{formatEur2(p.annual)}</div>
+                <div style={{ fontSize: 11, color: T.textMuted }}>{p.share.toFixed(1).replace(".", ",")} %</div>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+      <div style={{ ...note, marginTop: 12 }}>
+        Estimation à partir des dividendes versés par chaque titre sur les 12 derniers mois et de la valeur actuelle de tes positions.
+        {forecast.missingIsin > 0 && ` ${forecast.missingIsin} position${forecast.missingIsin > 1 ? "s" : ""} sans ISIN non comptée${forecast.missingIsin > 1 ? "s" : ""}.`}
+        {forecast.notFound > 0 && ` ${forecast.notFound} ISIN introuvable${forecast.notFound > 1 ? "s" : ""}.`}
+      </div>
     </div>
   );
 }
@@ -126,6 +196,7 @@ export default function Portfolio({ session, T: TProp }) {
   const [sharing, setSharing] = useState(false);
   const [incomes, setIncomes] = useState([]);
   const [incomeForm, setIncomeForm] = useState({});
+  const [divInfo, setDivInfo] = useState(null);
 
   function applyEntries(data) {
     setEntries(data || []);
@@ -158,6 +229,15 @@ export default function Portfolio({ session, T: TProp }) {
     fetchMyIncome().then(list => { if (!ignore) setIncomes(list); });
     return () => { ignore = true; };
   }, []);
+
+  // Dividendes des 12 derniers mois de chaque titre (Yahoo), rechargés quand les ISIN changent
+  const isinKey = [...new Set(entries.map(e => (e.isin || "").trim().toUpperCase()).filter(Boolean))].sort().join(",");
+  useEffect(() => {
+    if (!isinKey) return;
+    let ignore = false;
+    fetchDividendInfo(isinKey.split(",")).then(info => { if (!ignore) setDivInfo(info); });
+    return () => { ignore = true; };
+  }, [isinKey]);
 
   // Dividende ou coupon reçu : enregistré en privé, publié dans le fil sans le montant
   async function addIncome(entry) {
@@ -203,6 +283,10 @@ export default function Portfolio({ session, T: TProp }) {
     setEditSaving(true);
     const perf = calcPerf(Number(editForm.prix_achat), Number(editForm.prix_actuel));
     await supabase.from("portfolio_entries").update({ label: editForm.label.trim(), isin: editForm.isin.trim().toUpperCase() || null, type: editForm.type, exposition: editForm.exposition || null, percentage: Number(editForm.percentage), performance: perf, prix_achat: editForm.prix_achat ? Number(editForm.prix_achat) : null, prix_actuel: editForm.prix_actuel ? Number(editForm.prix_actuel) : null, nombre_parts: editForm.nombre_parts ? Number(editForm.nombre_parts) : null, broker: editForm.broker.trim() || null }).eq("id", editingId);
+    // Poids modifié : publié dans le fil comme un fait (« a allégé X · −20 % de la position »)
+    const before = entries.find(x => x.id === editingId);
+    const trade = before && tradeActivity(editForm.label.trim() || before.label, before.percentage, editForm.percentage);
+    if (trade) { await createActivity(session.user.id, trade.type, trade.data); syncBadges(); syncMoments(); }
     setEditingId(null); setEditForm({}); setEditSaving(false);
     loadEntries();
   }
@@ -227,7 +311,10 @@ export default function Portfolio({ session, T: TProp }) {
   }
 
   async function deleteEntry(id) {
-    await supabase.from("portfolio_entries").delete().eq("id", id);
+    const removed = entries.find(x => x.id === id);
+    const { error: err } = await supabase.from("portfolio_entries").delete().eq("id", id);
+    const trade = !err && removed && tradeActivity(removed.label, removed.percentage, 0);
+    if (trade) await createActivity(session.user.id, trade.type, trade.data);
     loadEntries();
   }
 
@@ -241,6 +328,7 @@ export default function Portfolio({ session, T: TProp }) {
   const gainTotal = valeurTotale > 0 && valeurAchatTotale > 0 ? valeurTotale - valeurAchatTotale : null;
   const hasValeur = valeurTotale > 0;
   const income = incomeStats(entries, incomes);
+  const forecast = dividendForecast(entries, isinKey ? divInfo : {});
   const byExpo = entries.reduce((acc, e) => { const k = e.exposition || e.type || "Autre"; acc[k] = (acc[k] || 0) + Number(e.percentage); return acc; }, {});
   const vehiculeCounts = entries.reduce((acc, e) => { acc[e.type] = (acc[e.type] || 0) + 1; return acc; }, {});
 
@@ -441,7 +529,11 @@ export default function Portfolio({ session, T: TProp }) {
               <div style={{ textAlign: "right" }}>
                 {e.valeur !== null ? <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{formatEur(e.valeur)}</div> : <div style={{ fontSize: 13, color: T.textFaint }}>{e.percentage}%</div>}
                 {e.performance !== null && <div style={{ fontSize: 12, fontWeight: 500, color: e.performance >= 0 ? T.accent : T.red }}>{e.performance >= 0 ? "+" : ""}{Number(e.performance).toFixed(2)}%</div>}
-                {income.byEntry[e.id]?.yield != null && <div style={{ fontSize: 11, color: T.yellow }} title="Rendement sur 12 mois (valeur actuelle)">💰 {fmtYield(income.byEntry[e.id].yield)}</div>}
+                {(() => {
+                  const fy = forecast.rows.find(r => r.entry.id === e.id)?.yield;
+                  const y = fy > 0 ? fy : income.byEntry[e.id]?.yield;
+                  return y > 0 ? <div style={{ fontSize: 11, color: T.yellow }} title="Rendement du dividende sur 12 mois">💰 {fmtYield(y)}</div> : null;
+                })()}
               </div>
               <div style={{ fontSize: 16, color: T.textFaint, transition: "transform 0.2s", transform: openDetail[e.id] ? "rotate(90deg)" : "none" }}>›</div>
             </div>
@@ -467,10 +559,13 @@ export default function Portfolio({ session, T: TProp }) {
       </div>
 
 
+      {/* PRÉVISION DE DIVIDENDES */}
+      {entries.length > 0 && <DividendForecast forecast={forecast} hasIsin={!!isinKey} T={T} card={card} />}
+
       {/* REVENUS */}
       {income.total12 > 0 && (
         <div style={card}>
-          <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>💰 Revenus sur 12 mois</div>
+          <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>🧾 Dividendes reçus (saisis) · 12 mois</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
             {[
               ["Reçus", formatEur2(income.total12), `${income.count12} versement${income.count12 > 1 ? "s" : ""}`],

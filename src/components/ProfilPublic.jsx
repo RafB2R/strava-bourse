@@ -3,6 +3,7 @@ import { supabase, PUBLIC_PROFILE_COLUMNS } from "../supabase";
 import { T as TLive, avatarColors } from "../theme";
 import { getBadgeInfo, badgeFromData } from "../badges";
 import { isMoment, momentSentence } from "../moments";
+import { tradeTexts } from "../trades";
 
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
 // Colonnes visibles par les autres membres : jamais prix_achat ni nombre_parts
@@ -208,6 +209,8 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
 
   function getActivityText(a) {
     const d = a.data || {};
+    const trade = tradeTexts(a.type, d);
+    if (trade) return `${trade.sentence.charAt(0).toUpperCase()}${trade.sentence.slice(1)} · ${trade.stat}`;
     if (isMoment(a.type)) return momentSentence(a.type, d);
     if (a.type === "post") return d.content || "A publié un message";
     switch (a.type) {
@@ -314,7 +317,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
           {activities.map(a => (
             <div key={a.id} style={{ ...card, display: "flex", gap: 12, alignItems: "flex-start" }}>
               <div style={{ width: 36, height: 36, borderRadius: "50%", background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
-                {a.type === "badge" ? "🏅" : a.type.startsWith("anniversaire") ? "🎂" : a.type.includes("dca") ? "🔥" : isMoment(a.type) ? "🌟" : a.type === "new_position" ? "📈" : a.type === "post" ? "💬" : a.type === "dividende" || a.type === "coupon" ? "💰" : "⚡"}
+                {a.type === "badge" ? "🏅" : a.type.startsWith("anniversaire") ? "🎂" : a.type.includes("dca") ? "🔥" : isMoment(a.type) ? "🌟" : a.type === "new_position" ? "📈" : a.type === "post" ? "💬" : a.type === "dividende" || a.type === "coupon" ? "💰" : a.type === "renforcement" ? "⬆️" : a.type === "allegement" || a.type === "vente" ? "⬇️" : "⚡"}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, color: T.text, lineHeight: 1.4 }}>{getActivityText(a)}</div>

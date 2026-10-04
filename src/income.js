@@ -63,3 +63,49 @@ export function incomeStats(entries, incomes, today = new Date()) {
 }
 
 export const fmtYield = v => (v === null || v === undefined ? "—" : `${v.toFixed(v < 10 ? 2 : 1).replace(".", ",")} %`);
+
+// Dividendes versés sur 12 mois par chaque titre, d'après Yahoo (route /api/dividends)
+export async function fetchDividendInfo(isins) {
+  const list = [...new Set(isins.filter(Boolean).map(i => i.trim().toUpperCase()))];
+  if (list.length === 0) return {};
+  try {
+    const res = await fetch(`/api/dividends?isins=${encodeURIComponent(list.join(","))}`);
+    return res.ok ? await res.json() : {};
+  } catch {
+    return {};
+  }
+}
+
+const positionValue = e => (Number(e.nombre_parts) > 0 && e.prix_actuel ? Number(e.nombre_parts) * Number(e.prix_actuel) : 0);
+
+/**
+ * Prévision de dividendes sur un an : rendement de chaque titre (dividendes
+ * des 12 derniers mois ÷ cours) appliqué à la valeur de la position.
+ * info : réponse de /api/dividends, ou null tant qu'elle n'est pas arrivée.
+ */
+export function dividendForecast(entries, info) {
+  const rows = entries.map(e => {
+    const value = positionValue(e);
+    const d = e.isin && info ? info[e.isin.trim().toUpperCase()] : undefined;
+    const status = !e.isin ? "sans_isin" : !info ? "chargement" : !d ? "introuvable" : "ok";
+    const yieldPct = status === "ok" ? d.yield : null;
+    const annual = yieldPct !== null && value > 0 ? (value * yieldPct) / 100 : null;
+    return { entry: e, value, status, yield: yieldPct, annual, payments: d?.payments || [] };
+  });
+  const total = rows.reduce((s, r) => s + (r.annual || 0), 0);
+  const portfolioValue = rows.reduce((s, r) => s + r.value, 0);
+  const payers = rows
+    .filter(r => r.annual > 0)
+    .sort((a, b) => b.annual - a.annual)
+    .map(r => ({ ...r, share: (r.annual / total) * 100 }));
+  return {
+    rows,
+    payers,
+    total,
+    // Rendement de tout le portefeuille : les positions sans donnée comptent pour 0
+    yield: portfolioValue > 0 ? (total / portfolioValue) * 100 : null,
+    missingIsin: rows.filter(r => r.status === "sans_isin").length,
+    notFound: rows.filter(r => r.status === "introuvable").length,
+    loading: rows.some(r => r.status === "chargement"),
+  };
+}
