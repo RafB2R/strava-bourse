@@ -120,17 +120,27 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   const [tab, setTab] = useState("holdings");
   const [isFriend, setIsFriend] = useState(false);
   const [isPending, setIsPending] = useState(false);
-  const [myPerf, setMyPerf] = useState(null);
+  const [compareStats, setCompareStats] = useState(null);
 
-  async function loadMyPerf() {
-    const { data } = await supabase.from("portfolio_entries").select("performance, percentage").eq("user_id", session.user.id);
-    if (data && data.length > 0) {
-      const avecPerf = data.filter(d => d.performance !== null);
-      const totalPct = avecPerf.reduce((s, d) => s + Number(d.percentage), 0);
-      const perf = totalPct > 0 ? avecPerf.reduce((s, d) => s + Number(d.performance) * Number(d.percentage) / totalPct, 0) : null;
-      setMyPerf(perf);
-    }
+  // Stats côte à côte (moi / ce membre) pour le widget de comparaison du desktop
+  async function loadCompareStats() {
+    const { data } = await supabase
+      .from("member_stats")
+      .select("id, perf, score_diversif, streak_mois, nb_badges")
+      .in("id", [session.user.id, userId]);
+    if (!data) return;
+    const toStats = row => row && {
+      perf: row.perf === null ? null : Number(row.perf),
+      diversif: Number(row.score_diversif),
+      streak: Number(row.streak_mois),
+      badges: Number(row.nb_badges),
+    };
+    setCompareStats({
+      mine: toStats(data.find(d => d.id === session.user.id)),
+      theirs: toStats(data.find(d => d.id === userId)),
+    });
   }
+
 
   // Le parent remonte ce composant (key=userId) à chaque changement de profil,
   // donc l'état repart de zéro sans reset manuel.
@@ -157,7 +167,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
     setLoading(false);
   }
 
-  useEffect(() => { loadAll(); loadMyPerf(); }, [userId]);
+  useEffect(() => { loadAll(); loadCompareStats(); }, [userId]);
 
   async function sendRequest() {
     const { data: me } = await supabase.from("profiles").select("full_name").eq("id", session.user.id).single();
@@ -172,10 +182,10 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
 
   // Envoyer les données de comparaison vers App
   useEffect(() => {
-    if (profile && onCompareData) {
-      onCompareData({ profile, perfGlobale, myPerf });
+    if (profile && compareStats && onCompareData) {
+      onCompareData({ profile, ...compareStats });
     }
-  }, [profile, perfGlobale, myPerf]);
+  }, [profile, compareStats]);
 
   // Nettoyer à la fermeture
   useEffect(() => {
