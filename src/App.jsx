@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from "react";
 import { supabase } from "./supabase";
 import { themes, getThemeKey } from "./theme";
 import { syncBadges } from "./badges";
+import { syncMoments } from "./moments";
 import Notifications from "./components/Notifications";
 
 // Écrans chargés à la demande pour alléger le bundle initial
@@ -158,11 +159,19 @@ export default function App() {
   }, []);
 
   async function loadProfile() {
-    // Badges du temps qui passe (ancienneté, série, anniversaire) : attribués dès la connexion
+    // Badges et moments liés au temps (ancienneté, série, anniversaires) : dès la connexion
     syncBadges();
+    syncMoments();
     const { data } = await supabase.rpc("get_my_profile").maybeSingle();
     setProfile(data);
     setLoading(false);
+  }
+
+  // Changer d'onglet ferme aussi le profil public éventuellement ouvert
+  function goToTab(id) {
+    setTab(id);
+    setPublicUserId(null);
+    setCompareData(null);
   }
 
   async function handleLogout() { await supabase.auth.signOut(); }
@@ -221,7 +230,7 @@ export default function App() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
           {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 10, border: "none", background: tab === t.id ? T.accentBg : "transparent", color: tab === t.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === t.id ? 700 : 400, fontSize: 14 }}>
+            <button key={t.id} onClick={() => goToTab(t.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 10, border: "none", background: tab === t.id ? T.accentBg : "transparent", color: tab === t.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === t.id ? 700 : 400, fontSize: 14 }}>
               <span style={{ fontSize: 18 }}>{t.icon}</span>{t.label}
             </button>
           ))}
@@ -288,7 +297,7 @@ export default function App() {
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: T.bgSecondary, borderTop: `0.5px solid ${T.border}` }}>
         <div style={{ maxWidth: 620, margin: "0 auto", display: "flex" }}>
           {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: "12px 4px 14px", fontSize: 10, background: "none", border: "none", color: tab === t.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === t.id ? 600 : 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            <button key={t.id} onClick={() => goToTab(t.id)} style={{ flex: 1, padding: "12px 4px 14px", fontSize: 10, background: "none", border: "none", color: tab === t.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === t.id ? 600 : 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
               <span style={{ fontSize: 20 }}>{t.icon}</span>{t.label}
             </button>
           ))}

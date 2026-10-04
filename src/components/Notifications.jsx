@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
 import { badgeFromData } from "../badges";
+import { momentNotification } from "../moments";
 
 function timeAgo(date) {
   const diff = (Date.now() - new Date(date)) / 1000;
@@ -19,6 +20,7 @@ function getNotifMeta(notif) {
     case "badge_unlocked": { const info = badgeFromData(d); return { icon: info.medal, text: `Tu as débloqué le badge ${info.name}` }; }
     case "activity_like": return { icon: "👍", text: `${d.from_name} a aimé ton activité` };
     case "activity_comment": return { icon: "💬", text: `${d.from_name} a commenté : « ${d.excerpt} »` };
+    case "moment": return { icon: d.moment_id?.startsWith("anniversaire") ? "🎂" : "🌟", text: momentNotification(d.moment_id) };
     case "post_reaction": return { icon: d.reaction || "👍", text: `${d.from_name} a réagi à ton post` };
     default: return { icon: "🔔", text: "Nouvelle notification" };
   }

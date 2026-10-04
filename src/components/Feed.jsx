@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabase";
 import { T, T as TLive, avatarColors } from "../theme";
 import { badgeFromData } from "../badges";
+import { MOMENTS, MOMENT_TYPES, isMoment, momentSentence } from "../moments";
 
 function Avatar({ name, size = 36 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
@@ -18,13 +19,16 @@ function timeAgo(date) {
 }
 
 const ACTIVITY_TYPES = ["new_position","renforcement","vente","allegement","dividende","coupon","versement","retrait","rebalancement","suppression_position","new_broker"];
-const MOMENT_TYPES = ["portfolio_complete","premier_etf","premiere_action","premier_dividende","dca_1m","dca_3m","dca_6m","dca_1a","10_positions","nouveau_plus_haut","anniversaire_1a","anniversaire_3a","anniversaire_5a"];
 const BADGE_TYPES = ["badge"];
 
 function getActivityMeta(activity) {
   const d = activity.data || {};
   const name = activity.author?.full_name || "Quelqu'un";
   const badge = badgeFromData(d);
+  if (isMoment(activity.type)) {
+    const m = MOMENTS[activity.type];
+    return { tag: m.tag, tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: momentSentence(activity.type, d, name), sub: m.sub?.(d) || "", stat: m.stat?.(d) || "" };
+  }
   const map = {
     new_position: { tag: "Nouvelle position", tagBg: "rgba(123,184,240,0.1)", tagColor: T.blue, title: `${name} a ajouté une nouvelle position`, sub: d.label, stat: `${d.exposition || d.vehicule || ""}${d.broker ? ` · ${d.broker}` : ""}${d.percentage ? ` · ${d.percentage}%` : ""}` },
     renforcement: { tag: "Renforcement", tagBg: T.accentBg, tagColor: T.accent, title: `${name} a renforcé une position`, sub: d.label, stat: "" },
@@ -37,18 +41,6 @@ function getActivityMeta(activity) {
     rebalancement: { tag: "Rééquilibrage", tagBg: "rgba(240,203,123,0.1)", tagColor: T.yellow, title: `${name} a rééquilibré son portefeuille`, sub: "", stat: "" },
     suppression_position: { tag: "Position supprimée", tagBg: "rgba(128,128,128,0.1)", tagColor: "#888", title: `${name} a supprimé une position`, sub: d.label, stat: "" },
     new_broker: { tag: "Nouveau broker", tagBg: "rgba(175,169,236,0.1)", tagColor: T.purple, title: `${name} a ajouté un broker`, sub: d.broker, stat: "" },
-    portfolio_complete: { tag: "Moment 🌟", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} a complété son portefeuille à 100%`, sub: "", stat: "100% alloué" },
-    premier_etf: { tag: "Moment 🌟", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} a acheté son premier ETF`, sub: d.label, stat: "" },
-    premier_dividende: { tag: "Moment 🌟", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} a reçu son premier dividende`, sub: "", stat: "" },
-    dca_1m: { tag: "Moment 🌟", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} atteint 1 mois d'investissement régulier`, sub: "", stat: "1 mois" },
-    dca_3m: { tag: "Moment 🌟", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} atteint 3 mois d'investissement régulier`, sub: "", stat: "3 mois" },
-    dca_6m: { tag: "Moment 🌟", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} atteint 6 mois d'investissement régulier`, sub: "", stat: "6 mois" },
-    dca_1a: { tag: "Moment 🌟", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} atteint 1 an d'investissement régulier`, sub: "", stat: "12 mois" },
-    "10_positions": { tag: "Moment 🌟", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} détient maintenant 10 positions`, sub: "", stat: "10 positions" },
-    nouveau_plus_haut: { tag: "Moment 🌟", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} atteint un nouveau plus haut`, sub: "", stat: "" },
-    anniversaire_1a: { tag: "Anniversaire 🎂", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} fête 1 an en tant qu'investisseur`, sub: "", stat: "1 an" },
-    anniversaire_3a: { tag: "Anniversaire 🎂", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} fête 3 ans en tant qu'investisseur`, sub: "", stat: "3 ans" },
-    anniversaire_5a: { tag: "Anniversaire 🎂", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} fête 5 ans en tant qu'investisseur`, sub: "", stat: "5 ans" },
     badge: { tag: "Badge 🏅", tagBg: "rgba(240,215,0,0.08)", tagColor: T.gold, title: `${name} a débloqué un badge`, sub: badge.category, stat: `${badge.medal} ${badge.name}` },
   };
   return map[activity.type] || { tag: "Activité", tagBg: "rgba(128,128,128,0.1)", tagColor: "#888", title: `${name} a eu une activité`, sub: "", stat: "" };
