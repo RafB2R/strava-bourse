@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
-import { T as TLive } from "../theme";
+import { T as TLive, avatarColors } from "../theme";
 
 const FILTERS = [
   { id: "performance", label: "📈 Performance" },
@@ -10,14 +10,13 @@ const FILTERS = [
   { id: "badges", label: "🏅 Badges" },
 ];
 
-const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB","rgba(240,153,123,0.12)|#F0997B","rgba(175,169,236,0.12)|#AFA9EC","rgba(123,184,240,0.12)|#7BB8F0","rgba(240,203,123,0.12)|#F0CB7B"];
 function Avatar({ name, size = 36 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
-  const [bg, color] = PALETTE[name?.charCodeAt(0) % PALETTE.length || 0].split("|");
+  const [bg, color] = avatarColors(name);
   return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size*0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
 }
 
-const card = (T) => ({ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 });
+const card = (T) => ({ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 });
 
 // Stats de classement (vue member_stats, une seule requête) pour mes amis et moi,
 // ou pour tous les membres selon le périmètre
@@ -73,10 +72,10 @@ export default function Classements({ session , T: TProp }) {
 
   function getValue(u) {
     if (filter === "performance") return { val: u.perf !== null ? `${u.perf >= 0 ? "+" : ""}${u.perf.toFixed(1)}%` : "—", color: u.perf === null ? T.textFaint : u.perf >= 0 ? T.accent : T.red };
-    if (filter === "regularite") return { val: u.streak > 0 ? `🔥 ${u.streak} mois` : "—", color: "#F0CB7B" };
-    if (filter === "diversification") return { val: `${u.scoreDiversif}/100`, color: u.scoreDiversif >= 70 ? T.accent : u.scoreDiversif >= 40 ? "#F0CB7B" : T.red };
-    if (filter === "contribution") return { val: u.contribution > 0 ? `💬 ${u.contribution}` : "—", color: "#AFA9EC" };
-    if (filter === "badges") return { val: `🏅 ${u.nbBadges}`, color: "#FFD700" };
+    if (filter === "regularite") return { val: u.streak > 0 ? `🔥 ${u.streak} mois` : "—", color: T.yellow };
+    if (filter === "diversification") return { val: `${u.scoreDiversif}/100`, color: u.scoreDiversif >= 70 ? T.accent : u.scoreDiversif >= 40 ? T.yellow : T.red };
+    if (filter === "contribution") return { val: u.contribution > 0 ? `💬 ${u.contribution}` : "—", color: T.purple };
+    if (filter === "badges") return { val: `🏅 ${u.nbBadges}`, color: T.gold };
     return { val: "—", color: T.textFaint };
   }
 

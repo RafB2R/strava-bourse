@@ -79,7 +79,7 @@ export default function KYC({ session, profile, onComplete, onSkip , T: TProp })
       <div style={{ background: T.bgSecondary, border: `0.5px solid ${T.border}`, borderRadius: 20, padding: "2rem", maxWidth: 520, width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
 
         {/* Progress bar */}
-        <div style={{ height: 3, background: T.bgCard, borderRadius: 2, marginBottom: 24, overflow: "hidden" }}>
+        <div style={{ height: 3, background: T.bgSubtle, borderRadius: 2, marginBottom: 24, overflow: "hidden" }}>
           <div style={{ width: `${progress}%`, height: "100%", background: T.accent, borderRadius: 2, transition: "width 0.3s" }} />
         </div>
 

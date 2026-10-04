@@ -60,7 +60,7 @@ function QuoteCard({ symbol, name, flag, unit, T }) {
   };
 
   return (
-    <div style={{ background: T.bgCard, borderRadius: 12, padding: "12px 14px" }}>
+    <div style={{ background: T.bgSubtle, borderRadius: 12, padding: "12px 14px" }}>
       <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>
         {flag && <span style={{ marginRight: 4 }}>{flag}</span>}{name}
       </div>
@@ -95,7 +95,7 @@ async function fetchJsonList(url) {
 
 export default function Marches({ T: TProp }) {
   const T = TProp || TLive;
-  const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
+  const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
   const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" };
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [secteurs, setSecteurs] = useState([]);
@@ -145,7 +145,7 @@ export default function Marches({ T: TProp }) {
         {!loadingSecteurs && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {secteurs.map(s => (
-              <div key={s.name} style={{ background: T.bgCard, borderRadius: 10, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div key={s.name} style={{ background: T.bgSubtle, borderRadius: 10, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontSize: 12, color: T.textMuted }}>{s.name}</span>
                 <span style={{ fontSize: 12, fontWeight: 600, color: s.change === null ? T.textFaint : s.change >= 0 ? T.accent : T.red }}>
                   {s.change === null ? "—" : `${s.change >= 0 ? "+" : ""}${s.change.toFixed(2)}%`}
@@ -161,12 +161,12 @@ export default function Marches({ T: TProp }) {
         <div style={sectionLabel}>🏦 Taux obligataires</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {TAUX.map(t => <QuoteCard key={t.symbol} {...t} unit="%" T={T} />)}
-          <div style={{ background: T.bgCard, borderRadius: 12, padding: "12px 14px" }}>
+          <div style={{ background: T.bgSubtle, borderRadius: 12, padding: "12px 14px" }}>
             <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>🇫🇷 OAT 10 ans</div>
             <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>3.12%</div>
             <div style={{ fontSize: 12, color: T.accent, marginTop: 2 }}>+0.02%</div>
           </div>
-          <div style={{ background: T.bgCard, borderRadius: 12, padding: "12px 14px" }}>
+          <div style={{ background: T.bgSubtle, borderRadius: 12, padding: "12px 14px" }}>
             <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>🇩🇪 Bund 10 ans</div>
             <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>2.41%</div>
             <div style={{ fontSize: 12, color: T.red, marginTop: 2 }}>-0.01%</div>
@@ -203,7 +203,7 @@ export default function Marches({ T: TProp }) {
           const month = d.toLocaleString("fr-FR", { month: "short" });
           return (
             <div key={e.company + i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}` }}>
-              <div style={{ width: 44, height: 44, borderRadius: 10, background: T.bgCard, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontSize: 13, color: T.accent, fontWeight: 700 }}>{day}</div>
                   <div style={{ fontSize: 9, color: T.textMuted }}>{month}</div>

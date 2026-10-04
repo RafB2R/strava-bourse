@@ -72,7 +72,7 @@ export default function Notifications({ session, T: TProp }) {
       >
         <span style={{ fontSize: 16 }}>🔔</span>
         {unread > 0 && (
-          <span style={{ position: "absolute", top: -4, right: -4, background: T.red, color: "#fff", borderRadius: "50%", width: 16, height: 16, fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ position: "absolute", top: -4, right: -4, background: T.red, color: T.bg, borderRadius: "50%", width: 16, height: 16, fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -97,7 +97,7 @@ export default function Notifications({ session, T: TProp }) {
               return (
                 <div key={notif.id} onClick={() => !notif.read && markRead(notif.id)}
                   style={{ display: "flex", gap: 12, padding: "12px 16px", borderBottom: `0.5px solid ${T.border}`, background: notif.read ? "none" : T.accentBg, cursor: notif.read ? "default" : "pointer" }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: T.bgCard, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
                     {meta.icon}
                   </div>
                   <div style={{ flex: 1 }}>

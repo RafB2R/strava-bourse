@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { T as TLive } from "../theme";
+import { T as TLive, avatarColors } from "../theme";
 import { supabase, PUBLIC_PROFILE_COLUMNS } from "../supabase";
 import Badges from "./Badges";
 import { syncBadges } from "../badges";
@@ -7,10 +7,9 @@ import KYC from "./KYC";
 
 const STRATEGIES = ["ETF passif", "Stock picking", "Dividendes", "Value investing", "DCA", "Mixte"];
 
-const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB", "rgba(240,153,123,0.12)|#F0997B", "rgba(175,169,236,0.12)|#AFA9EC", "rgba(123,184,240,0.12)|#7BB8F0", "rgba(240,203,123,0.12)|#F0CB7B"];
 function Avatar({ name, size = 36 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
-  const [bg, color] = PALETTE[name?.charCodeAt(0) % PALETTE.length || 0].split("|");
+  const [bg, color] = avatarColors(name);
   return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
 }
 
@@ -68,7 +67,7 @@ function StatsSection({ profile, session, friends, perf, T, onViewProfile }) {
       {!loading && friends.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem 0" }}>Ajoute des amis pour voir le classement 🙂</div>}
       {!loading && ranking.map((f, i) => (
         <div key={i} onClick={() => !f.me && onViewProfile && onViewProfile(f.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}`, cursor: f.me ? "default" : "pointer" }}>
-          <div style={{ fontSize: 13, color: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : T.textFaint, minWidth: 20, fontWeight: 600 }}>{i + 1}</div>
+          <div style={{ fontSize: 13, color: i === 0 ? T.gold : i === 1 ? T.medals["🥈"] : i === 2 ? T.medals["🥉"] : T.textFaint, minWidth: 20, fontWeight: 600 }}>{i + 1}</div>
           <div style={{ width: 30, height: 30, borderRadius: "50%", background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>
             {f.name?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)}
           </div>
@@ -94,7 +93,7 @@ function StatsSection({ profile, session, friends, perf, T, onViewProfile }) {
 
 export default function Profil({ profile: initialProfile, session, T: TProp, onViewProfile }) {
   const T = TProp || TLive;
-  const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
+  const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
   const inp = { width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.input.border}`, background: T.input.background, color: T.input.color, fontFamily: "inherit", marginBottom: 10, display: "block" };
   const btn = { background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 };
   const btnSm = { background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
@@ -205,7 +204,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
           <button style={btnSm} onClick={startEdit}>✏️ Éditer</button>
         </div>
 
-        {profile.bio && <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.6, marginBottom: 16, padding: "10px 12px", background: T.bgCard, borderRadius: 8 }}>{profile.bio}</div>}
+        {profile.bio && <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.6, marginBottom: 16, padding: "10px 12px", background: T.bgSubtle, borderRadius: 8 }}>{profile.bio}</div>}
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
           {[
@@ -213,7 +212,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
             ["Perf. totale", perf === null ? "—" : `${perf >= 0 ? "+" : ""}${perf.toFixed(2)}%`, perf === null ? T.textFaint : perf >= 0 ? T.accent : T.red],
             ["Depuis", profile.investing_since || "—", T.text],
           ].map(([label, val, color]) => (
-            <div key={label} style={{ background: T.bgCard, borderRadius: 10, padding: 12 }}>
+            <div key={label} style={{ background: T.bgSubtle, borderRadius: 10, padding: 12 }}>
               <div style={{ fontSize: 12, color: T.textFaint, marginBottom: 4 }}>{label}</div>
               <div style={{ fontSize: 20, fontWeight: 700, color }}>{val}</div>
             </div>
@@ -243,7 +242,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
           <div style={{ fontSize: 13, fontWeight: 600, color: T.textMuted, marginBottom: 10 }}>Profil investisseur</div>
           <button
             onClick={() => { setEditing(false); setShowKYC(true); }}
-            style={{ width: "100%", padding: "10px", background: "rgba(159,225,203,0.06)", border: "0.5px solid rgba(159,225,203,0.2)", borderRadius: 10, fontSize: 13, color: T.accent, cursor: "pointer", fontFamily: "inherit", marginBottom: 14, textAlign: "left" }}
+            style={{ width: "100%", padding: "10px", background: T.accentBg, border: `0.5px solid ${T.accentBorder}`, borderRadius: 10, fontSize: 13, color: T.accent, cursor: "pointer", fontFamily: "inherit", marginBottom: 14, textAlign: "left" }}
           >
             📋 Modifier mon profil investisseur →
           </button>

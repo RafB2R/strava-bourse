@@ -4,8 +4,6 @@
 // qui est seule à attribuer les badges.
 import { supabase } from "./supabase";
 
-export const MEDAL_COLORS = { "🥉": "#CD7F32", "🥈": "#C0C0C0", "🥇": "#FFD700", "💎": "#B9F2FF" };
-
 // metric : clé de l'objet metrics renvoyé par sync_my_badges()
 export const BADGE_CATEGORIES = [
   {

@@ -4,16 +4,15 @@ import Marches from "./Marches";
 import Clubs from "./Clubs";
 import { supabase } from "../supabase";
 import { syncBadges } from "../badges";
-import { T as TLive } from "../theme";
+import { T as TLive, avatarColors } from "../theme";
 
-const card = (T) => ({ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 });
+const card = (T) => ({ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 });
 const inp = (T) => ({ width: "100%", padding: "10px 14px", fontSize: 14, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: T.text, fontFamily: "inherit", display: "block" });
 const btnSm = (T) => ({ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" });
 
-const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB","rgba(240,153,123,0.12)|#F0997B","rgba(175,169,236,0.12)|#AFA9EC","rgba(123,184,240,0.12)|#7BB8F0"];
 function Avatar({ name, size = 36 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
-  const [bg, color] = PALETTE[name?.charCodeAt(0) % PALETTE.length || 0].split("|");
+  const [bg, color] = avatarColors(name);
   return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size*0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
 }
 
@@ -180,7 +179,7 @@ export default function Explore({ session , T: TProp }) {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}</div>
                 <div style={{ fontSize: 12, color: T.textMuted }}>@{u.username}{u.city ? ` · ${u.city}` : ""}{u.strategy ? ` · ${u.strategy}` : ""}</div>
-                {u.streak_mois > 0 && <div style={{ fontSize: 11, color: "#F0CB7B", marginTop: 2 }}>🔥 {u.streak_mois} mois</div>}
+                {u.streak_mois > 0 && <div style={{ fontSize: 11, color: T.yellow, marginTop: 2 }}>🔥 {u.streak_mois} mois</div>}
               </div>
               {friendIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.accent }}>✓ Ami</span>
                 : pendingIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.textFaint }}>En attente</span>
@@ -190,7 +189,7 @@ export default function Explore({ session , T: TProp }) {
 
           {!loading && searchTab === "clubs" && clubs.map(club => (
             <div key={club.id} style={{ ...card(T), display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{club.name}</div>
                 <div style={{ fontSize: 12, color: T.textMuted }}>{club.subcategory}</div>
@@ -260,12 +259,12 @@ export default function Explore({ session , T: TProp }) {
               {filteredClubs.map(club => (
                 <div key={club.id} onClick={() => setSelectedClub(club)} style={{ ...card(T), cursor: "pointer" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 4 }}>{club.name}</div>
                       <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
                         <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{club.subcategory}</span>
-                        <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgCard, color: T.textMuted }}>👥 {memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
+                        <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted }}>👥 {memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
                         {myClubIds.includes(club.id) && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>✓ Membre</span>}
                       </div>
                       {club.description && <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5 }}>{club.description}</div>}
@@ -288,13 +287,13 @@ export default function Explore({ session , T: TProp }) {
               {SUPER_INVESTORS.map(inv => (
                 <div key={inv.handle} style={{ ...card(T) }}>
                   <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                    <div style={{ width: 52, height: 52, borderRadius: 14, background: T.bgCard, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>{inv.icon}</div>
+                    <div style={{ width: 52, height: 52, borderRadius: 14, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>{inv.icon}</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 4 }}>{inv.name}</div>
                       <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 6 }}>{inv.desc}</div>
                       <div style={{ fontSize: 13, color: T.accent, fontWeight: 500 }}>{inv.perf}</div>
                     </div>
-                    <span style={{ fontSize: 11, color: T.accent, fontWeight: 600, padding: "3px 10px", borderRadius: 999, border: "0.5px solid rgba(159,225,203,0.3)", background: T.accentBg, flexShrink: 0 }}>Bientôt</span>
+                    <span style={{ fontSize: 11, color: T.accent, fontWeight: 600, padding: "3px 10px", borderRadius: 999, border: `0.5px solid ${T.accentBorder}`, background: T.accentBg, flexShrink: 0 }}>Bientôt</span>
                   </div>
                 </div>
               ))}

@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase, PUBLIC_PROFILE_COLUMNS } from "../supabase";
-import { T as TLive } from "../theme";
-import { getBadgeInfo, badgeFromData, MEDAL_COLORS } from "../badges";
+import { T as TLive, avatarColors } from "../theme";
+import { getBadgeInfo, badgeFromData } from "../badges";
 
-const PALETTE = ["rgba(159,225,203,0.12)|#9FE1CB","rgba(240,153,123,0.12)|#F0997B","rgba(175,169,236,0.12)|#AFA9EC","rgba(123,184,240,0.12)|#7BB8F0"];
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
 // Colonnes visibles par les autres membres : jamais prix_achat ni nombre_parts
 const PUBLIC_ENTRY_COLUMNS = "id, label, type, exposition, percentage, performance, broker";
@@ -95,7 +94,7 @@ function PieChart({ data, T }) {
 
 function Avatar({ name, size = 60 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
-  const [bg, color] = PALETTE[name?.charCodeAt(0) % PALETTE.length || 0].split("|");
+  const [bg, color] = avatarColors(name);
   return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size*0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
 }
 
@@ -150,7 +149,7 @@ async function fetchCompareStats(myId, userId) {
 
 export default function ProfilPublic({ userId, session, onBack, T: TProp, onCompareData }) {
   const T = TProp || TLive;
-  const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
+  const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
   const btnSm = { background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
 
   const [profile, setProfile] = useState(null);
@@ -239,8 +238,8 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {profile.strategy && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{profile.strategy}</span>}
-              {profile.streak_mois > 0 && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: "rgba(240,203,123,0.1)", color: "#F0CB7B" }}>🔥 {profile.streak_mois} mois</span>}
-              {profile.investing_since && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgCard, color: T.textMuted }}>Depuis {profile.investing_since}</span>}
+              {profile.streak_mois > 0 && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: "rgba(240,203,123,0.1)", color: T.yellow }}>🔥 {profile.streak_mois} mois</span>}
+              {profile.investing_since && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted }}>Depuis {profile.investing_since}</span>}
             </div>
           </div>
           {userId !== session.user.id && (
@@ -258,7 +257,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
             ["Performance", perfGlobale !== null ? `${perfGlobale >= 0 ? "+" : ""}${perfGlobale.toFixed(1)}%` : "—", perfGlobale !== null ? (perfGlobale >= 0 ? T.accent : T.red) : T.textFaint],
             ["Badges", badges.length, T.text],
           ].map(([label, val, color]) => (
-            <div key={label} style={{ background: T.bgCard, borderRadius: 10, padding: 10, textAlign: "center" }}>
+            <div key={label} style={{ background: T.bgSubtle, borderRadius: 10, padding: 10, textAlign: "center" }}>
               <div style={{ fontSize: 16, fontWeight: 700, color }}>{val}</div>
               <div style={{ fontSize: 11, color: T.textFaint }}>{label}</div>
             </div>
@@ -335,7 +334,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
               return (
                 <div key={b.badge_id} style={{ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 12, padding: "14px 10px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                   <div style={{ fontSize: 22 }}>{info.medal}</div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: MEDAL_COLORS[info.medal] || T.accent, textAlign: "center", lineHeight: 1.3 }}>{info.name}</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: T.medals[info.medal] || T.accent, textAlign: "center", lineHeight: 1.3 }}>{info.name}</div>
                   {info.category && <div style={{ fontSize: 10, color: T.textFaint, textAlign: "center" }}>{info.icon} {info.category}</div>}
                 </div>
               );
