@@ -94,16 +94,9 @@ function StatsSection({ profile, session, friends, perf, T, onViewProfile }) {
 
   async function loadFriendPerfs() {
     setLoading(true);
-    const perfs = await Promise.all(friends.map(async f => {
-      const { data } = await supabase.from("portfolio_entries").select("performance, percentage").eq("user_id", f.friend.id);
-      let friendPerf = null;
-      if (data && data.length > 0) {
-        const avecPerf = data.filter(d => d.performance !== null);
-        const totalPct = avecPerf.reduce((s, d) => s + Number(d.percentage), 0);
-        if (totalPct > 0) friendPerf = avecPerf.reduce((s, d) => s + Number(d.performance) * Number(d.percentage) / totalPct, 0);
-      }
-      return { id: f.friend.id, name: f.friend.full_name, perf: friendPerf, me: false };
-    }));
+    const { data } = await supabase.from("member_stats").select("id, perf").in("id", friends.map(f => f.friend.id));
+    const perfById = Object.fromEntries((data || []).map(d => [d.id, d.perf === null ? null : Number(d.perf)]));
+    const perfs = friends.map(f => ({ id: f.friend.id, name: f.friend.full_name, perf: perfById[f.friend.id] ?? null, me: false }));
     setFriendPerfs(perfs);
     setLoading(false);
   }

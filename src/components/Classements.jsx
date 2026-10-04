@@ -35,38 +35,20 @@ export default function Classements({ session , T: TProp }) {
   }
 
   async function loadRanking() {
-    let query = supabase.from("profiles").select("id, full_name, username, city, strategy, streak_mois, investing_since");
-    if (scope === "amis" && friendIds.length > 0) query = query.in("id", friendIds);
-    const { data: profiles } = await query.limit(50);
-    if (!profiles) { setLoading(false); return; }
+    // Stats calculées côté base par la vue member_stats : une seule requête
+    let query = supabase.from("member_stats").select("id, full_name, username, city, strategy, investing_since, streak_mois, perf, score_diversif, nb_badges, contribution");
+    if (scope === "amis") query = query.in("id", friendIds);
+    const { data: stats } = await query.limit(50);
+    if (!stats) { setLoading(false); return; }
 
-    const enriched = await Promise.all(profiles.map(async p => {
-      const { data: entries } = await supabase.from("portfolio_entries").select("performance, percentage, exposition, type, broker").eq("user_id", p.id);
-      const { data: badges } = await supabase.from("user_badges").select("badge_id").eq("user_id", p.id);
-      const { count: postCount } = await supabase.from("club_posts").select("*", { count: "exact", head: true }).eq("user_id", p.id);
-      const { count: replyCount } = await supabase.from("club_replies").select("*", { count: "exact", head: true }).eq("user_id", p.id);
-
-      let perf = null;
-      let scoreDiversif = 0;
-      if (entries && entries.length > 0) {
-        const avecPerf = entries.filter(e => e.performance !== null);
-        const totalPct = avecPerf.reduce((s, e) => s + Number(e.percentage), 0);
-        if (totalPct > 0) perf = avecPerf.reduce((s, e) => s + Number(e.performance) * Number(e.percentage) / totalPct, 0);
-        const nbExpo = new Set(entries.map(e => e.exposition || e.type)).size;
-        const nbBrokers = new Set(entries.filter(e => e.broker).map(e => e.broker)).size;
-        const maxPos = Math.max(...entries.map(e => Number(e.percentage)));
-        scoreDiversif = Math.min(nbExpo * 15, 40) + Math.min(nbBrokers * 10, 20) + (maxPos <= 30 ? 25 : maxPos <= 50 ? 15 : 5) + Math.min(entries.length * 3, 15);
-      }
-
-      return {
-        ...p,
-        perf,
-        scoreDiversif,
-        streak: p.streak_mois || 0,
-        nbBadges: (badges || []).length,
-        contribution: (postCount || 0) + (replyCount || 0),
-        isMe: p.id === session.user.id,
-      };
+    const enriched = stats.map(s => ({
+      ...s,
+      perf: s.perf === null ? null : Number(s.perf),
+      scoreDiversif: Number(s.score_diversif),
+      streak: Number(s.streak_mois),
+      nbBadges: Number(s.nb_badges),
+      contribution: Number(s.contribution),
+      isMe: s.id === session.user.id,
     }));
 
     setUsers(enriched);

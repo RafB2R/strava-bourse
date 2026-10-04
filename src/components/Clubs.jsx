@@ -134,31 +134,22 @@ function ClubRanking({ clubId, session }) {
   const [filter, setFilter] = useState("performance");
 
   async function loadRanking() {
-    const { data: memberships } = await supabase
-      .from("club_members")
-      .select("user_id, profiles!club_members_user_id_fkey(full_name, username, streak_mois)")
-      .eq("club_id", clubId);
-
+    const { data: memberships } = await supabase.from("club_members").select("user_id").eq("club_id", clubId);
     if (!memberships) { setLoading(false); return; }
 
-    const enriched = await Promise.all(memberships.map(async m => {
-      const { data: entries } = await supabase.from("portfolio_entries").select("performance, percentage").eq("user_id", m.user_id);
-      const { data: badges } = await supabase.from("user_badges").select("badge_id").eq("user_id", m.user_id);
-      let perf = null;
-      if (entries && entries.length > 0) {
-        const avecPerf = entries.filter(e => e.performance !== null);
-        const totalPct = avecPerf.reduce((s, e) => s + Number(e.percentage), 0);
-        if (totalPct > 0) perf = avecPerf.reduce((s, e) => s + Number(e.performance) * Number(e.percentage) / totalPct, 0);
-      }
-      return {
-        user_id: m.user_id,
-        name: m.profiles?.full_name || "Investisseur",
-        username: m.profiles?.username,
-        streak: m.profiles?.streak_mois || 0,
-        perf,
-        nbBadges: (badges || []).length,
-        isMe: m.user_id === session.user.id,
-      };
+    const { data: stats } = await supabase
+      .from("member_stats")
+      .select("id, full_name, username, streak_mois, perf, nb_badges")
+      .in("id", memberships.map(m => m.user_id));
+
+    const enriched = (stats || []).map(s => ({
+      user_id: s.id,
+      name: s.full_name || "Investisseur",
+      username: s.username,
+      streak: Number(s.streak_mois),
+      perf: s.perf === null ? null : Number(s.perf),
+      nbBadges: Number(s.nb_badges),
+      isMe: s.id === session.user.id,
     }));
 
     setMembers(enriched);
