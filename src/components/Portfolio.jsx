@@ -3,6 +3,7 @@ import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
 import { syncBadges } from "../badges";
 import { syncMoments } from "../moments";
+import { fetchMyIncome, incomeStats, incomeTypeFor, fmtYield } from "../income";
 import ShareCard from "./ShareCard";
 
 const VEHICULES = ["ETF", "Action directe", "Fonds actif", "Obligation directe", "SCPI", "Crypto", "Autre"];
@@ -18,6 +19,7 @@ const EXP_VOLATILITY = { Actions: 0.18, Crypto: 0.65, Immobilier: 0.12, Obligati
 
 
 function calcPerf(a, b) { if (!a || !b || a === 0) return null; return ((b - a) / a) * 100; }
+const formatEur2 = n => Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 function formatEur(n) { return n.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + " €"; }
 
 async function createActivity(userId, type, data) {
@@ -59,6 +61,43 @@ function HistoryPlaceholder({ T }) {
   );
 }
 
+// Dividendes / coupons d'une position : rendement, historique et saisie
+function IncomeSection({ entry, stats, form, T, btnSm, onChange, onAdd, onDelete }) {
+  const kind = incomeTypeFor(entry) === "coupon" ? "Coupons" : "Dividendes";
+  const list = stats?.list || [];
+  const canYield = Number(entry.nombre_parts) > 0 && entry.prix_actuel;
+  const line = { display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted };
+  const inp = { padding: "7px 10px", fontSize: 13, borderRadius: 8, border: `0.5px solid ${T.input.border}`, background: T.input.background, color: T.input.color, fontFamily: "inherit", minWidth: 0 };
+  return (
+    <div style={{ marginTop: 10, paddingTop: 10, borderTop: `0.5px solid ${T.border}` }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: T.text, marginBottom: 6 }}>💰 {kind}</div>
+      {stats?.total12 > 0 && (
+        <>
+          <div style={line}><span>Reçu sur 12 mois</span><span style={{ color: T.text, fontWeight: 500 }}>{formatEur2(stats.total12)}</span></div>
+          <div style={line}><span>Rendement actuel</span><span style={{ color: T.yellow, fontWeight: 600 }}>{fmtYield(stats.yield)}</span></div>
+          <div style={line}><span>Sur prix de revient</span><span style={{ color: T.text, fontWeight: 500 }}>{fmtYield(stats.yoc)}</span></div>
+          {!canYield && <div style={{ fontSize: 11, color: T.textFaint, padding: "2px 0 4px" }}>Ajoute le nombre de parts et les prix pour calculer le rendement.</div>}
+        </>
+      )}
+      {list.slice(0, 5).map(i => (
+        <div key={i.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0", fontSize: 12, color: T.textMuted }}>
+          <span style={{ flex: 1 }}>{new Date(i.received_at).toLocaleDateString("fr-FR")}</span>
+          <span style={{ color: T.text, fontWeight: 500 }}>{formatEur2(i.amount)}</span>
+          <button onClick={() => onDelete(i.id)} title="Supprimer ce versement" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, padding: 0 }}>✕</button>
+        </div>
+      ))}
+      {list.length > 5 && <div style={{ fontSize: 11, color: T.textFaint }}>+ {list.length - 5} versement{list.length - 5 > 1 ? "s" : ""} plus ancien{list.length - 5 > 1 ? "s" : ""}</div>}
+      <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+        <input type="text" inputMode="decimal" placeholder="Montant reçu (€)" value={form.amount || ""} onChange={ev => onChange({ amount: ev.target.value })} style={{ ...inp, flex: "1 1 120px" }} />
+        <input type="date" value={form.date || new Date().toISOString().slice(0, 10)} max={new Date().toISOString().slice(0, 10)} onChange={ev => onChange({ date: ev.target.value })} style={{ ...inp, flex: "0 1 150px" }} />
+        <button onClick={onAdd} style={{ ...btnSm, borderColor: T.accent, color: T.accent }}>+ {kind === "Coupons" ? "Coupon" : "Dividende"}</button>
+      </div>
+      {form.error && <div style={{ fontSize: 12, color: T.red, marginTop: 6 }}>{form.error}</div>}
+      <div style={{ fontSize: 11, color: T.textFaint, marginTop: 6 }}>🔒 Le montant reste privé : le fil indique seulement « a reçu un {kind === "Coupons" ? "coupon" : "dividende"} ».</div>
+    </div>
+  );
+}
+
 export default function Portfolio({ session, T: TProp }) {
   const T = TProp || TLive;
   const inp = { width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.input.border}`, background: T.input.background, color: T.input.color, fontFamily: "inherit", marginBottom: 10, display: "block" };
@@ -85,6 +124,8 @@ export default function Portfolio({ session, T: TProp }) {
   const [editPriceHint, setEditPriceHint] = useState(null);
   const hasRefreshed = useRef(false);
   const [sharing, setSharing] = useState(false);
+  const [incomes, setIncomes] = useState([]);
+  const [incomeForm, setIncomeForm] = useState({});
 
   function applyEntries(data) {
     setEntries(data || []);
@@ -111,6 +152,31 @@ export default function Portfolio({ session, T: TProp }) {
     fetchMyEntries().then(data => { if (!ignore) onInitialEntries(data); });
     return () => { ignore = true; };
   }, []);
+
+  useEffect(() => {
+    let ignore = false;
+    fetchMyIncome().then(list => { if (!ignore) setIncomes(list); });
+    return () => { ignore = true; };
+  }, []);
+
+  // Dividende ou coupon reçu : enregistré en privé, publié dans le fil sans le montant
+  async function addIncome(entry) {
+    const f = incomeForm[entry.id] || {};
+    const amount = Number(String(f.amount || "").replace(",", "."));
+    if (!amount || amount <= 0) return setIncomeForm(p => ({ ...p, [entry.id]: { ...f, error: "Entre un montant positif." } }));
+    const type = incomeTypeFor(entry);
+    const { error: err } = await supabase.from("portfolio_income").insert({ entry_id: entry.id, user_id: session.user.id, type, amount, received_at: f.date || new Date().toISOString().slice(0, 10) });
+    if (err) return setIncomeForm(p => ({ ...p, [entry.id]: { ...f, error: "Enregistrement impossible, réessaie." } }));
+    setIncomeForm(p => ({ ...p, [entry.id]: {} }));
+    setIncomes(await fetchMyIncome());
+    await createActivity(session.user.id, type, { label: entry.label });
+    syncMoments();
+  }
+
+  async function deleteIncome(id) {
+    await supabase.from("portfolio_income").delete().eq("id", id);
+    setIncomes(await fetchMyIncome());
+  }
 
   async function refreshAllPrices(entriesList) {
     const withISIN = entriesList.filter(e => e.isin);
@@ -174,6 +240,7 @@ export default function Portfolio({ session, T: TProp }) {
   const valeurAchatTotale = valeurParPosition.filter(e => e.valeurAchat !== null).reduce((s, e) => s + e.valeurAchat, 0);
   const gainTotal = valeurTotale > 0 && valeurAchatTotale > 0 ? valeurTotale - valeurAchatTotale : null;
   const hasValeur = valeurTotale > 0;
+  const income = incomeStats(entries, incomes);
   const byExpo = entries.reduce((acc, e) => { const k = e.exposition || e.type || "Autre"; acc[k] = (acc[k] || 0) + Number(e.percentage); return acc; }, {});
   const vehiculeCounts = entries.reduce((acc, e) => { acc[e.type] = (acc[e.type] || 0) + 1; return acc; }, {});
 
@@ -374,6 +441,7 @@ export default function Portfolio({ session, T: TProp }) {
               <div style={{ textAlign: "right" }}>
                 {e.valeur !== null ? <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{formatEur(e.valeur)}</div> : <div style={{ fontSize: 13, color: T.textFaint }}>{e.percentage}%</div>}
                 {e.performance !== null && <div style={{ fontSize: 12, fontWeight: 500, color: e.performance >= 0 ? T.accent : T.red }}>{e.performance >= 0 ? "+" : ""}{Number(e.performance).toFixed(2)}%</div>}
+                {income.byEntry[e.id]?.yield != null && <div style={{ fontSize: 11, color: T.yellow }} title="Rendement sur 12 mois (valeur actuelle)">💰 {fmtYield(income.byEntry[e.id].yield)}</div>}
               </div>
               <div style={{ fontSize: 16, color: T.textFaint, transition: "transform 0.2s", transform: openDetail[e.id] ? "rotate(90deg)" : "none" }}>›</div>
             </div>
@@ -385,6 +453,9 @@ export default function Portfolio({ session, T: TProp }) {
                 {e.valeurAchat && e.valeur && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>Gain / perte</span><span style={{ fontWeight: 500, color: e.valeur >= e.valeurAchat ? T.accent : T.red }}>{e.valeur >= e.valeurAchat ? "+" : ""}{formatEur(e.valeur - e.valeurAchat)}</span></div>}
                 {e.isin && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>ISIN</span><span style={{ color: T.text, fontWeight: 500, fontFamily: "monospace", fontSize: 12 }}>{e.isin}</span></div>}
                 {e.broker && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>Broker</span><span style={{ color: T.text, fontWeight: 500 }}>{e.broker}</span></div>}
+                <IncomeSection entry={e} stats={income.byEntry[e.id]} form={incomeForm[e.id] || {}} T={T} btnSm={btnSm}
+                  onChange={f => setIncomeForm(p => ({ ...p, [e.id]: { ...(p[e.id] || {}), ...f, error: null } }))}
+                  onAdd={() => addIncome(e)} onDelete={deleteIncome} />
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                   <button onClick={() => { startEdit(e); setOpenDetail(p => ({ ...p, [e.id]: false })); }} style={{ ...btnSm, flex: 1, textAlign: "center" }}>Modifier</button>
                   <button onClick={() => deleteEntry(e.id)} style={{ ...btnSm, flex: 1, textAlign: "center", borderColor: T.red, color: T.red }}>Supprimer</button>
@@ -395,6 +466,27 @@ export default function Portfolio({ session, T: TProp }) {
         ))}
       </div>
 
+
+      {/* REVENUS */}
+      {income.total12 > 0 && (
+        <div style={card}>
+          <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>💰 Revenus sur 12 mois</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+            {[
+              ["Reçus", formatEur2(income.total12), `${income.count12} versement${income.count12 > 1 ? "s" : ""}`],
+              ["Rendement du portefeuille", fmtYield(income.portfolioYield), "sur la valeur actuelle"],
+              ["Sur prix de revient", fmtYield(income.payersYoc), "positions qui versent"],
+            ].map(([label, value, hint]) => (
+              <div key={label} style={{ background: T.bgSubtle, borderRadius: 10, padding: 12 }}>
+                <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 4 }}>{label}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: T.text }}>{value}</div>
+                <div style={{ fontSize: 10, color: T.textFaint, marginTop: 2 }}>{hint}</div>
+              </div>
+            ))}
+          </div>
+          {income.portfolioYield === null && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 10 }}>Ajoute le nombre de parts et le prix de tes positions pour calculer le rendement.</div>}
+        </div>
+      )}
 
       {/* PROJECTIONS */}
       {entries.length > 0 && perfGlobale !== null && hasValeur && (

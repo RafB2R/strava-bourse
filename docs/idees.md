@@ -14,6 +14,11 @@ Pistes validées mais repoussées, avec ce qui les bloque aujourd'hui.
 - **Mention « depuis 2019 » sous la performance de la card** : rapide, à partir
   de l'année « investisseur depuis » du profil.
 
+- **Export CSV / « Télécharger mes données »** : repoussé, peu d'intérêt tant
+  que les données sont pauvres. À reprendre avec l'historique et les revenus,
+  par exemple dans les réglages ou dans l'offre Plus avec l'export PDF fiscal.
+  Le RGPD (portabilité) peut être assuré à la demande, par e-mail.
+
 ## Badges
 
 - **Builder et Diversification comptent la même chose** (le nombre de

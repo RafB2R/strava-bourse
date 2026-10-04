@@ -214,6 +214,8 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       case "new_position": return `A ajouté ${d.label || "une position"}${d.broker ? ` sur ${d.broker}` : ""}`;
       case "renforcement": return `A renforcé ${d.label || "une position"}`;
       case "badge": { const info = badgeFromData(d); return `A débloqué le badge ${info.medal} ${info.name}`; }
+      case "dividende": return `A reçu un dividende${d.label ? ` · ${d.label}` : ""}`;
+      case "coupon": return `A reçu un coupon${d.label ? ` · ${d.label}` : ""}`;
       case "new_broker": return `A ajouté ${d.broker || "un broker"}`;
       default: return "Activité";
     }
@@ -312,7 +314,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
           {activities.map(a => (
             <div key={a.id} style={{ ...card, display: "flex", gap: 12, alignItems: "flex-start" }}>
               <div style={{ width: 36, height: 36, borderRadius: "50%", background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
-                {a.type === "badge" ? "🏅" : a.type.startsWith("anniversaire") ? "🎂" : a.type.includes("dca") ? "🔥" : isMoment(a.type) ? "🌟" : a.type === "new_position" ? "📈" : a.type === "post" ? "💬" : "⚡"}
+                {a.type === "badge" ? "🏅" : a.type.startsWith("anniversaire") ? "🎂" : a.type.includes("dca") ? "🔥" : isMoment(a.type) ? "🌟" : a.type === "new_position" ? "📈" : a.type === "post" ? "💬" : a.type === "dividende" || a.type === "coupon" ? "💰" : "⚡"}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, color: T.text, lineHeight: 1.4 }}>{getActivityText(a)}</div>
