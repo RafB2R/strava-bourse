@@ -146,21 +146,21 @@ export default function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) loadProfile(session.user.id);
+      if (session) loadProfile();
       else setLoading(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) loadProfile(session.user.id);
+      if (session) loadProfile();
       else { setProfile(null); setLoading(false); setShowAuth(false); }
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  async function loadProfile(userId) {
+  async function loadProfile() {
     // Badges du temps qui passe (ancienneté, série, anniversaire) : attribués dès la connexion
     syncBadges();
-    const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
+    const { data } = await supabase.rpc("get_my_profile").maybeSingle();
     setProfile(data);
     setLoading(false);
   }
@@ -197,7 +197,7 @@ export default function App() {
 
   const content = (
     <Suspense fallback={<div style={{ color: T.textFaint, fontSize: 13, textAlign: "center", padding: "2rem" }}>Chargement…</div>}>
-      {showKYC && <KYC session={session} profile={profile} T={T} onComplete={() => { setShowKYC(false); loadProfile(session.user.id); }} onSkip={() => setShowKYC(false)} />}
+      {showKYC && <KYC session={session} profile={profile} T={T} onComplete={() => { setShowKYC(false); loadProfile(); }} onSkip={() => setShowKYC(false)} />}
       {publicUserId ? (
         <ProfilPublic key={publicUserId} userId={publicUserId} session={session} T={T} onBack={() => { setPublicUserId(null); setCompareData(null); }} onCompareData={setCompareData} />
       ) : (
