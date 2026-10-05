@@ -107,7 +107,7 @@ async function fetchFeed(userId, scope) {
 export default function Feed({ session, T: TProp, onViewProfile }) {
   const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
-  const toolBtn = { display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit" };
+  const toolBtn = { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, minWidth: 34, minHeight: 36, background: "none", border: "none", borderRadius: 8, padding: "5px 6px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit" };
   const btnAct = { background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
 
   const [activities, setActivities] = useState([]);
@@ -439,40 +439,40 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
             {pollOptions && <PollEditor options={pollOptions} onOptions={setPollOptions} days={pollDays} onDays={setPollDays} onRemove={() => setPollOptions(null)} T={T} />}
             {preparing > 0 && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 6 }}>Préparation de l'image…</div>}
             {postError && <div style={{ fontSize: 12, color: T.red, marginTop: 6 }}>{postError}</div>}
-            <div style={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap", marginTop: 10, paddingTop: 10, borderTop: `0.5px solid ${T.border}` }}>
+            <div className="composer-toolbar" style={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap", marginTop: 10, paddingTop: 10, borderTop: `0.5px solid ${T.border}` }}>
               <input ref={fileInput} type="file" accept={ACCEPT_ATTR} multiple hidden
                 onChange={e => { addImages(e.target.files); e.target.value = ""; }} />
-              <button onClick={() => fileInput.current?.click()} disabled={postImages.length + preparing >= MAX_IMAGES}
+              <button onClick={() => fileInput.current?.click()} disabled={postImages.length + preparing >= MAX_IMAGES} aria-label="Image"
                 title={`Ajouter jusqu'à ${MAX_IMAGES} images`}
                 style={{ ...toolBtn, opacity: postImages.length + preparing >= MAX_IMAGES ? 0.4 : 1 }}>
-                <span style={{ fontSize: 16 }}>🖼️</span> Image
+                <span style={{ fontSize: 18 }} aria-hidden="true">🖼️</span><span className="tool-label">Image</span>
               </button>
               <input ref={docInput} type="file" accept={FILE_ACCEPT_ATTR} multiple hidden
                 onChange={e => { addFiles(e.target.files); e.target.value = ""; }} />
-              <button onClick={() => docInput.current?.click()} disabled={postFiles.length >= MAX_FILES}
+              <button onClick={() => docInput.current?.click()} disabled={postFiles.length >= MAX_FILES} aria-label="Fichier"
                 title={`Joindre jusqu'à ${MAX_FILES} fichiers (PDF, Excel, CSV, Word, PowerPoint · 10 Mo max)`}
                 style={{ ...toolBtn, opacity: postFiles.length >= MAX_FILES ? 0.4 : 1 }}>
-                <span style={{ fontSize: 16 }}>📎</span> Fichier
+                <span style={{ fontSize: 18 }} aria-hidden="true">📎</span><span className="tool-label">Fichier</span>
               </button>
-              <button onClick={() => setPollOptions(o => (o ? null : ["", ""]))} aria-pressed={!!pollOptions}
+              <button onClick={() => setPollOptions(o => (o ? null : ["", ""]))} aria-pressed={!!pollOptions} aria-label="Sondage"
                 title="Ajouter un sondage" style={{ ...toolBtn, ...(pollOptions ? { background: T.accentBg } : {}) }}>
-                <span style={{ fontSize: 16 }}>📊</span> Sondage
+                <span style={{ fontSize: 18 }} aria-hidden="true">📊</span><span className="tool-label">Sondage</span>
               </button>
-              <button onClick={() => setPicker(p => (p === "asset" ? null : "asset"))} aria-pressed={picker === "asset"} title="Citer une action, un ETF ou un indice avec son cours"
+              <button onClick={() => setPicker(p => (p === "asset" ? null : "asset"))} aria-pressed={picker === "asset"} aria-label="Valeur" title="Citer une action, un ETF ou un indice avec son cours"
                 style={{ ...toolBtn, ...(picker === "asset" || (postAsset && !postAsset.chart) ? { background: T.accentBg } : {}) }}>
-                <span style={{ fontSize: 15, fontWeight: 800 }}>$</span> Valeur
+                <span style={{ fontSize: 17, fontWeight: 800, width: 18, textAlign: "center" }} aria-hidden="true">$</span><span className="tool-label">Valeur</span>
               </button>
-              <button onClick={() => setPicker(p => (p === "chart" ? null : "chart"))} aria-pressed={picker === "chart"} title="Joindre la courbe d'une valeur ou d'un indice"
+              <button onClick={() => setPicker(p => (p === "chart" ? null : "chart"))} aria-pressed={picker === "chart"} aria-label="Graphique" title="Joindre la courbe d'une valeur ou d'un indice"
                 style={{ ...toolBtn, ...(picker === "chart" || postAsset?.chart ? { background: T.accentBg } : {}) }}>
-                <span style={{ fontSize: 16 }}>📈</span> Graphique
+                <span style={{ fontSize: 18 }} aria-hidden="true">📈</span><span className="tool-label">Graphique</span>
               </button>
-              <button onClick={() => setPicker(p => (p === "allocation" ? null : "allocation"))} aria-pressed={picker === "allocation"} title="Partager ta répartition, en % uniquement"
+              <button onClick={() => setPicker(p => (p === "allocation" ? null : "allocation"))} aria-pressed={picker === "allocation"} aria-label="Répartition" title="Partager ta répartition, en % uniquement"
                 style={{ ...toolBtn, ...(picker === "allocation" || postAllocation ? { background: T.accentBg } : {}) }}>
-                <span style={{ fontSize: 16 }}>🥧</span> Répartition
+                <span style={{ fontSize: 18 }} aria-hidden="true">🥧</span><span className="tool-label">Répartition</span>
               </button>
               <div style={{ flex: 1 }} />
               {hasContent && (
-                <button onClick={publishPost} disabled={posting || preparing > 0} style={{ background: T.accent, border: "none", borderRadius: 999, padding: "6px 18px", fontSize: 13, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", opacity: preparing ? 0.6 : 1 }}>
+                <button className="composer-publish" onClick={publishPost} disabled={posting || preparing > 0} style={{ background: T.accent, border: "none", borderRadius: 999, padding: "6px 18px", fontSize: 13, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", opacity: preparing ? 0.6 : 1 }}>
                   {posting ? "Envoi…" : "Publier"}
                 </button>
               )}
