@@ -1,29 +1,23 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { T as TLive, avatarColors } from "../theme";
-import { fetchConversations, fetchMessages, sendMessage, markRead, startConversation, subscribeToConversation, fetchFriends } from "../messages";
+import { shortTime, fetchConversations, fetchMessages, sendMessage, markRead, startConversation, subscribeToConversation, fetchFriends } from "../messages";
 
-function Avatar({ name, size = 40 }) {
+export function Avatar({ name, size = 40 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
   const [bg, color] = avatarColors(name);
   return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.34, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
 }
 
-function shortTime(date) {
-  const d = new Date(date), now = new Date();
-  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-  const days = (now - d) / 86400000;
-  if (days < 7) return d.toLocaleDateString("fr-FR", { weekday: "short" });
-  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-}
-
 // Fil d'une conversation : messages en temps réel, envoi, lecture
-function Thread({ conversation, session, T, onBack, onViewProfile, onRead }) {
+// variant « page » (plein écran, bouton retour) ou « dock » (encart en bas d'écran : réduire, fermer)
+export function Thread({ conversation, session, T, onBack, onViewProfile, onRead, variant = "page", minimized = false, onToggleMinimize, onClose }) {
   const me = session.user.id;
   const [messages, setMessages] = useState(null);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const bottomRef = useRef(null);
+  const scrollRef = useRef(null);
+  const dock = variant === "dock";
   const convId = conversation.conversation_id;
 
   useEffect(() => {
@@ -37,7 +31,11 @@ function Thread({ conversation, session, T, onBack, onViewProfile, onRead }) {
     return () => { ignore = true; unsubscribe(); };
   }, [convId, me, onRead]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ block: "end" }); }, [messages]);
+  // Descend en bas de la zone des messages, sans faire défiler la page
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, minimized]);
 
   async function send() {
     const text = input.trim();
@@ -51,17 +49,26 @@ function Thread({ conversation, session, T, onBack, onViewProfile, onRead }) {
   }
 
   return (
-    <div style={{ background: T.bgCard, border: `0.5px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, display: "flex", flexDirection: "column", height: "min(70vh, 640px)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: `0.5px solid ${T.border}` }}>
-        <button onClick={onBack} aria-label="Retour aux conversations" style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 18, padding: "0 4px" }}>←</button>
-        <Avatar name={conversation.other_name} size={34} />
-        <button onClick={() => onViewProfile?.(conversation.other_id)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{conversation.other_name}</div>
-          {conversation.other_username && <div style={{ fontSize: 12, color: T.textFaint }}>@{conversation.other_username}</div>}
+    <div style={dock
+      ? { background: T.bgSecondary, border: `1px solid ${T.border}`, borderBottom: "none", boxShadow: "0 -4px 24px rgba(0,0,0,0.18)", borderRadius: "12px 12px 0 0", display: "flex", flexDirection: "column", height: minimized ? "auto" : 440 }
+      : { background: T.bgCard, border: `0.5px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, display: "flex", flexDirection: "column", height: "min(70vh, 640px)" }}>
+      <div onClick={dock ? onToggleMinimize : undefined} style={{ display: "flex", alignItems: "center", gap: dock ? 8 : 10, padding: dock ? "8px 10px" : "12px 14px", borderBottom: minimized ? "none" : `0.5px solid ${T.border}`, cursor: dock ? "pointer" : "default" }}>
+        {!dock && <button onClick={onBack} aria-label="Retour aux conversations" style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 18, padding: "0 4px" }}>←</button>}
+        <Avatar name={conversation.other_name} size={dock ? 30 : 34} />
+        <button onClick={e => { e.stopPropagation(); onViewProfile?.(conversation.other_id); }} style={{ flex: dock ? 1 : "none", minWidth: 0, background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
+          <div style={{ fontSize: dock ? 14 : 15, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{conversation.other_name}</div>
+          {conversation.other_username && !dock && <div style={{ fontSize: 12, color: T.textFaint }}>@{conversation.other_username}</div>}
         </button>
+        {dock && (
+          <>
+            <button onClick={e => { e.stopPropagation(); onToggleMinimize?.(); }} aria-label={minimized ? "Agrandir la conversation" : "Réduire la conversation"} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 14, padding: "2px 6px" }}>{minimized ? "▴" : "▾"}</button>
+            <button onClick={e => { e.stopPropagation(); onClose?.(); }} aria-label="Fermer la conversation" style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 14, padding: "2px 6px" }}>✕</button>
+          </>
+        )}
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "14px", display: "flex", flexDirection: "column", gap: 6 }}>
+      {!minimized && <>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: dock ? "10px 12px" : "14px", display: "flex", flexDirection: "column", gap: 6 }}>
         {messages === null && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", margin: "auto" }}>Chargement…</div>}
         {messages?.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", margin: "auto" }}>Aucun message. Dis bonjour 👋</div>}
         {messages?.map((m, i) => {
@@ -77,7 +84,6 @@ function Thread({ conversation, session, T, onBack, onViewProfile, onRead }) {
             </div>
           );
         })}
-        <div ref={bottomRef} />
       </div>
 
       <div style={{ borderTop: `0.5px solid ${T.border}`, padding: 10 }}>
@@ -92,6 +98,7 @@ function Thread({ conversation, session, T, onBack, onViewProfile, onRead }) {
           </button>
         </div>
       </div>
+      </>}
     </div>
   );
 }

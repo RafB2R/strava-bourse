@@ -60,3 +60,12 @@ export async function fetchFriends(userId) {
     .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
   return (data || []).map(f => (f.requester_id === userId ? f.receiver : f.requester)).filter(Boolean);
 }
+
+// Heure si aujourd'hui, jour de la semaine si < 7 jours, sinon date courte
+export function shortTime(date) {
+  const d = new Date(date), now = new Date();
+  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const days = (now - d) / 86400000;
+  if (days < 7) return d.toLocaleDateString("fr-FR", { weekday: "short" });
+  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}

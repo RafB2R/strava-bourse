@@ -16,12 +16,12 @@ const Explore = lazy(() => import("./components/Explore"));
 const KYC = lazy(() => import("./components/KYC"));
 const ProfilPublic = lazy(() => import("./components/ProfilPublic"));
 const Messages = lazy(() => import("./components/Messages"));
+const ChatDock = lazy(() => import("./components/ChatDock"));
 
 const TABS = [
   { id: "feed", label: "Fil", icon: "🏠" },
   { id: "explore", label: "Explore", icon: "🔍" },
   { id: "portfolio", label: "Portef.", icon: "📊" },
-  { id: "messages", label: "Messages", icon: "💬" },
   { id: "profil", label: "Profil", icon: "👤" },
 ];
 
@@ -31,6 +31,21 @@ function getGreeting(name) {
   if (hour < 12) return `Bonjour ${firstName} ☀️`;
   if (hour < 18) return `Bon après-midi ${firstName} 👋`;
   return `Bonsoir ${firstName} 🌙`;
+}
+
+// Bouton 💬 à côté de la cloche des notifications, avec le nombre de messages non lus
+function MessagesButton({ unread, onClick, active, T }) {
+  return (
+    <button onClick={onClick} aria-label={unread > 0 ? `Messagerie, ${unread} message(s) non lu(s)` : "Messagerie"}
+      style={{ background: active ? T.accentBg : "none", border: `0.5px solid ${active ? T.accent : T.borderStrong}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer", position: "relative", display: "flex", alignItems: "center" }}>
+      <span style={{ fontSize: 16 }}>💬</span>
+      {unread > 0 && (
+        <span style={{ position: "absolute", top: -4, right: -4, background: T.red, color: T.bg, borderRadius: 999, minWidth: 16, height: 16, padding: "0 4px", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {unread > 9 ? "9+" : unread}
+        </span>
+      )}
+    </button>
+  );
 }
 
 // Indices pour le widget desktop
@@ -137,6 +152,9 @@ export default function App() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [messageTarget, setMessageTarget] = useState(null);
   const clearMessageTarget = useCallback(() => setMessageTarget(null), []);
+  const [dockOpen, setDockOpen] = useState(false);
+  const [dockTarget, setDockTarget] = useState(null);
+  const clearDockTarget = useCallback(() => setDockTarget(null), []);
 
   const T = themes[themeKey];
 
@@ -158,7 +176,9 @@ export default function App() {
   }, [userId]);
 
   // « ✉️ Message » depuis un profil : ouvre la conversation dans l'onglet Messages
+  // Ordinateur : fenêtre de discussion en bas d'écran ; mobile : messagerie plein écran
   function openMessage(otherId) {
+    if (isDesktop) { setDockTarget(otherId); setDockOpen(true); return; }
     setMessageTarget(otherId);
     goToTab("messages");
   }
@@ -266,7 +286,7 @@ export default function App() {
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => goToTab(t.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 10, border: "none", background: tab === t.id ? T.accentBg : "transparent", color: tab === t.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === t.id ? 700 : 400, fontSize: 14 }}>
-              <span style={{ fontSize: 18 }}>{t.icon}</span>{t.label}{t.id === "messages" && unreadMessages > 0 && <span aria-label={`${unreadMessages} message(s) non lu(s)`} style={{ background: T.red, color: T.bg, borderRadius: 999, fontSize: 10, fontWeight: 700, padding: "0 6px", lineHeight: "16px", marginLeft: 4 }}>{unreadMessages > 99 ? "99+" : unreadMessages}</span>}
+              <span style={{ fontSize: 18 }}>{t.icon}</span>{t.label}
             </button>
           ))}
         </div>
@@ -293,6 +313,11 @@ export default function App() {
         <div style={{ padding: "24px" }}>{content}</div>
       </div>
 
+      <Suspense fallback={null}>
+        <ChatDock session={session} T={T} open={dockOpen} onToggle={() => setDockOpen(o => !o)}
+          target={dockTarget} onTargetHandled={clearDockTarget} onViewProfile={viewProfile} onUnreadChange={setUnreadMessages} />
+      </Suspense>
+
       {/* Droite */}
       <div style={{ width: 280, flexShrink: 0, padding: "24px 16px", position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}>
         {publicUserId ? (
@@ -300,7 +325,10 @@ export default function App() {
         ) : (
           <>
             <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: 16, marginBottom: 16, position: "relative", zIndex: 50 }}>
-              <Notifications session={session} T={T} />
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <Notifications session={session} T={T} />
+                <MessagesButton unread={unreadMessages} active={dockOpen} onClick={() => setDockOpen(o => !o)} T={T} />
+              </div>
             </div>
             <MarketWidget T={T} />
           </>
@@ -323,6 +351,7 @@ export default function App() {
               {themeKey === "dark" ? "☀️" : "🌙"}
             </button>
             <Notifications session={session} T={T} />
+            <MessagesButton unread={unreadMessages} active={tab === "messages"} onClick={() => goToTab("messages")} T={T} />
             <button onClick={handleLogout} style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>Déco.</button>
           </div>
         </div>
@@ -333,7 +362,7 @@ export default function App() {
         <div style={{ maxWidth: 620, margin: "0 auto", display: "flex" }}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => goToTab(t.id)} style={{ flex: 1, padding: "12px 4px 14px", fontSize: 10, background: "none", border: "none", color: tab === t.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === t.id ? 600 : 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: 20, position: "relative" }}>{t.icon}{t.id === "messages" && unreadMessages > 0 && <span style={{ position: "absolute", top: -4, right: -10, background: T.red, color: T.bg, borderRadius: 999, fontSize: 9, fontWeight: 700, padding: "0 4px", lineHeight: "14px" }}>{unreadMessages > 99 ? "99+" : unreadMessages}</span>}</span>{t.label}
+              <span style={{ fontSize: 20 }}>{t.icon}</span>{t.label}
             </button>
           ))}
         </div>
