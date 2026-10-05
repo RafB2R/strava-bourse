@@ -212,7 +212,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
     const trade = tradeTexts(a.type, d);
     if (trade) return `${trade.sentence.charAt(0).toUpperCase()}${trade.sentence.slice(1)} · ${trade.stat}`;
     if (isMoment(a.type)) return momentSentence(a.type, d);
-    if (a.type === "post") return d.content || (d.images?.length ? (d.images.length > 1 ? `📷 A publié ${d.images.length} photos` : "📷 A publié une photo") : "A publié un message");
+    if (a.type === "post") return (d.poll && d.content ? `📊 ${d.content}` : d.content) || (d.files?.length ? "📎 A partagé un fichier" : null) || (d.images?.length ? (d.images.length > 1 ? `📷 A publié ${d.images.length} photos` : "📷 A publié une photo") : "A publié un message");
     switch (a.type) {
       case "new_position": return `A ajouté ${d.label || "une position"}${d.broker ? ` sur ${d.broker}` : ""}`;
       case "renforcement": return `A renforcé ${d.label || "une position"}`;

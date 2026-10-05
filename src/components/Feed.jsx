@@ -4,8 +4,9 @@ import { T, T as TLive, avatarColors } from "../theme";
 import { badgeFromData } from "../badges";
 import { MOMENTS, MOMENT_TYPES, isMoment, momentSentence } from "../moments";
 import { tradeTexts } from "../trades";
-import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage, uploadImages, removeImages } from "../media";
-import { PostImages, ComposerPreviews } from "./PostMedia";
+import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage, uploadImages, removeImages, MAX_FILES, FILE_ACCEPT_ATTR, checkFile, uploadFiles, removeFiles } from "../media";
+import { makePoll, isValidPoll, fetchPolls, vote } from "../polls";
+import { PostImages, ComposerPreviews, PostFiles, ComposerFiles, PollEditor, PollView } from "./PostMedia";
 
 function Avatar({ name, size = 36 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
@@ -91,12 +92,15 @@ async function fetchFeed(userId, scope) {
     }
     for (const c of commentRows || []) (comments[c.activity_id] ||= []).push(c);
   }
-  return { ids, activities, likes, comments };
+  const pollIds = activities.filter(a => a.type === "post" && a.data?.poll).map(a => a.id);
+  const polls = await fetchPolls(pollIds, userId);
+  return { ids, activities, likes, comments, polls };
 }
 
 export default function Feed({ session, T: TProp, onViewProfile }) {
   const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
+  const toolBtn = { display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit" };
   const btnAct = { background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
 
   const [activities, setActivities] = useState([]);
@@ -115,6 +119,11 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
   const [preparing, setPreparing] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const fileInput = useRef(null);
+  const docInput = useRef(null);
+  const [postFiles, setPostFiles] = useState([]);
+  const [pollOptions, setPollOptions] = useState(null); // null = pas de sondage
+  const [pollDays, setPollDays] = useState(1);
+  const [polls, setPolls] = useState({ counts: {}, mine: {} });
   const [profile, setProfile] = useState(null);
 
   const [reloadKey, setReloadKey] = useState(0);
@@ -129,8 +138,9 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
 
   useEffect(() => {
     let ignore = false;
-    fetchFeed(userId, scope).then(({ ids, activities, likes, comments }) => {
+    fetchFeed(userId, scope).then(({ ids, activities, likes, comments, polls }) => {
       if (ignore) return;
+      setPolls(polls);
       setFriendIds(ids);
       setActivities(activities);
       setLikes(likes);
@@ -169,35 +179,78 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
     });
   }
 
+  function addFiles(fileList) {
+    const files = [...(fileList || [])];
+    if (files.length === 0) return;
+    setPostError("");
+    const ok = [];
+    for (const f of files) {
+      const err = checkFile(f);
+      if (err) setPostError(err); else ok.push(f);
+    }
+    const room = MAX_FILES - postFiles.length;
+    if (ok.length > room) setPostError(`${MAX_FILES} fichiers maximum par post.`);
+    if (room > 0) setPostFiles(p => [...p, ...ok.slice(0, room)]);
+  }
+
+  const poll = pollOptions ? makePoll(pollOptions, pollDays) : null;
+  const hasContent = postInput.trim() || postImages.length > 0 || postFiles.length > 0;
+
   async function publishPost() {
     const content = postInput.trim();
-    if ((!content && postImages.length === 0) || posting || preparing) return;
+    if (!hasContent || posting || preparing) return;
+    if (poll && !isValidPoll(poll)) { setPostError("Un sondage a besoin d'au moins 2 choix."); return; }
+    if (poll && !content) { setPostError("Écris la question du sondage dans le texte du post."); return; }
     setPosting(true);
     setPostError("");
-    let images;
+    let images, files;
     try {
       images = await uploadImages(userId, postImages);
+      try {
+        files = await uploadFiles(userId, postFiles);
+      } catch (e) {
+        await removeImages(images.map(i => i.path));
+        throw e;
+      }
     } catch (e) {
       setPostError(e.message);
       setPosting(false);
       return;
     }
-    const data = images.length ? { content, images } : { content };
+    const data = { content };
+    if (images.length) data.images = images;
+    if (files.length) data.files = files;
+    if (poll) data.poll = poll;
     const { error } = await supabase.from("activities").insert({ user_id: userId, type: "post", data });
     if (error) {
-      await removeImages(images.map(i => i.path));
+      await Promise.all([removeImages(images.map(i => i.path)), removeFiles(files.map(f => f.path))]);
       setPostError("Publication impossible. Réessaie.");
       setPosting(false);
       return;
     }
     postImages.forEach(p => URL.revokeObjectURL(p.preview));
     setPostImages([]);
+    setPostFiles([]);
+    setPollOptions(null);
+    setPollDays(1);
     setPostInput("");
     setPosting(false);
     setReloadKey(k => k + 1);
   }
 
   const likePending = useRef(new Set());
+
+  // Vote affiché tout de suite, annulé si Supabase refuse (sondage terminé…)
+  async function castVote(activityId, option) {
+    const before = polls;
+    setPolls(p => {
+      const counts = [...(p.counts[activityId] || [])];
+      counts[option] = (counts[option] || 0) + 1;
+      return { counts: { ...p.counts, [activityId]: counts }, mine: { ...p.mine, [activityId]: option } };
+    });
+    const { error } = await vote(activityId, option);
+    if (error) setPolls(before);
+  }
 
   async function notify(toUserId, type, data) {
     if (toUserId === userId) return;
@@ -261,25 +314,38 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <textarea
               value={postInput}
-              onChange={e => setPostInput(e.target.value)}
+              onChange={e => { setPostInput(e.target.value); if (postError) setPostError(""); }}
               onPaste={e => { const files = [...e.clipboardData.files].filter(isImage); if (files.length) { e.preventDefault(); addImages(files); } }}
               placeholder="Partage une pensée, une analyse, une question…"
               maxLength={5000}
               style={{ width: "100%", background: "none", border: "none", outline: "none", color: T.text, fontFamily: "inherit", fontSize: 14, resize: "none", lineHeight: 1.5, minHeight: 60 }}
             />
             <ComposerPreviews items={postImages} onRemove={removeImage} T={T} />
+            <ComposerFiles files={postFiles} onRemove={i => setPostFiles(p => p.filter((_, j) => j !== i))} T={T} />
+            {pollOptions && <PollEditor options={pollOptions} onOptions={setPollOptions} days={pollDays} onDays={setPollDays} onRemove={() => setPollOptions(null)} T={T} />}
             {preparing > 0 && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 6 }}>Préparation de l'image…</div>}
             {postError && <div style={{ fontSize: 12, color: T.red, marginTop: 6 }}>{postError}</div>}
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, paddingTop: 10, borderTop: `0.5px solid ${T.border}` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap", marginTop: 10, paddingTop: 10, borderTop: `0.5px solid ${T.border}` }}>
               <input ref={fileInput} type="file" accept={ACCEPT_ATTR} multiple hidden
                 onChange={e => { addImages(e.target.files); e.target.value = ""; }} />
               <button onClick={() => fileInput.current?.click()} disabled={postImages.length + preparing >= MAX_IMAGES}
                 title={`Ajouter jusqu'à ${MAX_IMAGES} images`}
-                style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit", opacity: postImages.length + preparing >= MAX_IMAGES ? 0.4 : 1 }}>
+                style={{ ...toolBtn, opacity: postImages.length + preparing >= MAX_IMAGES ? 0.4 : 1 }}>
                 <span style={{ fontSize: 16 }}>🖼️</span> Image
               </button>
+              <input ref={docInput} type="file" accept={FILE_ACCEPT_ATTR} multiple hidden
+                onChange={e => { addFiles(e.target.files); e.target.value = ""; }} />
+              <button onClick={() => docInput.current?.click()} disabled={postFiles.length >= MAX_FILES}
+                title={`Joindre jusqu'à ${MAX_FILES} fichiers (PDF, Excel, CSV, Word, PowerPoint · 10 Mo max)`}
+                style={{ ...toolBtn, opacity: postFiles.length >= MAX_FILES ? 0.4 : 1 }}>
+                <span style={{ fontSize: 16 }}>📎</span> Fichier
+              </button>
+              <button onClick={() => setPollOptions(o => (o ? null : ["", ""]))} aria-pressed={!!pollOptions}
+                title="Ajouter un sondage" style={{ ...toolBtn, ...(pollOptions ? { background: T.accentBg } : {}) }}>
+                <span style={{ fontSize: 16 }}>📊</span> Sondage
+              </button>
               <div style={{ flex: 1 }} />
-              {(postInput.trim() || postImages.length > 0) && (
+              {hasContent && (
                 <button onClick={publishPost} disabled={posting || preparing > 0} style={{ background: T.accent, border: "none", borderRadius: 999, padding: "6px 18px", fontSize: 13, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", opacity: preparing ? 0.6 : 1 }}>
                   {posting ? "Envoi…" : "Publier"}
                 </button>
@@ -350,7 +416,12 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
                     {activity.data.content}
                   </div>
                 )}
+                {activity.data?.poll && (
+                  <PollView poll={activity.data.poll} counts={polls.counts[activity.id]} myVote={polls.mine[activity.id]}
+                    isAuthor={isMe} onVote={option => castVote(activity.id, option)} T={T} />
+                )}
                 <PostImages images={activity.data?.images} T={T} />
+                <PostFiles files={activity.data?.files} T={T} />
               </>
             ) : (
               <div style={{ borderLeft: `2px solid ${T.border}`, paddingLeft: 12, marginBottom: 12 }}>

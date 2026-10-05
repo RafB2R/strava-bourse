@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { mediaUrl } from "../media";
+import { mediaUrl, fileUrl, fileExt, formatSize } from "../media";
+import { POLL_MAX_OPTIONS, POLL_OPTION_MAX_LENGTH, POLL_DURATIONS, isValidPoll, pollRemaining } from "../polls";
 
 // Images d'un post : 1 en grand, 2 côte à côte, 3-4 en grille. Clic → plein écran.
 export function PostImages({ images, T }) {
@@ -65,6 +66,131 @@ export function ComposerPreviews({ items, onRemove, T }) {
             style={{ position: "absolute", top: 4, right: 4, width: 22, height: 22, borderRadius: 999, border: "none", background: "rgba(0,0,0,0.65)", color: "#fff", fontSize: 11, cursor: "pointer", lineHeight: 1 }}>✕</button>
         </div>
       ))}
+    </div>
+  );
+}
+
+const FILE_ICONS = { pdf: "📕", xls: "📗", xlsx: "📗", csv: "📗", doc: "📘", docx: "📘", ppt: "📙", pptx: "📙", txt: "📄" };
+
+// Fichiers joints d'un post : nom, taille, ouverture (PDF) ou téléchargement
+export function PostFiles({ files, T }) {
+  const list = (files || []).map(f => ({ ...f, url: fileUrl(f) })).filter(f => f.url).slice(0, 3);
+  if (list.length === 0) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+      {list.map(f => {
+        const ext = fileExt(f.path);
+        return (
+          <a key={f.path} href={f.url} target="_blank" rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, border: `0.5px solid ${T.border}`, background: T.bgSubtle, textDecoration: "none", minWidth: 0 }}>
+            <span style={{ fontSize: 22 }}>{FILE_ICONS[ext] || "📄"}</span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name || `Fichier .${ext}`}</span>
+              <span style={{ display: "block", fontSize: 11, color: T.textFaint }}>{ext.toUpperCase()}{f.size ? ` · ${formatSize(f.size)}` : ""}</span>
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: T.accent, flexShrink: 0 }}>{ext === "pdf" ? "Ouvrir" : "Télécharger"}</span>
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
+// Fichiers choisis dans l'encadré de publication
+export function ComposerFiles({ files, onRemove, T }) {
+  if (files.length === 0) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+      {files.map((f, i) => (
+        <div key={`${f.name}-${i}`} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, border: `0.5px solid ${T.border}`, background: T.bgSubtle, minWidth: 0 }}>
+          <span>{FILE_ICONS[fileExt(f.name)] || "📄"}</span>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+          <span style={{ fontSize: 11, color: T.textFaint }}>{formatSize(f.size)}</span>
+          <button onClick={() => onRemove(i)} aria-label={`Retirer ${f.name}`} style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12 }}>✕</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Édition du sondage dans l'encadré de publication
+export function PollEditor({ options, onOptions, days, onDays, onRemove, T }) {
+  const input = { flex: 1, minWidth: 0, padding: "7px 10px", fontSize: 13, borderRadius: 8, border: `0.5px solid ${T.border}`, background: T.bgCard, color: T.text, fontFamily: "inherit" };
+  return (
+    <div style={{ marginTop: 8, padding: 10, borderRadius: 10, border: `0.5px solid ${T.border}`, background: T.bgSubtle }}>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: T.textMuted }}>📊 Sondage <span style={{ fontWeight: 400 }}>· la question est le texte du post</span></span>
+        <button onClick={onRemove} aria-label="Retirer le sondage" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12 }}>✕</button>
+      </div>
+      {options.map((o, i) => (
+        <div key={i} style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+          <input value={o} maxLength={POLL_OPTION_MAX_LENGTH} placeholder={`Choix ${i + 1}${i >= 2 ? " (facultatif)" : ""}`} aria-label={`Choix ${i + 1}`}
+            onChange={e => onOptions(options.map((x, j) => (j === i ? e.target.value : x)))} style={input} />
+          {i >= 2 && <button onClick={() => onOptions(options.filter((_, j) => j !== i))} aria-label={`Retirer le choix ${i + 1}`} style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12 }}>✕</button>}
+        </div>
+      ))}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        {options.length < POLL_MAX_OPTIONS && (
+          <button onClick={() => onOptions([...options, ""])} style={{ background: "none", border: `0.5px dashed ${T.border}`, borderRadius: 8, padding: "5px 10px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>+ Ajouter un choix</button>
+        )}
+        <span style={{ flex: 1 }} />
+        <label style={{ fontSize: 12, color: T.textMuted, display: "flex", alignItems: "center", gap: 6 }}>
+          Durée
+          <select value={days} onChange={e => onDays(Number(e.target.value))} style={{ padding: "4px 6px", fontSize: 12, borderRadius: 6, border: `0.5px solid ${T.border}`, background: T.bgCard, color: T.text, fontFamily: "inherit" }}>
+            {POLL_DURATIONS.map(d => <option key={d.days} value={d.days}>{d.label}</option>)}
+          </select>
+        </label>
+      </div>
+    </div>
+  );
+}
+
+// Sondage dans le fil : boutons tant qu'on n'a pas voté, puis résultats en %
+export function PollView({ poll, counts, myVote, isAuthor, onVote, T }) {
+  const [sending, setSending] = useState(false);
+  if (!isValidPoll(poll)) return null;
+  const votes = poll.options.map((_, i) => counts?.[i] || 0);
+  const total = votes.reduce((s, v) => s + v, 0);
+  const closed = !(new Date(poll.ends_at) > new Date());
+  const voted = myVote !== undefined && myVote !== null;
+  const showResults = voted || closed || isAuthor;
+  const best = Math.max(...votes);
+
+  async function choose(i) {
+    if (sending) return;
+    setSending(true);
+    await onVote(i);
+    setSending(false);
+  }
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {poll.options.map((label, i) => {
+          const pct = total ? Math.round((votes[i] / total) * 100) : 0;
+          if (!showResults) {
+            return (
+              <button key={i} onClick={() => choose(i)} disabled={sending}
+                style={{ padding: "9px 12px", borderRadius: 999, border: `1px solid ${T.accent}`, background: "none", color: T.accent, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "center" }}>
+                {label}
+              </button>
+            );
+          }
+          const lead = closed && total > 0 && votes[i] === best;
+          return (
+            <div key={i} style={{ position: "relative", borderRadius: 8, overflow: "hidden", background: T.bgSubtle, border: `0.5px solid ${myVote === i ? T.accent : T.border}` }}>
+              <div style={{ position: "absolute", inset: 0, width: `${pct}%`, background: lead || myVote === i ? T.accentBg : "rgba(128,128,128,0.12)" }} />
+              <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", fontSize: 13 }}>
+                <span style={{ flex: 1, color: T.text, fontWeight: lead ? 700 : 500 }}>{label}{myVote === i && <span style={{ color: T.accent }}> ✓</span>}</span>
+                <span style={{ color: T.text, fontWeight: 700 }}>{pct} %</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ fontSize: 12, color: T.textFaint, marginTop: 6 }}>
+        {total} vote{total > 1 ? "s" : ""} · {pollRemaining(poll.ends_at)}{!showResults ? " · votes anonymes" : ""}
+      </div>
     </div>
   );
 }
