@@ -7,6 +7,8 @@ import { tradeTexts } from "../trades";
 import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage, uploadImages, removeImages, MAX_FILES, FILE_ACCEPT_ATTR, checkFile, uploadFiles, removeFiles } from "../media";
 import { makePoll, isValidPoll, fetchPolls, vote, closeFinishedPolls } from "../polls";
 import { PostImages, ComposerPreviews, PostFiles, ComposerFiles, PollEditor, PollView } from "./PostMedia";
+import { AssetCard, AllocationCard, AssetPicker, AllocationPicker, AttachedChip } from "./PostAttachments";
+import { CHART_PERIODS } from "../attachments";
 
 function Avatar({ name, size = 36 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
@@ -124,6 +126,9 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
   const [postFiles, setPostFiles] = useState([]);
   const [pollOptions, setPollOptions] = useState(null); // null = pas de sondage
   const [pollDays, setPollDays] = useState(1);
+  const [postAsset, setPostAsset] = useState(null);           // valeur citée { symbol, name, type, chart }
+  const [postAllocation, setPostAllocation] = useState(null); // répartition { mode, rows }
+  const [picker, setPicker] = useState(null);                 // "asset" | "chart" | "allocation"
   const [polls, setPolls] = useState({ counts: {}, mine: {} });
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
@@ -197,7 +202,7 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
   }
 
   const poll = pollOptions ? makePoll(pollOptions, pollDays) : null;
-  const hasContent = postInput.trim() || postImages.length > 0 || postFiles.length > 0;
+  const hasContent = postInput.trim() || postImages.length > 0 || postFiles.length > 0 || postAsset || postAllocation;
 
   async function publishPost() {
     const content = postInput.trim();
@@ -224,6 +229,8 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
     if (images.length) data.images = images;
     if (files.length) data.files = files;
     if (poll) data.poll = poll;
+    if (postAsset) data.asset = postAsset;
+    if (postAllocation) data.allocation = postAllocation;
     const { error } = await supabase.from("activities").insert({ user_id: userId, type: "post", data });
     if (error) {
       await Promise.all([removeImages(images.map(i => i.path)), removeFiles(files.map(f => f.path))]);
@@ -236,6 +243,9 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
     setPostFiles([]);
     setPollOptions(null);
     setPollDays(1);
+    setPostAsset(null);
+    setPostAllocation(null);
+    setPicker(null);
     setPostInput("");
     setPosting(false);
     setReloadKey(k => k + 1);
@@ -340,6 +350,21 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
             />
             <ComposerPreviews items={postImages} onRemove={removeImage} T={T} />
             <ComposerFiles files={postFiles} onRemove={i => setPostFiles(p => p.filter((_, j) => j !== i))} T={T} />
+            {postAsset && (
+              <AttachedChip T={T} icon={postAsset.chart ? "📈" : "$"} onRemove={() => setPostAsset(null)}
+                label={`${postAsset.name} (${postAsset.symbol})${postAsset.chart ? ` · graphique ${CHART_PERIODS.find(p => p.id === postAsset.chart)?.label}` : ""}`} />
+            )}
+            {postAllocation && (
+              <AttachedChip T={T} icon="🥧" onRemove={() => setPostAllocation(null)}
+                label={`Ma répartition ${postAllocation.mode === "positions" ? "par position" : "par classe d'actifs"} (${postAllocation.rows.length} lignes, en %)`} />
+            )}
+            {(picker === "asset" || picker === "chart") && (
+              <AssetPicker key={picker} T={T} withChart={picker === "chart"} onClose={() => setPicker(null)}
+                onPick={a => { setPostAsset(a); setPicker(null); }} />
+            )}
+            {picker === "allocation" && (
+              <AllocationPicker T={T} onClose={() => setPicker(null)} onPick={a => { setPostAllocation(a); setPicker(null); }} />
+            )}
             {pollOptions && <PollEditor options={pollOptions} onOptions={setPollOptions} days={pollDays} onDays={setPollDays} onRemove={() => setPollOptions(null)} T={T} />}
             {preparing > 0 && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 6 }}>Préparation de l'image…</div>}
             {postError && <div style={{ fontSize: 12, color: T.red, marginTop: 6 }}>{postError}</div>}
@@ -361,6 +386,18 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
               <button onClick={() => setPollOptions(o => (o ? null : ["", ""]))} aria-pressed={!!pollOptions}
                 title="Ajouter un sondage" style={{ ...toolBtn, ...(pollOptions ? { background: T.accentBg } : {}) }}>
                 <span style={{ fontSize: 16 }}>📊</span> Sondage
+              </button>
+              <button onClick={() => setPicker(p => (p === "asset" ? null : "asset"))} aria-pressed={picker === "asset"} title="Citer une action, un ETF ou un indice avec son cours"
+                style={{ ...toolBtn, ...(picker === "asset" || (postAsset && !postAsset.chart) ? { background: T.accentBg } : {}) }}>
+                <span style={{ fontSize: 15, fontWeight: 800 }}>$</span> Valeur
+              </button>
+              <button onClick={() => setPicker(p => (p === "chart" ? null : "chart"))} aria-pressed={picker === "chart"} title="Joindre la courbe d'une valeur ou d'un indice"
+                style={{ ...toolBtn, ...(picker === "chart" || postAsset?.chart ? { background: T.accentBg } : {}) }}>
+                <span style={{ fontSize: 16 }}>📈</span> Graphique
+              </button>
+              <button onClick={() => setPicker(p => (p === "allocation" ? null : "allocation"))} aria-pressed={picker === "allocation"} title="Partager ta répartition, en % uniquement"
+                style={{ ...toolBtn, ...(picker === "allocation" || postAllocation ? { background: T.accentBg } : {}) }}>
+                <span style={{ fontSize: 16 }}>🥧</span> Répartition
               </button>
               <div style={{ flex: 1 }} />
               {hasContent && (
@@ -438,6 +475,8 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
                   <PollView poll={activity.data.poll} counts={polls.counts[activity.id]} myVote={polls.mine[activity.id]}
                     isAuthor={isMe} onVote={option => castVote(activity.id, option)} T={T} />
                 )}
+                {activity.data?.asset && <AssetCard asset={activity.data.asset} T={T} />}
+                {activity.data?.allocation && <AllocationCard allocation={activity.data.allocation} T={T} />}
                 <PostImages images={activity.data?.images} T={T} />
                 <PostFiles files={activity.data?.files} T={T} />
               </>
