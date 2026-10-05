@@ -1,17 +1,10 @@
 import { useState, useEffect } from "react";
 import { T as TLive } from "../theme";
+import { INDICES, fetchChart, fmtChange } from "../indices";
+import IndexDetail, { Sparkline } from "./IndexDetail";
 
 // card défini dynamiquement avec T
 // sectionLabel défini dynamiquement avec T
-
-const INDICES = [
-  { symbol: "^GSPC", name: "S&P 500", flag: "🇺🇸" },
-  { symbol: "^FCHI", name: "CAC 40", flag: "🇫🇷" },
-  { symbol: "^IXIC", name: "NASDAQ", flag: "🇺🇸" },
-  { symbol: "^STOXX50E", name: "Euro Stoxx 50", flag: "🇪🇺" },
-  { symbol: "^GDAXI", name: "DAX", flag: "🇩🇪" },
-  { symbol: "^N225", name: "Nikkei 225", flag: "🇯🇵" },
-];
 
 const FOREX = [
   { symbol: "EURUSD=X", name: "EUR/USD" },
@@ -93,11 +86,39 @@ async function fetchJsonList(url) {
   }
 }
 
+// Tuile d'indice : cours, variation du jour et courbe sur 1 an ; ouvre le détail
+function IndexTile({ index, onOpen, T }) {
+  const [quote, setQuote] = useState(null);
+  const [year, setYear] = useState(null);
+  useEffect(() => {
+    let ignore = false;
+    fetchQuote(index.symbol).then(d => { if (!ignore) setQuote(d || {}); });
+    fetchChart(index.symbol, "1y").then(d => { if (!ignore) setYear(d); });
+    return () => { ignore = true; };
+  }, [index.symbol]);
+  const day = quote?.change;
+  const yearUp = (year?.change ?? 0) >= 0;
+  return (
+    <button onClick={() => onOpen(index)} style={{ background: T.bgSubtle, border: "none", borderRadius: 12, padding: "12px 14px", textAlign: "left", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, width: "100%", minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{index.flag} {index.name}</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>{quote?.price ? quote.price.toLocaleString("fr-FR", { maximumFractionDigits: 0 }) : quote ? "—" : "…"}</div>
+        <div style={{ fontSize: 12, fontWeight: 500, color: day == null ? T.textFaint : day >= 0 ? T.accent : T.red, marginTop: 2 }}>{day == null ? "—" : fmtChange(day)} <span style={{ color: T.textFaint, fontWeight: 400 }}>auj.</span></div>
+      </div>
+      <div style={{ textAlign: "right" }}>
+        <Sparkline points={year?.points} color={yearUp ? T.accent : T.red} width={72} height={30} />
+        <div style={{ fontSize: 10, color: T.textFaint, marginTop: 2 }}>{year ? `${fmtChange(year.change)} · 1 an` : "1 an"}</div>
+      </div>
+    </button>
+  );
+}
+
 export default function Marches({ T: TProp }) {
   const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
   const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" };
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [openIndex, setOpenIndex] = useState(null);
   const [secteurs, setSecteurs] = useState([]);
   const [earnings, setEarnings] = useState([]);
   const [loadingSecteurs, setLoadingSecteurs] = useState(true);
@@ -119,6 +140,8 @@ export default function Marches({ T: TProp }) {
     setReloadKey(k => k + 1);
   }
 
+  if (openIndex) return <IndexDetail index={openIndex} T={T} onBack={() => setOpenIndex(null)} />;
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -132,9 +155,9 @@ export default function Marches({ T: TProp }) {
 
       {/* Indices */}
       <div style={card}>
-        <div style={sectionLabel}>📊 Indices</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {INDICES.map(idx => <QuoteCard key={idx.symbol} {...idx} T={T} />)}
+        <div style={sectionLabel}>📊 Indices <span style={{ textTransform: "none", letterSpacing: 0 }}>· touche un indice pour le découvrir</span></div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 8 }}>
+          {INDICES.map(idx => <IndexTile key={idx.symbol} index={idx} T={T} onOpen={i => { setOpenIndex(i); window.scrollTo(0, 0); }} />)}
         </div>
       </div>
 
