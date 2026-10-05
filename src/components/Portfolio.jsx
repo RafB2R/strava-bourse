@@ -4,6 +4,7 @@ import { T as TLive } from "../theme";
 import { syncBadges } from "../badges";
 import { syncMoments } from "../moments";
 import { tradeActivity } from "../trades";
+import { SHOW_PLUS } from "../features";
 import { fetchMyIncome, incomeStats, incomeTypeFor, fmtYield, fetchDividendInfo, dividendForecast } from "../income";
 import ShareCard from "./ShareCard";
 
@@ -624,6 +625,7 @@ export default function Portfolio({ session, T: TProp }) {
             ⚠️ Projection indicative basée sur ta performance actuelle. Les rendements passés ne préjugent pas des rendements futurs.
           </div>
 
+          {SHOW_PLUS && (
           <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", background: T.accentBg, border: `0.5px solid ${T.accentBorder}`, borderRadius: 10 }}>
             <span style={{ fontSize: 16 }}>✨</span>
             <div style={{ flex: 1 }}>
@@ -632,13 +634,14 @@ export default function Portfolio({ session, T: TProp }) {
             </div>
             <span style={{ fontSize: 11, color: T.accent, fontWeight: 600, padding: "2px 8px", borderRadius: 999, border: `0.5px solid ${T.accentBorder}` }}>🔒</span>
           </div>
+          )}
         </div>
       )}
 
       {/* 4. SCORE DIVERSIFICATION + PROFIL RISQUE */}
       {entries.length > 0 && (
         <div style={card}>
-          <div style={sectionLabel}>Analyse gratuite</div>
+          <div style={sectionLabel}>{SHOW_PLUS ? "Analyse gratuite" : "Analyse"}</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
             <div style={{ background: T.bgSubtle, borderRadius: 10, padding: 14, textAlign: "center" }}>
               <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 6 }}>Score diversification</div>
@@ -654,8 +657,8 @@ export default function Portfolio({ session, T: TProp }) {
         </div>
       )}
 
-      {/* 5. ANALYSE AVANCÉE — PAYWALL */}
-      {entries.length > 0 && (
+      {/* 5. ANALYSE AVANCÉE — PAYWALL (masquée tant que Verio Plus n'est pas prêt) */}
+      {SHOW_PLUS && entries.length > 0 && (
         <div style={{ ...card, border: `0.5px solid ${T.accentBorder}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div style={sectionLabel}>Analyse avancée</div>

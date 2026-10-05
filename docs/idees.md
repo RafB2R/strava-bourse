@@ -35,3 +35,10 @@ Pistes validées mais repoussées, avec ce qui les bloque aujourd'hui.
 - **Vérifier qu'un pseudo est libre dès l'inscription** : les visiteurs non
   connectés n'ont plus accès aux profils. Une petite fonction « pseudo
   disponible ? » suffirait.
+
+## Monétisation
+
+- **Verio Plus masqué** (`SHOW_PLUS = false` dans `src/features.js`) : l'encart
+  de la projection et la carte « Analyse avancée » (volatilité, Sharpe, beta,
+  alpha, drawdown, tracking error, bouton 9,99 €/mois) sont prêts à être
+  réaffichés quand l'offre et Stripe seront au point.
