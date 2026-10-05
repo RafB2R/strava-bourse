@@ -1,8 +1,9 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { supabase } from "./supabase";
 import { themes, getThemeKey } from "./theme";
 import { syncBadges } from "./badges";
 import { syncMoments } from "./moments";
+import { fetchUnreadTotal } from "./messages";
 import Notifications from "./components/Notifications";
 
 // Écrans chargés à la demande pour alléger le bundle initial
@@ -14,11 +15,13 @@ const Feed = lazy(() => import("./components/Feed"));
 const Explore = lazy(() => import("./components/Explore"));
 const KYC = lazy(() => import("./components/KYC"));
 const ProfilPublic = lazy(() => import("./components/ProfilPublic"));
+const Messages = lazy(() => import("./components/Messages"));
 
 const TABS = [
   { id: "feed", label: "Fil", icon: "🏠" },
   { id: "explore", label: "Explore", icon: "🔍" },
   { id: "portfolio", label: "Portef.", icon: "📊" },
+  { id: "messages", label: "Messages", icon: "💬" },
   { id: "profil", label: "Profil", icon: "👤" },
 ];
 
@@ -131,6 +134,9 @@ export default function App() {
   const [compareData, setCompareData] = useState(null);
   // Incrémenté à chaque clic sur un onglet du menu : remet l'écran à son état de départ
   const [navKey, setNavKey] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [messageTarget, setMessageTarget] = useState(null);
+  const clearMessageTarget = useCallback(() => setMessageTarget(null), []);
 
   const T = themes[themeKey];
 
@@ -139,6 +145,23 @@ export default function App() {
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, []);
+
+  // Messages non lus : au chargement puis toutes les 30 s
+  const userId = session?.user.id;
+  useEffect(() => {
+    if (!userId) return;
+    let ignore = false;
+    const refresh = () => fetchUnreadTotal().then(n => { if (!ignore) setUnreadMessages(n); });
+    refresh();
+    const timer = setInterval(refresh, 30000);
+    return () => { ignore = true; clearInterval(timer); };
+  }, [userId]);
+
+  // « ✉️ Message » depuis un profil : ouvre la conversation dans l'onglet Messages
+  function openMessage(otherId) {
+    setMessageTarget(otherId);
+    goToTab("messages");
+  }
 
   function toggleTheme() {
     const next = themeKey === "dark" ? "light" : "dark";
@@ -219,12 +242,13 @@ export default function App() {
     <Suspense fallback={<div style={{ color: T.textFaint, fontSize: 13, textAlign: "center", padding: "2rem" }}>Chargement…</div>}>
       {showKYC && <KYC session={session} profile={profile} T={T} onComplete={() => { setShowKYC(false); loadProfile(); }} onSkip={() => setShowKYC(false)} />}
       {publicUserId ? (
-        <ProfilPublic key={publicUserId} userId={publicUserId} session={session} T={T} onBack={() => { setPublicUserId(null); setCompareData(null); }} onCompareData={setCompareData} />
+        <ProfilPublic key={publicUserId} userId={publicUserId} session={session} T={T} onMessage={openMessage} onBack={() => { setPublicUserId(null); setCompareData(null); }} onCompareData={setCompareData} />
       ) : (
         <>
           {tab === "feed" && <Feed key={navKey} session={session} T={T} onViewProfile={viewProfile} />}
           {tab === "explore" && <Explore key={navKey} session={session} T={T} onViewProfile={viewProfile} />}
           {tab === "portfolio" && <Portfolio key={navKey} session={session} T={T} />}
+          {tab === "messages" && <Messages key={navKey} session={session} T={T} openWith={messageTarget} onOpened={clearMessageTarget} onViewProfile={viewProfile} onUnreadChange={setUnreadMessages} />}
           {tab === "profil" && <Profil key={navKey} profile={profile} session={session} T={T} onViewProfile={viewProfile} />}
         </>
       )}
@@ -242,7 +266,7 @@ export default function App() {
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => goToTab(t.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 10, border: "none", background: tab === t.id ? T.accentBg : "transparent", color: tab === t.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === t.id ? 700 : 400, fontSize: 14 }}>
-              <span style={{ fontSize: 18 }}>{t.icon}</span>{t.label}
+              <span style={{ fontSize: 18 }}>{t.icon}</span>{t.label}{t.id === "messages" && unreadMessages > 0 && <span aria-label={`${unreadMessages} message(s) non lu(s)`} style={{ background: T.red, color: T.bg, borderRadius: 999, fontSize: 10, fontWeight: 700, padding: "0 6px", lineHeight: "16px", marginLeft: 4 }}>{unreadMessages > 99 ? "99+" : unreadMessages}</span>}
             </button>
           ))}
         </div>
@@ -309,7 +333,7 @@ export default function App() {
         <div style={{ maxWidth: 620, margin: "0 auto", display: "flex" }}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => goToTab(t.id)} style={{ flex: 1, padding: "12px 4px 14px", fontSize: 10, background: "none", border: "none", color: tab === t.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === t.id ? 600 : 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: 20 }}>{t.icon}</span>{t.label}
+              <span style={{ fontSize: 20, position: "relative" }}>{t.icon}{t.id === "messages" && unreadMessages > 0 && <span style={{ position: "absolute", top: -4, right: -10, background: T.red, color: T.bg, borderRadius: 999, fontSize: 9, fontWeight: 700, padding: "0 4px", lineHeight: "14px" }}>{unreadMessages > 99 ? "99+" : unreadMessages}</span>}</span>{t.label}
             </button>
           ))}
         </div>

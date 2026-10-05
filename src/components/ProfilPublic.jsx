@@ -149,7 +149,7 @@ async function fetchCompareStats(myId, userId) {
   };
 }
 
-export default function ProfilPublic({ userId, session, onBack, T: TProp, onCompareData }) {
+export default function ProfilPublic({ userId, session, onBack, T: TProp, onCompareData, onMessage }) {
   const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
   const btnSm = { background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
@@ -246,7 +246,12 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
             </div>
           </div>
           {userId !== session.user.id && (
-            isFriend ? <span style={{ fontSize: 12, color: T.accent }}>✓ Ami</span>
+            isFriend ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                <span style={{ fontSize: 12, color: T.accent }}>✓ Ami</span>
+                {onMessage && <button onClick={() => onMessage(userId)} style={{ ...btnSm, borderColor: T.accent, color: T.accent }}>✉️ Message</button>}
+              </div>
+            )
             : isPending ? <span style={{ fontSize: 12, color: T.textFaint }}>En attente</span>
             : <button onClick={sendRequest} style={{ ...btnSm, borderColor: T.accent, color: T.accent }}>+ Suivre</button>
           )}
