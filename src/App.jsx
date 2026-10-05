@@ -39,9 +39,10 @@ function tabFromUrl() {
   }
 }
 
-// Ordinateur : l'interface grandit avec la largeur de l'écran (×1 à 1 536 px, jusqu'à ×1,25 à 1 920 px),
-// pour ne pas paraître minuscule sur un grand écran affiché à 100 %.
-const DESIGN_WIDTH = 1536;
+// Ordinateur : l'interface grandit avec la largeur de la fenêtre, en pixels du navigateur
+// (×1 jusqu'à 1 220 px, puis progressivement jusqu'à ×1,25 dès 1 525 px). Exemple : écran
+// 1920 px avec Windows à 125 % = 1 536 px pour le navigateur → ×1,25, comme un zoom à 125 %.
+const DESIGN_WIDTH = 1220;
 function desktopZoom() {
   return Math.round(Math.min(1.25, Math.max(1, window.innerWidth / DESIGN_WIDTH)) * 100) / 100;
 }
