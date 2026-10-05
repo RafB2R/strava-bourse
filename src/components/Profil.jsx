@@ -174,7 +174,13 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
     setTimeout(() => setMessage(""), 3000);
   }
 
-  async function acceptRequest(id) { await supabase.from("friendships").update({ status: "accepted" }).eq("id", id); reloadFriendships(); }
+  async function acceptRequest(id) {
+    const { error } = await supabase.from("friendships").update({ status: "accepted" }).eq("id", id);
+    // Prévient celui qui avait demandé (le nom de l'expéditeur est fixé par la base)
+    const request = received.find(f => f.id === id);
+    if (!error && request?.requester_id) await supabase.from("notifications").insert({ user_id: request.requester_id, type: "friend_accepted", data: {} });
+    reloadFriendships();
+  }
   async function declineRequest(id) { await supabase.from("friendships").delete().eq("id", id); reloadFriendships(); }
 
   function startEdit() {
