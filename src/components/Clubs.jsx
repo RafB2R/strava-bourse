@@ -4,6 +4,17 @@ import { syncBadges } from "../badges";
 import { T, T as TLive, avatarColors } from "../theme";
 import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage, uploadImages, removeImages, MAX_FILES, FILE_ACCEPT_ATTR, checkFile, uploadFiles, removeFiles } from "../media";
 import { PostImages, ComposerPreviews, PostFiles, ComposerFiles } from "./PostMedia";
+import { RichText, TickerChips, TagField } from "./PostText";
+import { finalizeTags } from "../tags";
+import IndexDetail from "./IndexDetail";
+import { detailFor } from "../indices";
+
+// Prévient les membres mentionnés dans un post ou une réponse de club
+async function notifyMentions(tags, myId, data) {
+  for (const m of tags?.mentions || []) {
+    if (m.id !== myId) await supabase.from("notifications").insert({ user_id: m.id, type: "mention", data });
+  }
+}
 
 const CATEGORIES = {
   "📈 Actions": ["Actions France", "Actions Europe", "Actions USA", "Actions Monde", "Actions Émergents", "Small Caps", "Value Investing", "Growth Investing", "Dividendes", "Stock Picking"],
@@ -38,10 +49,11 @@ function timeAgo(date) {
   return `il y a ${Math.floor(diff / 86400)} j`;
 }
 
-function Post({ post, session, isMember, onReact, onDelete }) {
+function Post({ post, session, isMember, onReact, onDelete, onAsset, onProfile }) {
   const [showReplies, setShowReplies] = useState(false);
   const [replies, setReplies] = useState([]);
   const [replyInput, setReplyInput] = useState("");
+  const [replyTags, setReplyTags] = useState(null);
   const [sendingReply, setSendingReply] = useState(false);
   const [loadingReplies, setLoadingReplies] = useState(false);
 
@@ -63,8 +75,14 @@ function Post({ post, session, isMember, onReact, onDelete }) {
   async function sendReply() {
     if (!replyInput.trim() || sendingReply) return;
     setSendingReply(true);
-    await supabase.from("club_replies").insert({ post_id: post.id, user_id: session.user.id, content: replyInput.trim() });
+    const text = replyInput.trim();
+    const tags = finalizeTags(text, replyTags);
+    const row = { post_id: post.id, user_id: session.user.id, content: text };
+    if (tags) row.tags = tags;
+    const { error } = await supabase.from("club_replies").insert(row);
+    if (!error) notifyMentions(tags, session.user.id, { club_id: post.club_id, post_id: post.id, excerpt: text.slice(0, 80) });
     setReplyInput("");
+    setReplyTags(null);
     setSendingReply(false);
     await loadReplies();
     setShowReplies(true);
@@ -87,7 +105,12 @@ function Post({ post, session, isMember, onReact, onDelete }) {
               <button onClick={() => onDelete(post.id)} style={{ marginLeft: "auto", background: "transparent", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 11, fontFamily: "inherit" }}>✕</button>
             )}
           </div>
-          {post.content?.trim() && <div style={{ fontSize: 14, color: T.text, lineHeight: 1.6, marginBottom: 10, wordBreak: "break-word", whiteSpace: "pre-wrap" }}>{post.content}</div>}
+          {post.content?.trim() && (
+            <div style={{ fontSize: 14, color: T.text, lineHeight: 1.6, marginBottom: 10, wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
+              <RichText text={post.content} tickers={post.tags?.tickers} mentions={post.tags?.mentions} T={T} onAsset={onAsset} onProfile={onProfile} />
+            </div>
+          )}
+          <TickerChips tickers={post.tags?.tickers} T={T} onAsset={onAsset} />
           <PostImages images={post.images} T={T} />
           <PostFiles files={post.files} T={T} />
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
@@ -115,14 +138,17 @@ function Post({ post, session, isMember, onReact, onDelete }) {
                   <span style={{ fontSize: 11, color: T.textFaint }}>{timeAgo(reply.created_at)}</span>
                   {reply.user_id === session.user.id && <button onClick={() => deleteReply(reply.id)} style={{ marginLeft: "auto", background: "transparent", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 11, fontFamily: "inherit" }}>✕</button>}
                 </div>
-                <div style={{ fontSize: 13, color: T.text, lineHeight: 1.5, background: T.bgSubtle, borderRadius: 8, padding: "7px 10px", wordBreak: "break-word" }}>{reply.content}</div>
+                <div style={{ fontSize: 13, color: T.text, lineHeight: 1.5, background: T.bgSubtle, borderRadius: 8, padding: "7px 10px", wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
+                  <RichText text={reply.content} tickers={reply.tags?.tickers} mentions={reply.tags?.mentions} T={T} onAsset={onAsset} onProfile={onProfile} />
+                </div>
               </div>
             </div>
           ))}
           {isMember && (
             <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
               <Avatar name={session.user.email} size={26} />
-              <input style={{ ...inp(T), marginBottom: 0, flex: 1, fontSize: 12, padding: "7px 10px" }} placeholder="Répondre…" value={replyInput} onChange={e => setReplyInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendReply()} />
+              <TagField as="input" style={{ ...inp(T), marginBottom: 0, flex: 1, fontSize: 12, padding: "7px 10px" }} placeholder="Répondre… ($ valeur, @ membre)"
+                value={replyInput} onValueChange={setReplyInput} tags={replyTags} onTagsChange={setReplyTags} onSubmit={sendReply} myId={session.user.id} T={T} />
               <button onClick={sendReply} disabled={sendingReply || !replyInput.trim()} style={{ ...btn(T), padding: "7px 14px", fontSize: 12, flexShrink: 0 }}>↵</button>
             </div>
           )}
@@ -241,9 +267,11 @@ function ClubRanking({ clubId, session }) {
   );
 }
 
-function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCount }) {
+function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCount, onViewProfile }) {
   const [posts, setPosts] = useState([]);
   const [input, setInput] = useState("");
+  const [inputTags, setInputTags] = useState(null);
+  const [openAsset, setOpenAsset] = useState(null);   // fiche d'une valeur citée
   const [sending, setSending] = useState(false);
   const [postImages, setPostImages] = useState([]);   // images préparées (compressées) avec aperçu
   const [postFiles, setPostFiles] = useState([]);
@@ -312,16 +340,20 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
       await removeImages(images.map(i => i.path));
       setPostError(e.message); setSending(false); return;
     }
-    const row = { club_id: club.id, user_id: session.user.id, content: input.trim() };
+    const content = input.trim();
+    const tags = finalizeTags(content, inputTags);
+    const row = { club_id: club.id, user_id: session.user.id, content };
     if (images.length) row.images = images;
     if (files.length) row.files = files;
-    const { error } = await supabase.from("club_posts").insert(row);
+    if (tags) row.tags = tags;
+    const { data: created, error } = await supabase.from("club_posts").insert(row).select("id").single();
     if (error) {
       await Promise.all([removeImages(images.map(i => i.path)), removeFiles(files.map(f => f.path))]);
       setPostError("Publication impossible. Réessaie."); setSending(false); return;
     }
+    notifyMentions(tags, session.user.id, { club_id: club.id, post_id: created?.id, excerpt: content.slice(0, 80) });
     postImages.forEach(i => URL.revokeObjectURL(i.preview));
-    setPostImages([]); setPostFiles([]);
+    setPostImages([]); setPostFiles([]); setInputTags(null);
     setInput(""); setSending(false); setPage(1); reloadPosts();
   }
 
@@ -356,6 +388,10 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
   }
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  if (openAsset) {
+    return <IndexDetail index={detailFor(openAsset)} T={T} backLabel={`← ${club.name}`} initialPeriod="1y" onBack={() => setOpenAsset(null)} />;
+  }
 
   return (
     <div>
@@ -397,8 +433,8 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
         <div>
           {isMember && (
             <div style={{ ...card(T), marginBottom: 20 }}>
-              <textarea style={{ ...inp(T), marginBottom: 8, height: 80, resize: "none" }} placeholder="Partage une idée, une question, une analyse…" value={input}
-                onChange={e => setInput(e.target.value)}
+              <TagField as="textarea" style={{ ...inp(T), marginBottom: 8, height: 80, resize: "none" }} placeholder="Partage une idée, une question… $ pour citer une valeur, @ pour un membre"
+                value={input} onValueChange={setInput} tags={inputTags} onTagsChange={setInputTags} myId={session.user.id} T={T}
                 onPaste={e => { const files = [...e.clipboardData.files].filter(isImage); if (files.length) { e.preventDefault(); addImages(files); } }} />
               <ComposerPreviews items={postImages} onRemove={i => setPostImages(p => p.filter((_, j) => j !== i))} T={T} />
               <ComposerFiles files={postFiles} onRemove={i => setPostFiles(p => p.filter((_, j) => j !== i))} T={T} />
@@ -430,7 +466,8 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
           {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>Chargement…</div>}
           {!loading && posts.length === 0 && <div style={{ ...card(T), textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>Aucun post encore — lance la discussion ! 🚀</div>}
           {posts.map(post => (
-            <Post key={post.id} post={post} session={session} isMember={isMember} onReact={handleReact} onDelete={deletePost} />
+            <Post key={post.id} post={post} session={session} isMember={isMember} onReact={handleReact} onDelete={deletePost}
+              onAsset={a => { setOpenAsset(a); window.scrollTo(0, 0); }} onProfile={id => onViewProfile?.(id)} />
           ))}
 
           {totalPages > 1 && (
@@ -461,7 +498,7 @@ function highlight(text, query, color) {
   return parts;
 }
 
-export default function Clubs({ session, initialClub = null, onBack = null , T: TProp }) {
+export default function Clubs({ session, initialClub = null, onBack = null , T: TProp, onViewProfile }) {
   const T = TProp || TLive;
   const [clubs, setClubs] = useState([]);
   const [myClubs, setMyClubs] = useState([]);
@@ -530,6 +567,7 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
         onJoin={() => joinClub(selectedClub.id)}
         onLeave={() => leaveClub(selectedClub.id)}
         memberCount={memberCounts[selectedClub.id] || 0}
+        onViewProfile={onViewProfile}
       />
       </div>
     );

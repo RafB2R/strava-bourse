@@ -9,8 +9,8 @@ import { makePoll, isValidPoll, fetchPolls, vote, closeFinishedPolls } from "../
 import { PostImages, ComposerPreviews, PostFiles, ComposerFiles, PollEditor, PollView } from "./PostMedia";
 import { AssetCard, AllocationCard, AssetPicker, AllocationPicker, AttachedChip } from "./PostAttachments";
 import { CHART_PERIODS } from "../attachments";
-import { RichText, TickerChips, TagSuggestions } from "./PostText";
-import { tagAtCaret } from "../tags";
+import { RichText, TickerChips, TagSuggestions, TagField } from "./PostText";
+import { tagAtCaret, finalizeTags } from "../tags";
 import IndexDetail from "./IndexDetail";
 import { detailFor } from "../indices";
 
@@ -68,7 +68,7 @@ const FILTERS = [
   { id: "badges", label: "Badges 🏅" },
 ];
 
-const COMMENT_COLUMNS = "id, activity_id, user_id, content, created_at, author:profiles!activity_comments_user_id_fkey(full_name)";
+const COMMENT_COLUMNS = "id, activity_id, user_id, content, tags, created_at, author:profiles!activity_comments_user_id_fkey(full_name)";
 
 // Amis acceptés (moi inclus), activités à afficher selon le périmètre, avec leurs likes et commentaires
 async function fetchFeed(userId, scope) {
@@ -119,6 +119,7 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
   const [comments, setComments] = useState({});
   const [openComment, setOpenComment] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
+  const [commentTags, setCommentTags] = useState({});  // tags choisis par commentaire en cours
   const [postInput, setPostInput] = useState("");
   const [posting, setPosting] = useState(false);
   const [postImages, setPostImages] = useState([]);
@@ -358,11 +359,19 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
     const id = activity.id;
     const text = (commentInputs[id] || "").trim();
     if (!text) return;
+    const tags = finalizeTags(text, commentTags[id]);
     setCommentInputs(p => ({ ...p, [id]: "" }));
-    const { data, error } = await supabase.from("activity_comments").insert({ activity_id: id, user_id: userId, content: text }).select(COMMENT_COLUMNS).single();
+    const row = { activity_id: id, user_id: userId, content: text };
+    if (tags) row.tags = tags;
+    const { data, error } = await supabase.from("activity_comments").insert(row).select(COMMENT_COLUMNS).single();
     if (error) { setCommentInputs(p => ({ ...p, [id]: text })); return; }
+    setCommentTags(p => ({ ...p, [id]: null }));
     setComments(p => ({ ...p, [id]: [...(p[id] || []), data] }));
     notify(activity.user_id, "activity_comment", { activity_id: id, excerpt: text.slice(0, 80) });
+    // Membres mentionnés (l'auteur du post est déjà prévenu du commentaire)
+    for (const m of tags?.mentions || []) {
+      if (m.id !== userId && m.id !== activity.user_id) notify(m.id, "mention", { activity_id: id, excerpt: text.slice(0, 80) });
+    }
   }
 
   async function deleteComment(activityId, commentId) {
@@ -585,17 +594,24 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
                           <button onClick={() => deleteComment(activity.id, c.id)} title="Supprimer" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, padding: 0 }}>✕</button>
                         )}
                       </div>
-                      <div style={{ fontSize: 13, color: T.text, marginTop: 2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{c.content}</div>
+                      <div style={{ fontSize: 13, color: T.text, marginTop: 2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                        <RichText text={c.content} tickers={c.tags?.tickers} mentions={c.tags?.mentions} T={T} onAsset={openAssetDetail} onProfile={pid => onViewProfile && onViewProfile(pid)} />
+                      </div>
                     </div>
                   </div>
                 ))}
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <Avatar name={profile?.full_name} size={26} />
-                  <input
+                  <TagField
+                    as="input"
                     value={commentInputs[activity.id] || ""}
-                    onChange={e => setCommentInputs(p => ({ ...p, [activity.id]: e.target.value }))}
-                    onKeyDown={e => e.key === "Enter" && addComment(activity)}
-                    placeholder="Commenter…"
+                    onValueChange={v => setCommentInputs(p => ({ ...p, [activity.id]: v }))}
+                    tags={commentTags[activity.id]}
+                    onTagsChange={t => setCommentTags(p => ({ ...p, [activity.id]: t }))}
+                    onSubmit={() => addComment(activity)}
+                    myId={userId}
+                    T={T}
+                    placeholder="Commenter… ($ valeur, @ membre)"
                     maxLength={1000}
                     style={{ flex: 1, padding: "7px 10px", fontSize: 13, borderRadius: 8, border: `0.5px solid ${T.border}`, background: T.bgCard, color: T.text, fontFamily: "inherit" }}
                   />

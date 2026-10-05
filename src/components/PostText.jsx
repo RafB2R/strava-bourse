@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { tagAtCaret, addTag } from "../tags";
 import { supabase } from "../supabase";
 import { searchAssets, fetchQuote } from "../attachments";
 import { fmtChange } from "../indices";
@@ -77,11 +78,12 @@ async function searchMembers(q, myId) {
   let query = supabase.from("profiles").select("id, full_name, username").neq("id", myId).not("username", "is", null).limit(5);
   if (safe) query = query.or(`username.ilike.${safe}%,full_name.ilike.%${safe}%`);
   const { data } = await query;
-  return data || [];
+  return (data || []).filter(m => m.username && m.id !== myId);
 }
 
 // Suggestions sous la zone de texte pendant la frappe de « $… » ou « @… »
-export function TagSuggestions({ tag, myId, T, onPick }) {
+// « onItems(clé, résultats) » : permet à la zone de saisie de choisir la 1re suggestion avec Entrée
+export function TagSuggestions({ tag, myId, T, onPick, onItems }) {
   const [state, setState] = useState({ key: null, items: [] });
   const key = tag ? `${tag.sign}${tag.query}` : null;
 
@@ -91,10 +93,12 @@ export function TagSuggestions({ tag, myId, T, onPick }) {
     let ignore = false;
     const t = setTimeout(async () => {
       const items = tag.sign === "$" ? await searchAssets(tag.query) : await searchMembers(tag.query, myId);
-      if (!ignore) setState({ key: `${tag.sign}${tag.query}`, items });
+      if (ignore) return;
+      setState({ key: `${tag.sign}${tag.query}`, items });
+      onItems?.(`${tag.sign}${tag.query}`, items);
     }, 250);
     return () => { ignore = true; clearTimeout(t); };
-  }, [tag, myId]);
+  }, [tag, myId, onItems]);
 
   if (!tag) return null;
   const hint = tag.sign === "$" ? "Tape le nom ou le ticker d'une valeur (ex. $total, $CW8)…" : "Tape le pseudo ou le nom d'un membre…";
@@ -116,6 +120,56 @@ export function TagSuggestions({ tag, myId, T, onPick }) {
           </span>
         </button>
       ))}
+    </div>
+  );
+}
+
+// Zone de saisie (input ou textarea) avec les suggestions $valeur / @membre.
+// La valeur et les tags choisis sont gérés par le parent ; finalizeTags() à l'envoi.
+// Entrée : choisit la 1re suggestion si la liste est ouverte, sinon onSubmit (input).
+export function TagField({ as = "input", value, onValueChange, tags, onTagsChange, onSubmit, myId, T, inputRef, style, ...rest }) {
+  const [caret, setCaret] = useState(0);
+  const [focused, setFocused] = useState(false);
+  const [dismissed, setDismissed] = useState(null);
+  const [found, setFound] = useState({ key: null, items: [] });
+  const raw = focused ? tagAtCaret(value, caret) : null;
+  const tag = raw && `${raw.start}${raw.sign}${raw.query}` !== dismissed ? raw : null;
+  const key = tag ? `${tag.sign}${tag.query}` : null;
+  const items = found.key === key ? found.items : [];
+  const fieldRef = useRef(null);
+  const onItems = useCallback((k, list) => setFound({ key: k, items: list }), []);
+
+  function pick(item) {
+    if (!tag) return;
+    const token = tag.sign === "$" ? `$${item.symbol} ` : `@${item.username} `;
+    onValueChange(value.slice(0, tag.start) + token + value.slice(caret));
+    onTagsChange(addTag(tags, tag.sign, item));
+    const pos = tag.start + token.length;
+    setCaret(pos);
+    requestAnimationFrame(() => { fieldRef.current?.focus(); fieldRef.current?.setSelectionRange(pos, pos); });
+  }
+
+  const Field = as;
+  return (
+    <div style={{ flex: style?.flex, minWidth: 0, width: style?.width }}>
+      <Field
+        {...rest}
+        ref={node => { fieldRef.current = node; if (inputRef) inputRef.current = node; }}
+        value={value}
+        style={{ ...style, flex: undefined, width: "100%" }}
+        onChange={e => { onValueChange(e.target.value); setCaret(e.target.selectionStart); }}
+        onSelect={e => setCaret(e.target.selectionStart)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onKeyDown={e => {
+          if (tag && e.key === "Escape") { e.preventDefault(); setDismissed(`${tag.start}${tag.sign}${tag.query}`); return; }
+          if (e.key === "Enter" && !e.shiftKey) {
+            if (tag && items.length) { e.preventDefault(); pick(items[0]); return; }
+            if (as === "input" && onSubmit) { e.preventDefault(); onSubmit(); }
+          }
+        }}
+      />
+      <TagSuggestions tag={tag} myId={myId} T={T} onPick={pick} onItems={onItems} />
     </div>
   );
 }
