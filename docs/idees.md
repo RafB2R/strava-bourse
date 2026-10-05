@@ -48,15 +48,10 @@ Pistes validées mais repoussées, avec ce qui les bloque aujourd'hui.
 L'encadré de publication a les boutons « 🖼️ Image » (4 images max,
 compressées avant l'envoi), « 📎 Fichier » (3 fichiers, 10 Mo, PDF, Excel,
 CSV, Word, PowerPoint, texte) et « 📊 Sondage » (2 à 4 choix, 1 à 7 jours,
-votes anonymes). Pistes pour compléter la barre d'outils :
+votes anonymes), « $ Valeur », « 📈 Graphique » et « 🥧 Répartition » (en %).
+Pistes pour compléter la barre d'outils :
 
-- **Valeur** (« $ Stock ») : citer une action ou un ETF, avec son cours et un
-  lien vers sa fiche.
-- **Graphique** : joindre la courbe d'un indice ou d'une valeur (en %).
-- **Portefeuille / Trade** : partager sa répartition ou un mouvement, en %
-  uniquement (jamais de montant).
 - **GIF** : nécessite une clé d'API (Giphy ou Tenor).
-- **Fichiers dans la messagerie** (PDF…), sur le modèle des images privées.
 - **Clôture des sondages** : sans l'extension pg_cron, les sondages terminés
   sont clos à l'ouverture du fil ou des notifications par n'importe quel
   membre. Activer pg_cron (Database → Extensions) puis relancer la migration
@@ -68,9 +63,9 @@ Verio s'installe comme une application (PWA) : icône sur l'écran d'accueil,
 plein écran, ouverture rapide, raccourcis (Portefeuille, Messagerie, Explore).
 Suites possibles :
 
-- **Notifications push** (nouveau message, demande d'ami, fin de sondage) :
-  Web Push, possible sur Android et sur iPhone (iOS 16.4+, une fois l'app
-  installée). Demande des clés VAPID et une fonction serveur qui envoie.
+- **Notifications push** : en place (messages, demandes d'ami, commentaires,
+  fins de sondage). Pistes : choisir par type ce qu'on reçoit, regrouper les
+  messages d'une même conversation, notifier les réponses dans les clubs.
 - **Partager vers Verio** depuis la galerie du téléphone (Web Share Target).
 - **Applications natives (Expo)** pour être présent dans l'App Store et le
   Play Store, si la PWA ne suffit plus.
