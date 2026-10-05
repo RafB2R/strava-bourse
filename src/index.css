@@ -4,3 +4,11 @@ button { cursor: pointer; }
 input:focus { outline: none; border-color: #999 !important; }
 /* Options des listes déroulantes : couleurs système, qui suivent color-scheme (clair ou sombre) */
 select option { background-color: Canvas; color: CanvasText; }
+/* Barres d'outils de publication : seulement les icônes sur téléphone */
+@media (max-width: 640px) {
+  .tool-label { display: none; }
+  /* La barre prend toute la largeur de l'encadré (sous l'avatar aussi) */
+  .composer-toolbar { margin-left: -46px; gap: 0 !important; }
+  .composer-toolbar > button:not(.composer-publish) { min-width: 32px !important; padding: 5px 4px !important; }
+  .composer-publish { padding: 6px 14px !important; }
+}

@@ -444,9 +444,9 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
                 <input ref={imageInput} type="file" accept={ACCEPT_ATTR} multiple hidden onChange={e => { addImages(e.target.files); e.target.value = ""; }} />
                 <input ref={fileInput} type="file" accept={FILE_ACCEPT_ATTR} multiple hidden onChange={e => { addFiles(e.target.files); e.target.value = ""; }} />
                 <button onClick={() => imageInput.current?.click()} disabled={postImages.length + preparing >= MAX_IMAGES}
-                  style={{ background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit" }}>🖼️ Photo</button>
+                  style={{ background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 36 }} aria-label="Photo"><span style={{ fontSize: 18 }} aria-hidden="true">🖼️</span><span className="tool-label">Photo</span></button>
                 <button onClick={() => fileInput.current?.click()} disabled={postFiles.length >= MAX_FILES} title="PDF, Excel, Word, PowerPoint, CSV · 10 Mo max"
-                  style={{ background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit" }}>📎 Fichier</button>
+                  style={{ background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 36 }} aria-label="Fichier"><span style={{ fontSize: 18 }} aria-hidden="true">📎</span><span className="tool-label">Fichier</span></button>
                 <span style={{ flex: 1 }} />
                 <button style={{ ...btn(T), padding: "8px 20px", opacity: canPost ? 1 : 0.5 }} onClick={sendPost} disabled={!canPost}>{sending ? "Publication…" : "Publier"}</button>
               </div>
