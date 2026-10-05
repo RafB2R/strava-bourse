@@ -5,7 +5,7 @@ import { badgeFromData } from "../badges";
 import { MOMENTS, MOMENT_TYPES, isMoment, momentSentence } from "../moments";
 import { tradeTexts } from "../trades";
 import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage, uploadImages, removeImages, MAX_FILES, FILE_ACCEPT_ATTR, checkFile, uploadFiles, removeFiles } from "../media";
-import { makePoll, isValidPoll, fetchPolls, vote } from "../polls";
+import { makePoll, isValidPoll, fetchPolls, vote, closeFinishedPolls } from "../polls";
 import { PostImages, ComposerPreviews, PostFiles, ComposerFiles, PollEditor, PollView } from "./PostMedia";
 
 function Avatar({ name, size = 36 }) {
@@ -66,6 +66,7 @@ const COMMENT_COLUMNS = "id, activity_id, user_id, content, created_at, author:p
 
 // Amis acceptés (moi inclus), activités à afficher selon le périmètre, avec leurs likes et commentaires
 async function fetchFeed(userId, scope) {
+  closeFinishedPolls();
   const { data: friendships } = await supabase.from("friendships").select("requester_id, receiver_id").eq("status", "accepted").or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
   const ids = [userId];
   if (friendships) friendships.forEach(f => {
@@ -124,6 +125,8 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
   const [pollOptions, setPollOptions] = useState(null); // null = pas de sondage
   const [pollDays, setPollDays] = useState(1);
   const [polls, setPolls] = useState({ counts: {}, mine: {} });
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [profile, setProfile] = useState(null);
 
   const [reloadKey, setReloadKey] = useState(0);
@@ -239,6 +242,21 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
   }
 
   const likePending = useRef(new Set());
+
+  // Supprime un de ses posts, puis ses images et fichiers du stockage
+  async function deletePost(activity) {
+    if (deleting) return;
+    setDeleting(true);
+    const { data, error } = await supabase.from("activities").delete().eq("id", activity.id).eq("user_id", userId).select("id");
+    setDeleting(false);
+    setConfirmDelete(null);
+    if (error || !data?.length) return;
+    setActivities(p => p.filter(a => a.id !== activity.id));
+    await Promise.all([
+      removeImages((activity.data?.images || []).map(i => i.path).filter(Boolean)),
+      removeFiles((activity.data?.files || []).map(f => f.path).filter(Boolean)),
+    ]);
+  }
 
   // Vote affiché tout de suite, annulé si Supabase refuse (sondage terminé…)
   async function castVote(activityId, option) {
@@ -431,13 +449,24 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
               </div>
             )}
 
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
               <button onClick={() => toggleLike(activity)} style={{ ...btnAct, ...(like.mine ? { borderColor: T.accent, color: T.accent } : {}) }}>
                 👍 {like.mine ? "Liké" : "Like"}{like.count > 0 ? ` · ${like.count}` : ""}
               </button>
               <button onClick={() => toggleComment(activity.id)} style={btnAct}>
                 💬 {activityComments.length > 0 ? activityComments.length : "Commenter"}
               </button>
+              {isMe && activity.type === "post" && (
+                confirmDelete === activity.id ? (
+                  <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 12, color: T.textMuted }}>Supprimer ce post ?</span>
+                    <button onClick={() => deletePost(activity)} disabled={deleting} style={{ ...btnAct, borderColor: T.red, color: T.red }}>{deleting ? "…" : "Supprimer"}</button>
+                    <button onClick={() => setConfirmDelete(null)} style={btnAct}>Annuler</button>
+                  </span>
+                ) : (
+                  <button onClick={() => setConfirmDelete(activity.id)} title="Supprimer le post" aria-label="Supprimer le post" style={{ ...btnAct, marginLeft: "auto", border: "none" }}>🗑️</button>
+                )
+              )}
             </div>
 
             {openComment[activity.id] && (

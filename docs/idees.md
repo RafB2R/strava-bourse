@@ -50,13 +50,14 @@ compressées avant l'envoi), « 📎 Fichier » (3 fichiers, 10 Mo, PDF, Excel,
 CSV, Word, PowerPoint, texte) et « 📊 Sondage » (2 à 4 choix, 1 à 7 jours,
 votes anonymes). Pistes pour compléter la barre d'outils :
 
-- **Images dans la messagerie** : même mécanisme, mais dans un bucket privé
-  (adresses signées), puisque les conversations sont privées.
 - **Valeur** (« $ Stock ») : citer une action ou un ETF, avec son cours et un
   lien vers sa fiche.
 - **Graphique** : joindre la courbe d'un indice ou d'une valeur (en %).
 - **Portefeuille / Trade** : partager sa répartition ou un mouvement, en %
   uniquement (jamais de montant).
 - **GIF** : nécessite une clé d'API (Giphy ou Tenor).
-- **Supprimer un post** (et ses images et fichiers) : pas encore possible depuis le fil.
-- **Notifier l'auteur à la fin de son sondage**, avec le résultat.
+- **Fichiers dans la messagerie** (PDF…), sur le modèle des images privées.
+- **Clôture des sondages** : sans l'extension pg_cron, les sondages terminés
+  sont clos à l'ouverture du fil ou des notifications par n'importe quel
+  membre. Activer pg_cron (Database → Extensions) puis relancer la migration
+  20261011000001 pour une clôture toutes les 15 minutes.
