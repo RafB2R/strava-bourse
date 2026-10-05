@@ -99,7 +99,7 @@ export default function ShareCard({ session, perf, allocation, positions, onClos
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div role="dialog" aria-label="Partager mon portefeuille" onClick={e => e.stopPropagation()} style={{ background: T.bgSecondary, border: `0.5px solid ${T.border}`, borderRadius: 18, padding: 20, width: "100%", maxWidth: 440, maxHeight: "calc(100vh - 32px)", overflowY: "auto", fontFamily: "system-ui, sans-serif" }}>
+      <div role="dialog" aria-label="Partager mon portefeuille" onClick={e => e.stopPropagation()} style={{ background: T.bgSecondary, border: `0.5px solid ${T.border}`, borderRadius: 18, padding: 20, width: "100%", maxWidth: 440, maxHeight: "calc(100vh / var(--verio-zoom, 1) - 32px)", overflowY: "auto", fontFamily: "system-ui, sans-serif" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: T.text }}>📤 Partager mon portefeuille</div>
           <button onClick={onClose} aria-label="Fermer" style={{ background: "none", border: "none", fontSize: 18, color: T.textFaint, cursor: "pointer" }}>✕</button>
