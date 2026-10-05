@@ -87,17 +87,19 @@ async function fetchJsonList(url) {
   }
 }
 
-const fmtMonth = period => new Date(`${period}-01T12:00:00`).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+const fmtRateDate = (r) => r.frequency === "daily"
+  ? `Au ${new Date(`${r.date}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })} · ${r.source}`
+  : `Moyenne de ${new Date(`${r.date.slice(0, 7)}-01T12:00:00`).toLocaleDateString("fr-FR", { month: "long", year: "numeric" })} · ${r.source}`;
 
-// Taux d'État à 10 ans publié par la BCE (moyenne mensuelle), variation en points
-function EcbRateTile({ country, name, rates, T }) {
+// Taux d'État à 10 ans (quotidien si disponible, sinon moyenne mensuelle BCE), variation en points
+function RateTile({ country, name, rates, T }) {
   const r = rates?.[country];
   return (
     <div style={{ background: T.bgSubtle, borderRadius: 12, padding: "12px 14px" }}>
       <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}><Flag country={country} size={12} />{name}</div>
       <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>{r ? `${r.value.toFixed(2).replace(".", ",")} %` : rates ? "—" : "…"}</div>
-      {r?.change != null && <div style={{ fontSize: 12, color: r.change >= 0 ? T.accent : T.red, marginTop: 2 }}>{r.change >= 0 ? "+" : "−"}{Math.abs(r.change).toFixed(2).replace(".", ",")} pt sur un mois</div>}
-      {r && <div style={{ fontSize: 10, color: T.textFaint, marginTop: 2 }}>Moyenne de {fmtMonth(r.period)} · BCE</div>}
+      {r?.change != null && <div style={{ fontSize: 12, color: r.change >= 0 ? T.accent : T.red, marginTop: 2 }}>{r.change >= 0 ? "+" : "−"}{Math.abs(r.change).toFixed(2).replace(".", ",")} pt sur un {r.frequency === "daily" ? "jour" : "mois"}</div>}
+      {r && <div style={{ fontSize: 10, color: T.textFaint, marginTop: 2 }}>{fmtRateDate(r)}</div>}
     </div>
   );
 }
@@ -207,8 +209,8 @@ export default function Marches({ T: TProp }) {
         <div style={sectionLabel}>🏦 Taux obligataires</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {TAUX.map(t => <QuoteCard key={t.symbol} {...t} unit="%" T={T} />)}
-          <EcbRateTile country="fr" name="OAT 10 ans" rates={rates} T={T} />
-          <EcbRateTile country="de" name="Bund 10 ans" rates={rates} T={T} />
+          <RateTile country="fr" name="OAT 10 ans" rates={rates} T={T} />
+          <RateTile country="de" name="Bund 10 ans" rates={rates} T={T} />
         </div>
       </div>
 
