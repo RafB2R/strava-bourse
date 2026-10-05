@@ -42,3 +42,21 @@ Pistes validées mais repoussées, avec ce qui les bloque aujourd'hui.
   de la projection et la carte « Analyse avancée » (volatilité, Sharpe, beta,
   alpha, drawdown, tracking error, bouton 9,99 €/mois) sont prêts à être
   réaffichés quand l'offre et Stripe seront au point.
+
+## Publication dans le fil
+
+L'encadré de publication a les boutons « 🖼️ Image » (4 images max,
+compressées avant l'envoi), « 📎 Fichier » (3 fichiers, 10 Mo, PDF, Excel,
+CSV, Word, PowerPoint, texte) et « 📊 Sondage » (2 à 4 choix, 1 à 7 jours,
+votes anonymes). Pistes pour compléter la barre d'outils :
+
+- **Images dans la messagerie** : même mécanisme, mais dans un bucket privé
+  (adresses signées), puisque les conversations sont privées.
+- **Valeur** (« $ Stock ») : citer une action ou un ETF, avec son cours et un
+  lien vers sa fiche.
+- **Graphique** : joindre la courbe d'un indice ou d'une valeur (en %).
+- **Portefeuille / Trade** : partager sa répartition ou un mouvement, en %
+  uniquement (jamais de montant).
+- **GIF** : nécessite une clé d'API (Giphy ou Tenor).
+- **Supprimer un post** (et ses images et fichiers) : pas encore possible depuis le fil.
+- **Notifier l'auteur à la fin de son sondage**, avec le résultat.
