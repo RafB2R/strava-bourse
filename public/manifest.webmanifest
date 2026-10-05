@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "Verio — investir sur le long terme, ensemble",
+  "short_name": "Verio",
+  "description": "Le réseau social des investisseurs long terme : suis ton portefeuille, partage tes moments, compare-toi à tes amis.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ECEEF2",
+  "theme_color": "#0F6E56",
+  "categories": ["finance", "social"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Mon portefeuille", "short_name": "Portefeuille", "url": "/?tab=portfolio&source=pwa", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Messagerie", "short_name": "Messages", "url": "/?tab=messages&source=pwa", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Explore", "url": "/?tab=explore&source=pwa", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

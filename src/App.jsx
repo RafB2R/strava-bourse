@@ -18,6 +18,7 @@ const ProfilPublic = lazy(() => import("./components/ProfilPublic"));
 const Messages = lazy(() => import("./components/Messages"));
 const ChatDock = lazy(() => import("./components/ChatDock"));
 const ClubsWidget = lazy(() => import("./components/SideWidgets").then(m => ({ default: m.ClubsWidget })));
+const InstallBanner = lazy(() => import("./components/InstallBanner"));
 const FriendSuggestions = lazy(() => import("./components/SideWidgets").then(m => ({ default: m.FriendSuggestions })));
 
 const TABS = [
@@ -26,6 +27,17 @@ const TABS = [
   { id: "portfolio", label: "Portef.", icon: "📊" },
   { id: "profil", label: "Profil", icon: "👤" },
 ];
+
+// Onglet demandé par l'adresse (raccourcis de l'application installée : /?tab=portfolio)
+const URL_TABS = ["feed", "explore", "portfolio", "profil", "messages"];
+function tabFromUrl() {
+  try {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    return URL_TABS.includes(t) ? t : null;
+  } catch {
+    return null;
+  }
+}
 
 function getGreeting(name) {
   const hour = new Date().getHours();
@@ -141,7 +153,9 @@ function ComparisonWidget({ data, T }) {
 export default function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [tab, setTab] = useState("feed");
+  // Sur ordinateur, la messagerie s'ouvre dans l'encart en bas d'écran, pas dans un onglet
+  const [urlTab] = useState(tabFromUrl);
+  const [tab, setTab] = useState(() => (urlTab === "messages" && window.innerWidth > 900 ? "feed" : urlTab || "feed"));
   const [loading, setLoading] = useState(true);
   const [showAuth, setShowAuth] = useState(false);
   const [showKYC, setShowKYC] = useState(false);
@@ -154,7 +168,7 @@ export default function App() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [messageTarget, setMessageTarget] = useState(null);
   const clearMessageTarget = useCallback(() => setMessageTarget(null), []);
-  const [dockOpen, setDockOpen] = useState(false);
+  const [dockOpen, setDockOpen] = useState(() => urlTab === "messages" && window.innerWidth > 900);
   // Écran d'Explore à ouvrir depuis la colonne de droite : { section, club }
   const [exploreIntent, setExploreIntent] = useState(null);
   const [dockTarget, setDockTarget] = useState(null);
@@ -163,9 +177,17 @@ export default function App() {
   const T = themes[themeKey];
 
   // Les éléments natifs du navigateur (listes déroulantes, barres de défilement) suivent le thème
+  // ainsi que la barre du navigateur / de l'application installée et le fond visible au rebond du défilement
   useEffect(() => {
     document.documentElement.style.colorScheme = themeKey;
+    document.body.style.background = themes[themeKey].bg;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themes[themeKey].bgSecondary);
   }, [themeKey]);
+
+  // Retire ?tab=… de l'adresse une fois l'onglet ouvert (un rechargement revient au fil)
+  useEffect(() => {
+    if (urlTab || window.location.search.includes("source=pwa")) window.history.replaceState(null, "", window.location.pathname + window.location.hash);
+  }, [urlTab]);
 
   useEffect(() => {
     const handler = () => setIsDesktop(window.innerWidth > 900);
@@ -357,7 +379,7 @@ export default function App() {
   // ── MOBILE ──
   return (
     <div style={{ background: T.bg, minHeight: "100vh", fontFamily: "system-ui, sans-serif" }}>
-      <div style={{ background: T.bgSecondary, borderBottom: `0.5px solid ${T.border}`, position: "sticky", top: 0, zIndex: 10 }}>
+      <div style={{ background: T.bgSecondary, borderBottom: `0.5px solid ${T.border}`, position: "sticky", top: 0, zIndex: 10, paddingTop: "env(safe-area-inset-top)" }}>
         <div style={{ maxWidth: 620, margin: "0 auto", padding: "14px 1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>ve<span style={{ color: T.accent }}>rio</span></div>
@@ -374,8 +396,11 @@ export default function App() {
         </div>
       </div>
       {kycBanner}
-      <div style={{ maxWidth: 620, margin: "0 auto", padding: "1.5rem 1rem 6rem" }}>{content}</div>
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: T.bgSecondary, borderTop: `0.5px solid ${T.border}` }}>
+      <div style={{ maxWidth: 620, margin: "0 auto", padding: "1.5rem 1rem calc(6rem + env(safe-area-inset-bottom))" }}>
+        {tab === "feed" && !publicUserId && <Suspense fallback={null}><InstallBanner T={T} /></Suspense>}
+        {content}
+      </div>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: T.bgSecondary, borderTop: `0.5px solid ${T.border}`, paddingBottom: "env(safe-area-inset-bottom)", zIndex: 10 }}>
         <div style={{ maxWidth: 620, margin: "0 auto", display: "flex" }}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => goToTab(t.id)} style={{ flex: 1, padding: "12px 4px 14px", fontSize: 10, background: "none", border: "none", color: tab === t.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === t.id ? 600 : 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>

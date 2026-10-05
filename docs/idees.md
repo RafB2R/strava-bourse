@@ -61,3 +61,16 @@ votes anonymes). Pistes pour compléter la barre d'outils :
   sont clos à l'ouverture du fil ou des notifications par n'importe quel
   membre. Activer pg_cron (Database → Extensions) puis relancer la migration
   20261011000001 pour une clôture toutes les 15 minutes.
+
+## Application mobile
+
+Verio s'installe comme une application (PWA) : icône sur l'écran d'accueil,
+plein écran, ouverture rapide, raccourcis (Portefeuille, Messagerie, Explore).
+Suites possibles :
+
+- **Notifications push** (nouveau message, demande d'ami, fin de sondage) :
+  Web Push, possible sur Android et sur iPhone (iOS 16.4+, une fois l'app
+  installée). Demande des clés VAPID et une fonction serveur qui envoie.
+- **Partager vers Verio** depuis la galerie du téléphone (Web Share Target).
+- **Applications natives (Expo)** pour être présent dans l'App Store et le
+  Play Store, si la PWA ne suffit plus.
