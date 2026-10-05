@@ -48,3 +48,19 @@ export function pollRemaining(endsAt) {
   if (h >= 1) return `${Math.floor(h)} h restante${h >= 2 ? "s" : ""}`;
   return `${Math.max(1, Math.floor(ms / 60000))} min restantes`;
 }
+
+// Clôt les sondages terminés et prévient l'auteur et les participants (une seule fois par sondage).
+// Sans pg_cron côté Supabase, c'est l'ouverture de l'application qui déclenche la clôture.
+export async function closeFinishedPolls() {
+  try { await supabase.rpc("close_finished_polls"); } catch { /* sans incidence pour l'affichage */ }
+}
+
+// Texte de la notification « poll_ended »
+export function pollEndedText(d) {
+  const q = d.question ? `« ${d.question} »` : "";
+  const who = d.mine ? `Ton sondage ${q}` : `Le sondage de ${d.author_name || "ton ami"} ${q}`;
+  const winners = Array.isArray(d.winners) ? d.winners : [];
+  if (!d.total) return `${who} est terminé, sans aucun vote.`;
+  if (winners.length > 1) return `${who} est terminé : égalité entre ${winners.map(w => `« ${w} »`).join(" et ")} (${d.winner_pct} % chacun).`;
+  return `${who} est terminé : « ${winners[0]} » l'emporte avec ${d.winner_pct} % (${d.total} vote${d.total > 1 ? "s" : ""}).`;
+}

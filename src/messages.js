@@ -20,7 +20,7 @@ export async function startConversation(otherId) {
 export async function fetchMessages(conversationId) {
   const { data } = await supabase
     .from("messages")
-    .select("id, sender_id, content, created_at")
+    .select("id, sender_id, content, images, created_at")
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true })
     .order("id", { ascending: true })
@@ -28,11 +28,13 @@ export async function fetchMessages(conversationId) {
   return data || [];
 }
 
-export async function sendMessage(conversationId, senderId, content) {
+export async function sendMessage(conversationId, senderId, content, images = []) {
+  const row = { conversation_id: conversationId, sender_id: senderId, content };
+  if (images.length) row.images = images;
   const { data, error } = await supabase
     .from("messages")
-    .insert({ conversation_id: conversationId, sender_id: senderId, content })
-    .select("id, sender_id, content, created_at")
+    .insert(row)
+    .select("id, sender_id, content, images, created_at")
     .single();
   return error ? { error: error.message } : { message: data };
 }
@@ -68,4 +70,29 @@ export function shortTime(date) {
   const days = (now - d) / 86400000;
   if (days < 7) return d.toLocaleDateString("fr-FR", { weekday: "short" });
   return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
+
+// ---- Images des messages : bucket privé « message-media », un dossier par conversation ----
+const MESSAGE_BUCKET = "message-media";
+
+// Envoie les images préparées (voir compressImage dans media.js) ; renvoie [{ path, w, h }]
+export async function uploadMessageImages(conversationId, prepared) {
+  const uploaded = [];
+  for (const img of prepared) {
+    const path = `${conversationId}/${crypto.randomUUID()}.${img.ext}`;
+    const { error } = await supabase.storage.from(MESSAGE_BUCKET)
+      .upload(path, img.blob, { contentType: img.type, cacheControl: "3600", upsert: false });
+    if (error) throw new Error("L'envoi de l'image a échoué. Réessaie.");
+    uploaded.push({ path, w: img.width, h: img.height });
+  }
+  return uploaded;
+}
+
+// Adresses temporaires (1 h) des images d'une conversation : { [path]: url }
+export async function signMessageImages(paths) {
+  if (paths.length === 0) return {};
+  const { data } = await supabase.storage.from(MESSAGE_BUCKET).createSignedUrls(paths, 3600);
+  const urls = {};
+  for (const d of data || []) if (d.signedUrl && !d.error) urls[d.path] = d.signedUrl;
+  return urls;
 }

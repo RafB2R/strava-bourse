@@ -3,16 +3,17 @@ import { mediaUrl, fileUrl, fileExt, formatSize } from "../media";
 import { POLL_MAX_OPTIONS, POLL_OPTION_MAX_LENGTH, POLL_DURATIONS, isValidPoll, pollRemaining } from "../polls";
 
 // Images d'un post : 1 en grand, 2 côte à côte, 3-4 en grille. Clic → plein écran.
-export function PostImages({ images, T }) {
+// « compact » : version messagerie (sans marge, coins plus petits) ; img.url remplace l'adresse publique
+export function PostImages({ images, T, compact = false }) {
   const [open, setOpen] = useState(null);
-  const list = (images || []).map(img => ({ ...img, url: mediaUrl(img.path) })).filter(img => img.url).slice(0, 4);
+  const list = (images || []).map(img => ({ ...img, url: img.url || mediaUrl(img.path) })).filter(img => img.url).slice(0, 4);
   if (list.length === 0) return null;
 
   const single = list.length === 1;
   const ratio = single && list[0].w && list[0].h ? Math.min(Math.max(list[0].w / list[0].h, 0.75), 2) : null;
   return (
     <>
-      <div style={{ display: "grid", gridTemplateColumns: single ? "1fr" : "1fr 1fr", gap: 4, borderRadius: 12, overflow: "hidden", border: `0.5px solid ${T.border}`, marginBottom: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: single ? "1fr" : "1fr 1fr", gap: compact ? 2 : 4, borderRadius: compact ? 10 : 12, overflow: "hidden", border: `0.5px solid ${T.border}`, marginBottom: compact ? 0 : 12, width: compact ? 220 : undefined, maxWidth: "100%" }}>
         {list.map((img, i) => (
           <button key={img.path} onClick={() => setOpen(i)} aria-label={`Agrandir l'image ${i + 1}`}
             style={{ padding: 0, border: "none", background: T.bgSubtle, cursor: "zoom-in", display: "block", minWidth: 0,

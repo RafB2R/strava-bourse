@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { T as TLive, avatarColors } from "../theme";
-import { shortTime, fetchConversations, fetchMessages, sendMessage, markRead, startConversation, subscribeToConversation, fetchFriends } from "../messages";
+import { shortTime, fetchConversations, fetchMessages, sendMessage, markRead, startConversation, subscribeToConversation, fetchFriends, uploadMessageImages, signMessageImages } from "../messages";
+import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage } from "../media";
+import { PostImages, ComposerPreviews } from "./PostMedia";
 
 export function Avatar({ name, size = 40 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
@@ -16,6 +18,11 @@ export function Thread({ conversation, session, T, onBack, onViewProfile, onRead
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [pending, setPending] = useState([]);   // images prêtes à partir : { blob, …, preview }
+  const [preparing, setPreparing] = useState(0);
+  const [urls, setUrls] = useState({});          // chemin → adresse signée (ou aperçu local)
+  const requested = useRef(new Set());
+  const fileInput = useRef(null);
   const scrollRef = useRef(null);
   const dock = variant === "dock";
   const convId = conversation.conversation_id;
@@ -31,19 +38,65 @@ export function Thread({ conversation, session, T, onBack, onViewProfile, onRead
     return () => { ignore = true; unsubscribe(); };
   }, [convId, me, onRead]);
 
+  // Adresses signées (1 h) des images pas encore chargées
+  useEffect(() => {
+    const missing = (messages || []).flatMap(m => (m.images || []).map(i => i.path))
+      .filter(path => typeof path === "string" && path.startsWith(`${convId}/`) && !requested.current.has(path));
+    if (missing.length === 0) return;
+    missing.forEach(path => requested.current.add(path));
+    signMessageImages(missing).then(signed => setUrls(prev => ({ ...signed, ...prev })));
+  }, [messages, convId]);
+
   // Descend en bas de la zone des messages, sans faire défiler la page
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [messages, minimized]);
+  }, [messages, minimized, urls]);
+
+  async function addImages(fileList) {
+    const files = [...(fileList || [])].filter(isImage);
+    if (files.length === 0) return;
+    setError("");
+    const room = MAX_IMAGES - pending.length - preparing;
+    if (files.length > room) setError(`${MAX_IMAGES} images maximum par message.`);
+    const batch = files.slice(0, Math.max(0, room));
+    setPreparing(n => n + batch.length);
+    for (const file of batch) {
+      try {
+        const img = await compressImage(file);
+        setPending(p => [...p, { ...img, preview: URL.createObjectURL(img.blob) }]);
+      } catch (e) {
+        setError(e.message || "Image illisible.");
+      } finally {
+        setPreparing(n => n - 1);
+      }
+    }
+  }
+
+  function removePending(i) {
+    setPending(p => p.filter((_, j) => j !== i));
+  }
+
+  const canSend = (input.trim() || pending.length > 0) && !sending && preparing === 0;
 
   async function send() {
     const text = input.trim();
-    if (!text || sending) return;
+    if (!canSend) return;
     setSending(true); setError("");
-    const { message, error: err } = await sendMessage(convId, me, text);
+    let images;
+    try {
+      images = await uploadMessageImages(convId, pending);
+    } catch (e) {
+      setSending(false); setError(e.message); return;
+    }
+    const { message, error: err } = await sendMessage(convId, me, text, images);
     setSending(false);
     if (err) { setError("Message non envoyé : vous n'êtes peut-être plus amis."); return; }
+    // Les images envoyées s'affichent tout de suite depuis l'aperçu local
+    const local = {};
+    images.forEach((img, i) => { local[img.path] = pending[i].preview; requested.current.add(img.path); });
+    setUrls(prev => ({ ...prev, ...local }));
+    setPending([]);
     setInput("");
     setMessages(prev => (prev.some(m => m.id === message.id) ? prev : [...prev, message]));
   }
@@ -78,9 +131,18 @@ export function Thread({ conversation, session, T, onBack, onViewProfile, onRead
           return (
             <div key={m.id} style={{ display: "flex", flexDirection: "column", alignItems: mine ? "flex-end" : "flex-start" }}>
               {showTime && <div style={{ fontSize: 11, color: T.textFaint, alignSelf: "center", margin: "6px 0" }}>{shortTime(m.created_at)}</div>}
-              <div style={{ maxWidth: "78%", padding: "8px 12px", borderRadius: 16, borderBottomRightRadius: mine ? 4 : 16, borderBottomLeftRadius: mine ? 16 : 4, background: mine ? T.accent : T.bgSubtle, color: mine ? T.onAccent : T.text, fontSize: 14, lineHeight: 1.45, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                {m.content}
-              </div>
+              {m.images?.length > 0 && (
+                <div style={{ maxWidth: "78%", marginBottom: m.content?.trim() ? 3 : 0 }}>
+                  {m.images.some(img => urls[img.path])
+                    ? <PostImages images={m.images.map(img => ({ ...img, url: urls[img.path] }))} T={T} compact />
+                    : <div style={{ width: 160, height: 110, borderRadius: 10, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: T.textFaint }}>📷 Chargement…</div>}
+                </div>
+              )}
+              {m.content?.trim() && (
+                <div style={{ maxWidth: "78%", padding: "8px 12px", borderRadius: 16, borderBottomRightRadius: mine ? 4 : 16, borderBottomLeftRadius: mine ? 16 : 4, background: mine ? T.accent : T.bgSubtle, color: mine ? T.onAccent : T.text, fontSize: 14, lineHeight: 1.45, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                  {m.content}
+                </div>
+              )}
             </div>
           );
         })}
@@ -88,13 +150,20 @@ export function Thread({ conversation, session, T, onBack, onViewProfile, onRead
 
       <div style={{ borderTop: `0.5px solid ${T.border}`, padding: 10 }}>
         {error && <div style={{ fontSize: 12, color: T.red, marginBottom: 6 }}>{error}</div>}
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+        {pending.length > 0 && <div style={{ marginTop: -8, marginBottom: 8 }}><ComposerPreviews items={pending} onRemove={removePending} T={T} /></div>}
+        {preparing > 0 && <div style={{ fontSize: 12, color: T.textFaint, marginBottom: 6 }}>Préparation de l'image…</div>}
+        <div style={{ display: "flex", gap: dock ? 4 : 8, alignItems: "flex-end" }}>
+          <input ref={fileInput} type="file" accept={ACCEPT_ATTR} multiple hidden onChange={e => { addImages(e.target.files); e.target.value = ""; }} />
+          <button onClick={() => fileInput.current?.click()} aria-label="Joindre une image" title="Joindre une image"
+            disabled={pending.length + preparing >= MAX_IMAGES}
+            style={{ background: "none", border: "none", fontSize: 20, padding: "6px 4px", cursor: "pointer", opacity: pending.length + preparing >= MAX_IMAGES ? 0.4 : 1 }}>🖼️</button>
           <textarea value={input} onChange={e => setInput(e.target.value)} rows={1} maxLength={2000} placeholder="Écris un message…"
+            onPaste={e => { const files = [...e.clipboardData.files].filter(isImage); if (files.length) { e.preventDefault(); addImages(files); } }}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
             style={{ flex: 1, resize: "none", padding: "9px 12px", fontSize: 14, borderRadius: 18, border: `0.5px solid ${T.input.border}`, background: T.input.background, color: T.input.color, fontFamily: "inherit", maxHeight: 120 }} />
-          <button onClick={send} disabled={sending || !input.trim()} aria-label="Envoyer"
-            style={{ background: T.accent, color: T.onAccent, border: "none", borderRadius: 18, padding: "9px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", opacity: sending || !input.trim() ? 0.5 : 1 }}>
-            Envoyer
+          <button onClick={send} disabled={!canSend} aria-label="Envoyer"
+            style={{ background: T.accent, color: T.onAccent, border: "none", borderRadius: 18, padding: dock ? "9px 12px" : "9px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", opacity: canSend ? 1 : 0.5 }}>
+            {sending ? "…" : dock ? "➤" : "Envoyer"}
           </button>
         </div>
       </div>
