@@ -25,7 +25,8 @@ function AreaChart({ points, color }) {
 }
 
 // Valeur citée : cours du moment et, si demandé, courbe sur la période choisie
-export function AssetCard({ asset: raw, T }) {
+// « onOpen » : clic sur la carte → fiche de la valeur (courbe, périodes)
+export function AssetCard({ asset: raw, T, onOpen }) {
   const asset = cleanAsset(raw);
   const [quote, setQuote] = useState(null);
   const [chart, setChart] = useState(null);
@@ -43,8 +44,9 @@ export function AssetCard({ asset: raw, T }) {
   const up = (quote?.change ?? 0) >= 0;
   const periodUp = (chart?.change ?? 0) >= 0;
   const periodLabel = CHART_PERIODS.find(p => p.id === period)?.label;
+  const clickable = onOpen ? { role: "button", tabIndex: 0, onClick: () => onOpen(asset), onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(asset); } }, "aria-label": `Voir la fiche de ${asset.name}` } : {};
   return (
-    <div style={box(T)}>
+    <div {...clickable} style={{ ...box(T), ...(onOpen ? { cursor: "pointer" } : {}) }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
         <span style={{ width: 36, height: 36, borderRadius: 10, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, flexShrink: 0 }}>$</span>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -54,7 +56,7 @@ export function AssetCard({ asset: raw, T }) {
         <div style={{ textAlign: "right", flexShrink: 0 }}>
           {quote ? (
             <>
-              <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{fmtPrice(quote.price, quote.currency)}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{fmtPrice(quote.price, asset.type === "Indice" ? null : quote.currency)}</div>
               <div style={{ fontSize: 12, fontWeight: 600, color: up ? T.accent : T.red }}>{fmtChange(quote.change)} auj.</div>
             </>
           ) : <div style={{ fontSize: 12, color: T.textFaint }}>Cours…</div>}
@@ -71,6 +73,7 @@ export function AssetCard({ asset: raw, T }) {
           </>
         ) : <div style={{ height: 90, marginTop: 10, borderRadius: 8, background: T.bgCard, opacity: 0.6 }} />
       )}
+      {onOpen && <div style={{ fontSize: 12, fontWeight: 600, color: T.accent, marginTop: 8, textAlign: "right" }}>Voir la fiche ›</div>}
     </div>
   );
 }

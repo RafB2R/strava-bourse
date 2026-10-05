@@ -9,6 +9,10 @@ import { makePoll, isValidPoll, fetchPolls, vote, closeFinishedPolls } from "../
 import { PostImages, ComposerPreviews, PostFiles, ComposerFiles, PollEditor, PollView } from "./PostMedia";
 import { AssetCard, AllocationCard, AssetPicker, AllocationPicker, AttachedChip } from "./PostAttachments";
 import { CHART_PERIODS } from "../attachments";
+import { RichText, TickerChips, TagSuggestions } from "./PostText";
+import { tagAtCaret } from "../tags";
+import IndexDetail from "./IndexDetail";
+import { detailFor } from "../indices";
 
 function Avatar({ name, size = 36 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
@@ -129,6 +133,14 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
   const [postAsset, setPostAsset] = useState(null);           // valeur citée { symbol, name, type, chart }
   const [postAllocation, setPostAllocation] = useState(null); // répartition { mode, rows }
   const [picker, setPicker] = useState(null);                 // "asset" | "chart" | "allocation"
+  const [postTickers, setPostTickers] = useState([]);         // valeurs identifiées dans le texte ($TTE.PA)
+  const [postMentions, setPostMentions] = useState([]);       // membres identifiés (@pseudo)
+  const [caret, setCaret] = useState(0);
+  const [focused, setFocused] = useState(false);
+  const [dismissedTag, setDismissedTag] = useState(null);
+  const textRef = useRef(null);
+  const [openAsset, setOpenAsset] = useState(null);           // fiche ouverte depuis un post
+  const feedScroll = useRef(0);
   const [polls, setPolls] = useState({ counts: {}, mine: {} });
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
@@ -201,6 +213,33 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
     if (room > 0) setPostFiles(p => [...p, ...ok.slice(0, room)]);
   }
 
+  // Tag en cours de frappe (« $tot », « @ali ») et choix d'une suggestion
+  const rawTag = focused ? tagAtCaret(postInput, caret) : null;
+  const tag = rawTag && `${rawTag.start}${rawTag.sign}${rawTag.query}` !== dismissedTag ? rawTag : null;
+
+  function pickTag(item) {
+    if (!tag) return;
+    const token = tag.sign === "$" ? `$${item.symbol} ` : `@${item.username} `;
+    const next = postInput.slice(0, tag.start) + token + postInput.slice(caret);
+    setPostInput(next);
+    if (tag.sign === "$") setPostTickers(p => (p.some(t => t.symbol === item.symbol) ? p : [...p, { symbol: item.symbol, name: item.name, type: item.type }]));
+    else setPostMentions(p => (p.some(m => m.id === item.id) ? p : [...p, { id: item.id, username: item.username, full_name: item.full_name }]));
+    const pos = tag.start + token.length;
+    setCaret(pos);
+    requestAnimationFrame(() => { textRef.current?.focus(); textRef.current?.setSelectionRange(pos, pos); });
+  }
+
+  function openAssetDetail(asset) {
+    feedScroll.current = window.scrollY;
+    setOpenAsset(asset);
+    window.scrollTo(0, 0);
+  }
+
+  function closeAssetDetail() {
+    setOpenAsset(null);
+    requestAnimationFrame(() => window.scrollTo(0, feedScroll.current));
+  }
+
   const poll = pollOptions ? makePoll(pollOptions, pollDays) : null;
   const hasContent = postInput.trim() || postImages.length > 0 || postFiles.length > 0 || postAsset || postAllocation;
 
@@ -231,16 +270,29 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
     if (poll) data.poll = poll;
     if (postAsset) data.asset = postAsset;
     if (postAllocation) data.allocation = postAllocation;
-    const { error } = await supabase.from("activities").insert({ user_id: userId, type: "post", data });
+    // Ne garder que les tags encore présents dans le texte
+    const tickers = postTickers.filter(t => new RegExp(`\\$${t.symbol.replace(/[.^]/g, "\\$&")}(?![A-Za-z0-9])`, "i").test(content));
+    const mentions = postMentions.filter(m => new RegExp(`@${m.username.replace(/\./g, "\\.")}(?![A-Za-z0-9_])`, "i").test(content));
+    if (tickers.length) data.tickers = tickers;
+    if (mentions.length) data.mentions = mentions;
+    const { data: created, error } = await supabase.from("activities").insert({ user_id: userId, type: "post", data }).select("id").single();
     if (error) {
       await Promise.all([removeImages(images.map(i => i.path)), removeFiles(files.map(f => f.path))]);
       setPostError("Publication impossible. Réessaie.");
       setPosting(false);
       return;
     }
+    // Prévient les membres mentionnés (le nom de l'expéditeur est fixé par la base)
+    if (created?.id) {
+      for (const m of mentions) {
+        if (m.id !== userId) await supabase.from("notifications").insert({ user_id: m.id, type: "mention", data: { activity_id: created.id, excerpt: content.slice(0, 80) } });
+      }
+    }
     postImages.forEach(p => URL.revokeObjectURL(p.preview));
     setPostImages([]);
     setPostFiles([]);
+    setPostTickers([]);
+    setPostMentions([]);
     setPollOptions(null);
     setPollDays(1);
     setPostAsset(null);
@@ -328,6 +380,10 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
 
 
 
+  if (openAsset) {
+    return <IndexDetail index={detailFor(openAsset)} T={T} backLabel="← Fil" initialPeriod={openAsset.chart || "1y"} onBack={closeAssetDetail} />;
+  }
+
   return (
     <div>
       {/* Encadré publier */}
@@ -342,12 +398,18 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <textarea
               value={postInput}
-              onChange={e => { setPostInput(e.target.value); if (postError) setPostError(""); }}
+              ref={textRef}
+              onChange={e => { setPostInput(e.target.value); setCaret(e.target.selectionStart); if (postError) setPostError(""); }}
+              onSelect={e => setCaret(e.target.selectionStart)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              onKeyDown={e => { if (e.key === "Escape" && tag) { e.preventDefault(); setDismissedTag(`${tag.start}${tag.sign}${tag.query}`); } }}
               onPaste={e => { const files = [...e.clipboardData.files].filter(isImage); if (files.length) { e.preventDefault(); addImages(files); } }}
-              placeholder="Partage une pensée, une analyse, une question…"
+              placeholder="Partage une pensée, une analyse… $ pour citer une valeur, @ pour un membre"
               maxLength={5000}
               style={{ width: "100%", background: "none", border: "none", outline: "none", color: T.text, fontFamily: "inherit", fontSize: 14, resize: "none", lineHeight: 1.5, minHeight: 60 }}
             />
+            <TagSuggestions tag={tag} myId={userId} T={T} onPick={pickTag} />
             <ComposerPreviews items={postImages} onRemove={removeImage} T={T} />
             <ComposerFiles files={postFiles} onRemove={i => setPostFiles(p => p.filter((_, j) => j !== i))} T={T} />
             {postAsset && (
@@ -468,14 +530,16 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
               <>
                 {activity.data?.content && (
                   <div style={{ fontSize: 14, color: T.text, lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                    {activity.data.content}
+                    <RichText text={activity.data.content} tickers={activity.data.tickers} mentions={activity.data.mentions} T={T}
+                      onAsset={openAssetDetail} onProfile={id => onViewProfile && onViewProfile(id)} />
                   </div>
                 )}
+                <TickerChips tickers={activity.data?.tickers} T={T} onAsset={openAssetDetail} />
                 {activity.data?.poll && (
                   <PollView poll={activity.data.poll} counts={polls.counts[activity.id]} myVote={polls.mine[activity.id]}
                     isAuthor={isMe} onVote={option => castVote(activity.id, option)} T={T} />
                 )}
-                {activity.data?.asset && <AssetCard asset={activity.data.asset} T={T} />}
+                {activity.data?.asset && <AssetCard asset={activity.data.asset} T={T} onOpen={openAssetDetail} />}
                 {activity.data?.allocation && <AllocationCard allocation={activity.data.allocation} T={T} />}
                 <PostImages images={activity.data?.images} T={T} />
                 <PostFiles files={activity.data?.files} T={T} />

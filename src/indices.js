@@ -139,3 +139,9 @@ export async function fetchChart(symbol, period) {
 }
 
 export const fmtChange = v => (v === null || v === undefined ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(2).replace(".", ",")} %`);
+
+// Fiche à ouvrir pour une valeur citée dans un post : la fiche complète si c'est
+// un indice connu (CAC 40…), sinon une fiche simple (nom, symbole, courbe)
+export function detailFor(asset) {
+  return INDICES.find(i => i.symbol === asset.symbol) || { symbol: asset.symbol, name: asset.name || asset.symbol, type: asset.type || "" };
+}
