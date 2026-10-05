@@ -65,6 +65,19 @@ export function parseBdf(json) {
   })).filter(o => o.date);
 }
 
+// Clé collée dans Vercel avec espaces, retour à la ligne, guillemets ou préfixe « Apikey » :
+// ces caractères rendent l'en-tête HTTP invalide (« Invalid header value »)
+export function cleanKey(raw) {
+  if (!raw) return '';
+  return String(raw).trim().replace(/^["']+|["']+$/g, '').replace(/^apikey\s+/i, '').replace(/\s+/g, '');
+}
+
+// Indices sur la clé pour le diagnostic, sans jamais l'exposer
+function describeKey(raw, key) {
+  if (!raw) return 'absente';
+  return `${key.length} caractères après nettoyage${raw !== key ? ' (espaces, guillemets ou préfixe retirés)' : ''}${/[^\x21-\x7e]/.test(key) ? ', contient des caractères spéciaux' : ''}`;
+}
+
 async function attempt(name, fn, debug) {
   try {
     const result = await fn();
@@ -79,7 +92,8 @@ async function attempt(name, fn, debug) {
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const debug = [];
-  const key = typeof process !== 'undefined' ? process.env?.BDF_API_KEY : undefined;
+  const rawKey = typeof process !== 'undefined' ? process.env?.BDF_API_KEY : undefined;
+  const key = cleanKey(rawKey);
 
   const ecb = attempt('BCE (mensuel)', async () => {
     const res = await fetch(ECB_URL, { headers: { Accept: 'text/csv' } });
@@ -102,6 +116,7 @@ export default async function handler(req) {
       return latest(parseBdf(await res.json()), 'daily', 'Banque de France');
     }, debug)
     : (debug.push({ source: 'Banque de France (quotidien)', ok: false, error: 'BDF_API_KEY absente dans Vercel' }), null);
+  if (key) debug.push({ source: 'Clé Banque de France', ok: true, result: describeKey(rawKey, key) });
 
   const [monthly, de, fr] = await Promise.all([ecb, bund, oat]);
   const rates = { fr: fr || monthly?.fr || null, de: de || monthly?.de || null };
