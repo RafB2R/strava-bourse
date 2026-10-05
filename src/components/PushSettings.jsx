@@ -13,7 +13,7 @@ export default function PushSettings({ T }) {
     return () => { ignore = true; };
   }, []);
 
-  if (!status || status === "unsupported") return null;
+  if (!status) return null;
 
   async function toggle() {
     setBusy(true); setError("");
@@ -27,6 +27,10 @@ export default function PushSettings({ T }) {
 
   const on = status === "on";
   const text = {
+    unsupported: "Ce navigateur ne permet pas les notifications. Utilise Chrome, Edge, Firefox ou Safari à jour.",
+    "ios-other-browser": "Sur iPhone, les notifications passent par Safari : ouvre Verio dans Safari, installe-le sur l'écran d'accueil, puis ouvre-le depuis l'icône.",
+    "ios-too-old": "Les notifications demandent iOS 16.4 ou plus récent. Mets ton iPhone à jour (Réglages → Général → Mise à jour logicielle).",
+    reload: "Ferme et rouvre Verio pour finir l'installation, puis reviens ici pour activer les notifications.",
     "install-first": "Sur iPhone, installe d'abord Verio sur ton écran d'accueil (encart ci-dessus), puis ouvre-le depuis l'icône pour activer les notifications.",
     denied: "Les notifications sont bloquées pour Verio. Réactive-les dans les réglages du téléphone (Réglages → Notifications → Verio) ou du navigateur.",
     off: "Messages, demandes d'ami, commentaires et fins de sondage, même quand Verio est fermé.",

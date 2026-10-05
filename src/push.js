@@ -14,8 +14,14 @@ function urlBase64ToUint8Array(base64) {
 // « unsupported » : navigateur sans push · « install-first » : iPhone, il faut d'abord installer l'app
 // « denied » : refusé dans les réglages · « on » / « off » : activé ou non sur cet appareil
 export async function pushStatus() {
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   if (isIosSafari() && !isStandalone()) return "install-first";
-  if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return "unsupported";
+  if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+    // iPhone : Chrome/Firefox n'ont pas les notifications, et Safari seulement depuis iOS 16.4, app installée
+    if (ios) return isStandalone() ? "ios-too-old" : "ios-other-browser";
+    return "unsupported";
+  }
+  if (!navigator.serviceWorker.controller && !(await navigator.serviceWorker.getRegistration())) return "reload";
   if (Notification.permission === "denied") return "denied";
   const reg = await navigator.serviceWorker.getRegistration();
   const sub = await reg?.pushManager.getSubscription();
