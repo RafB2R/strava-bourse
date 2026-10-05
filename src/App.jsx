@@ -129,6 +129,8 @@ export default function App() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth > 900);
   const [publicUserId, setPublicUserId] = useState(null);
   const [compareData, setCompareData] = useState(null);
+  // Incrémenté à chaque clic sur un onglet du menu : remet l'écran à son état de départ
+  const [navKey, setNavKey] = useState(0);
 
   const T = themes[themeKey];
 
@@ -170,6 +172,8 @@ export default function App() {
   // Changer d'onglet ferme aussi le profil public éventuellement ouvert
   function goToTab(id) {
     setTab(id);
+    setNavKey(k => k + 1);
+    window.scrollTo(0, 0);
     setPublicUserId(null);
     setCompareData(null);
   }
@@ -218,10 +222,10 @@ export default function App() {
         <ProfilPublic key={publicUserId} userId={publicUserId} session={session} T={T} onBack={() => { setPublicUserId(null); setCompareData(null); }} onCompareData={setCompareData} />
       ) : (
         <>
-          {tab === "feed" && <Feed session={session} T={T} onViewProfile={viewProfile} />}
-          {tab === "explore" && <Explore session={session} T={T} onViewProfile={viewProfile} />}
-          {tab === "portfolio" && <Portfolio session={session} T={T} />}
-          {tab === "profil" && <Profil profile={profile} session={session} T={T} onViewProfile={viewProfile} />}
+          {tab === "feed" && <Feed key={navKey} session={session} T={T} onViewProfile={viewProfile} />}
+          {tab === "explore" && <Explore key={navKey} session={session} T={T} onViewProfile={viewProfile} />}
+          {tab === "portfolio" && <Portfolio key={navKey} session={session} T={T} />}
+          {tab === "profil" && <Profil key={navKey} profile={profile} session={session} T={T} onViewProfile={viewProfile} />}
         </>
       )}
     </Suspense>

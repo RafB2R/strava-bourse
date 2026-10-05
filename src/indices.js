@@ -19,7 +19,7 @@ export const DEFAULT_PERIOD = "5y";
 
 export const INDICES = [
   {
-    symbol: "^FCHI", name: "CAC 40", flag: "🇫🇷",
+    symbol: "^FCHI", name: "CAC 40", country: "fr",
     summary: "Les 40 plus grandes entreprises cotées à la Bourse de Paris. C'est le baromètre de l'économie française… et de ses géants mondiaux du luxe, de l'énergie et de l'industrie.",
     facts: [
       ["Entreprises", "40"],
@@ -37,7 +37,7 @@ export const INDICES = [
     ],
   },
   {
-    symbol: "^GSPC", name: "S&P 500", flag: "🇺🇸",
+    symbol: "^GSPC", name: "S&P 500", country: "us",
     summary: "Environ 500 des plus grandes entreprises américaines, soit près de 80 % de la valeur de la Bourse des États-Unis. C'est l'indice de référence mondial des actions.",
     facts: [
       ["Entreprises", "≈ 500"],
@@ -55,7 +55,7 @@ export const INDICES = [
     ],
   },
   {
-    symbol: "^IXIC", name: "NASDAQ", flag: "🇺🇸",
+    symbol: "^IXIC", name: "NASDAQ", country: "us",
     summary: "Le Nasdaq Composite regroupe toutes les actions cotées sur le Nasdaq, la Bourse américaine de la technologie. Très concentré sur les géants de la tech.",
     facts: [
       ["Entreprises", "Plus de 3 000"],
@@ -73,7 +73,7 @@ export const INDICES = [
     ],
   },
   {
-    symbol: "^STOXX50E", name: "Euro Stoxx 50", flag: "🇪🇺",
+    symbol: "^STOXX50E", name: "Euro Stoxx 50", country: "eu",
     summary: "Les 50 plus grandes entreprises de la zone euro, tous pays confondus. L'équivalent européen du CAC 40, avec l'Allemagne, la France et les Pays-Bas en tête.",
     facts: [
       ["Entreprises", "50"],
@@ -91,7 +91,7 @@ export const INDICES = [
     ],
   },
   {
-    symbol: "^GDAXI", name: "DAX", flag: "🇩🇪",
+    symbol: "^GDAXI", name: "DAX", country: "de",
     summary: "Les 40 plus grandes entreprises cotées à Francfort (30 jusqu'en 2021). Le reflet de l'industrie, de l'assurance et de la tech allemandes.",
     facts: [
       ["Entreprises", "40"],
@@ -109,7 +109,7 @@ export const INDICES = [
     ],
   },
   {
-    symbol: "^N225", name: "Nikkei 225", flag: "🇯🇵",
+    symbol: "^N225", name: "Nikkei 225", country: "jp",
     summary: "225 grandes entreprises cotées à la Bourse de Tokyo. Le plus ancien indice boursier d'Asie, calculé depuis 1950.",
     facts: [
       ["Entreprises", "225"],

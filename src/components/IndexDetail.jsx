@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { T as TLive } from "../theme";
+import Flag from "./Flag";
 import { PERIODS, DEFAULT_PERIOD, TOP5_UPDATED, fetchChart, fmtChange } from "../indices";
 
 const fmtPrice = p => (p === null || p === undefined ? "—" : p.toLocaleString("fr-FR", { maximumFractionDigits: p > 1000 ? 0 : 2 }));
@@ -99,7 +100,7 @@ export default function IndexDetail({ index, onBack, T: TProp }) {
       {/* En-tête et encart explicatif */}
       <div style={card}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: T.text }}>{index.flag} {index.name}</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: T.text }}><Flag country={index.country} size={18} />{index.name}</div>
           <div style={{ fontSize: 13, color: T.textFaint }}>{index.symbol}</div>
         </div>
         <div style={{ fontSize: 14, color: T.textMuted, lineHeight: 1.6, margin: "10px 0 14px" }}>{index.summary}</div>

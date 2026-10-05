@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { T as TLive } from "../theme";
 import { INDICES, fetchChart, fmtChange } from "../indices";
 import IndexDetail, { Sparkline } from "./IndexDetail";
+import Flag from "./Flag";
 
 // card défini dynamiquement avec T
 // sectionLabel défini dynamiquement avec T
@@ -21,8 +22,8 @@ const MATIERES = [
 ];
 
 const TAUX = [
-  { symbol: "^TNX", name: "US 10 ans", flag: "🇺🇸" },
-  { symbol: "^TYX", name: "US 30 ans", flag: "🇺🇸" },
+  { symbol: "^TNX", name: "US 10 ans", country: "us" },
+  { symbol: "^TYX", name: "US 30 ans", country: "us" },
 ];
 
 // Earnings chargés dynamiquement via /api/earnings
@@ -37,7 +38,7 @@ async function fetchQuote(symbol) {
   } catch { return null; }
 }
 
-function QuoteCard({ symbol, name, flag, unit, T }) {
+function QuoteCard({ symbol, name, country, unit, T }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -55,7 +56,7 @@ function QuoteCard({ symbol, name, flag, unit, T }) {
   return (
     <div style={{ background: T.bgSubtle, borderRadius: 12, padding: "12px 14px" }}>
       <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>
-        {flag && <span style={{ marginRight: 4 }}>{flag}</span>}{name}
+        {country && <Flag country={country} size={12} />}{name}
       </div>
       {loading ? (
         <div style={{ fontSize: 14, color: T.textFaint }}>…</div>
@@ -86,6 +87,21 @@ async function fetchJsonList(url) {
   }
 }
 
+const fmtMonth = period => new Date(`${period}-01T12:00:00`).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+
+// Taux d'État à 10 ans publié par la BCE (moyenne mensuelle), variation en points
+function EcbRateTile({ country, name, rates, T }) {
+  const r = rates?.[country];
+  return (
+    <div style={{ background: T.bgSubtle, borderRadius: 12, padding: "12px 14px" }}>
+      <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}><Flag country={country} size={12} />{name}</div>
+      <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>{r ? `${r.value.toFixed(2).replace(".", ",")} %` : rates ? "—" : "…"}</div>
+      {r?.change != null && <div style={{ fontSize: 12, color: r.change >= 0 ? T.accent : T.red, marginTop: 2 }}>{r.change >= 0 ? "+" : "−"}{Math.abs(r.change).toFixed(2).replace(".", ",")} pt sur un mois</div>}
+      {r && <div style={{ fontSize: 10, color: T.textFaint, marginTop: 2 }}>Moyenne de {fmtMonth(r.period)} · BCE</div>}
+    </div>
+  );
+}
+
 // Tuile d'indice : cours, variation du jour et courbe sur 1 an ; ouvre le détail
 function IndexTile({ index, onOpen, T }) {
   const [quote, setQuote] = useState(null);
@@ -101,7 +117,7 @@ function IndexTile({ index, onOpen, T }) {
   return (
     <button onClick={() => onOpen(index)} style={{ background: T.bgSubtle, border: "none", borderRadius: 12, padding: "12px 14px", textAlign: "left", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, width: "100%", minWidth: 0 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{index.flag} {index.name}</div>
+        <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><Flag country={index.country} size={12} />{index.name}</div>
         <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>{quote?.price ? quote.price.toLocaleString("fr-FR", { maximumFractionDigits: 0 }) : quote ? "—" : "…"}</div>
         <div style={{ fontSize: 12, fontWeight: 500, color: day == null ? T.textFaint : day >= 0 ? T.accent : T.red, marginTop: 2 }}>{day == null ? "—" : fmtChange(day)} <span style={{ color: T.textFaint, fontWeight: 400 }}>auj.</span></div>
       </div>
@@ -119,12 +135,19 @@ export default function Marches({ T: TProp }) {
   const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" };
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [openIndex, setOpenIndex] = useState(null);
+  const [rates, setRates] = useState(null);
   const [secteurs, setSecteurs] = useState([]);
   const [earnings, setEarnings] = useState([]);
   const [loadingSecteurs, setLoadingSecteurs] = useState(true);
   const [loadingEarnings, setLoadingEarnings] = useState(true);
 
   const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let ignore = false;
+    fetch("/api/rates").then(r => (r.ok ? r.json() : {})).catch(() => ({})).then(d => { if (!ignore) setRates(d); });
+    return () => { ignore = true; };
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -184,16 +207,8 @@ export default function Marches({ T: TProp }) {
         <div style={sectionLabel}>🏦 Taux obligataires</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {TAUX.map(t => <QuoteCard key={t.symbol} {...t} unit="%" T={T} />)}
-          <div style={{ background: T.bgSubtle, borderRadius: 12, padding: "12px 14px" }}>
-            <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>🇫🇷 OAT 10 ans</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>3.12%</div>
-            <div style={{ fontSize: 12, color: T.accent, marginTop: 2 }}>+0.02%</div>
-          </div>
-          <div style={{ background: T.bgSubtle, borderRadius: 12, padding: "12px 14px" }}>
-            <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>🇩🇪 Bund 10 ans</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>2.41%</div>
-            <div style={{ fontSize: 12, color: T.red, marginTop: 2 }}>-0.01%</div>
-          </div>
+          <EcbRateTile country="fr" name="OAT 10 ans" rates={rates} T={T} />
+          <EcbRateTile country="de" name="Bund 10 ans" rates={rates} T={T} />
         </div>
       </div>
 
