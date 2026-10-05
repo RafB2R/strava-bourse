@@ -276,7 +276,7 @@ export default function App() {
       ) : (
         <>
           {tab === "feed" && <Feed key={navKey} session={session} T={T} onViewProfile={viewProfile} />}
-          {tab === "explore" && <Explore key={navKey} session={session} T={T} onViewProfile={viewProfile} initialSection={exploreIntent?.section} initialClub={exploreIntent?.club} />}
+          {tab === "explore" && <Explore key={navKey} session={session} T={T} onViewProfile={viewProfile} initialSection={exploreIntent?.section} initialClub={exploreIntent?.club} initialClubView={exploreIntent?.clubView} />}
           {tab === "portfolio" && <Portfolio key={navKey} session={session} T={T} />}
           {tab === "messages" && <Messages key={navKey} session={session} T={T} openWith={messageTarget} onOpened={clearMessageTarget} onViewProfile={viewProfile} onUnreadChange={setUnreadMessages} />}
           {tab === "profil" && <Profil key={navKey} profile={profile} session={session} T={T} onViewProfile={viewProfile} />}
@@ -344,7 +344,7 @@ export default function App() {
             <Suspense fallback={null}>
               <ClubsWidget session={session} T={T}
                 onOpenClub={club => goToTab("explore", { section: "clubs", club })}
-                onAllClubs={() => goToTab("explore", { section: "clubs" })} />
+                onAllClubs={mine => goToTab("explore", { section: "clubs", clubView: mine ? "mes" : "decouvrir" })} />
               <FriendSuggestions session={session} T={T} onViewProfile={viewProfile}
                 onFindFriends={() => goToTab("explore", { section: "amis" })} />
             </Suspense>
