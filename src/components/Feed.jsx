@@ -4,6 +4,8 @@ import { T, T as TLive, avatarColors } from "../theme";
 import { badgeFromData } from "../badges";
 import { MOMENTS, MOMENT_TYPES, isMoment, momentSentence } from "../moments";
 import { tradeTexts } from "../trades";
+import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage, uploadImages, removeImages } from "../media";
+import { PostImages, ComposerPreviews } from "./PostMedia";
 
 function Avatar({ name, size = 36 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
@@ -108,6 +110,11 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
   const [commentInputs, setCommentInputs] = useState({});
   const [postInput, setPostInput] = useState("");
   const [posting, setPosting] = useState(false);
+  const [postImages, setPostImages] = useState([]);
+  const [postError, setPostError] = useState("");
+  const [preparing, setPreparing] = useState(0);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInput = useRef(null);
   const [profile, setProfile] = useState(null);
 
   const [reloadKey, setReloadKey] = useState(0);
@@ -133,10 +140,58 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
     return () => { ignore = true; };
   }, [userId, scope, reloadKey]);
 
+  // Images choisies (bouton, coller ou glisser-déposer) : compressées tout de suite pour l'aperçu
+  async function addImages(fileList) {
+    const files = [...(fileList || [])].filter(isImage);
+    if (files.length === 0) return;
+    setPostError("");
+    const room = MAX_IMAGES - postImages.length - preparing;
+    if (room <= 0) { setPostError(`${MAX_IMAGES} images maximum par post.`); return; }
+    if (files.length > room) setPostError(`${MAX_IMAGES} images maximum par post.`);
+    const batch = files.slice(0, room);
+    setPreparing(n => n + batch.length);
+    for (const file of batch) {
+      try {
+        const img = await compressImage(file);
+        setPostImages(p => [...p, { ...img, preview: URL.createObjectURL(img.blob) }]);
+      } catch (e) {
+        setPostError(e.message || "Image illisible.");
+      } finally {
+        setPreparing(n => n - 1);
+      }
+    }
+  }
+
+  function removeImage(i) {
+    setPostImages(p => {
+      URL.revokeObjectURL(p[i].preview);
+      return p.filter((_, j) => j !== i);
+    });
+  }
+
   async function publishPost() {
-    if (!postInput.trim() || posting) return;
+    const content = postInput.trim();
+    if ((!content && postImages.length === 0) || posting || preparing) return;
     setPosting(true);
-    await supabase.from("activities").insert({ user_id: session.user.id, type: "post", data: { content: postInput.trim() } });
+    setPostError("");
+    let images;
+    try {
+      images = await uploadImages(userId, postImages);
+    } catch (e) {
+      setPostError(e.message);
+      setPosting(false);
+      return;
+    }
+    const data = images.length ? { content, images } : { content };
+    const { error } = await supabase.from("activities").insert({ user_id: userId, type: "post", data });
+    if (error) {
+      await removeImages(images.map(i => i.path));
+      setPostError("Publication impossible. Réessaie.");
+      setPosting(false);
+      return;
+    }
+    postImages.forEach(p => URL.revokeObjectURL(p.preview));
+    setPostImages([]);
     setPostInput("");
     setPosting(false);
     setReloadKey(k => k + 1);
@@ -195,23 +250,41 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
   return (
     <div>
       {/* Encadré publier */}
-      <div style={{ ...card, marginBottom: 16 }}>
+      <div
+        style={{ ...card, marginBottom: 16, ...(dragOver ? { borderColor: T.accent, background: T.accentBg } : {}) }}
+        onDragOver={e => { if ([...e.dataTransfer.types].includes("Files")) { e.preventDefault(); setDragOver(true); } }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={e => { e.preventDefault(); setDragOver(false); addImages(e.dataTransfer.files); }}
+      >
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
           <Avatar name={profile?.full_name} size={36} />
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <textarea
               value={postInput}
               onChange={e => setPostInput(e.target.value)}
+              onPaste={e => { const files = [...e.clipboardData.files].filter(isImage); if (files.length) { e.preventDefault(); addImages(files); } }}
               placeholder="Partage une pensée, une analyse, une question…"
+              maxLength={5000}
               style={{ width: "100%", background: "none", border: "none", outline: "none", color: T.text, fontFamily: "inherit", fontSize: 14, resize: "none", lineHeight: 1.5, minHeight: 60 }}
             />
-            {postInput.trim() && (
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-                <button onClick={publishPost} disabled={posting} style={{ background: T.accent, border: "none", borderRadius: 999, padding: "6px 18px", fontSize: 13, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>
-                  {posting ? "…" : "Publier"}
+            <ComposerPreviews items={postImages} onRemove={removeImage} T={T} />
+            {preparing > 0 && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 6 }}>Préparation de l'image…</div>}
+            {postError && <div style={{ fontSize: 12, color: T.red, marginTop: 6 }}>{postError}</div>}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, paddingTop: 10, borderTop: `0.5px solid ${T.border}` }}>
+              <input ref={fileInput} type="file" accept={ACCEPT_ATTR} multiple hidden
+                onChange={e => { addImages(e.target.files); e.target.value = ""; }} />
+              <button onClick={() => fileInput.current?.click()} disabled={postImages.length + preparing >= MAX_IMAGES}
+                title={`Ajouter jusqu'à ${MAX_IMAGES} images`}
+                style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit", opacity: postImages.length + preparing >= MAX_IMAGES ? 0.4 : 1 }}>
+                <span style={{ fontSize: 16 }}>🖼️</span> Image
+              </button>
+              <div style={{ flex: 1 }} />
+              {(postInput.trim() || postImages.length > 0) && (
+                <button onClick={publishPost} disabled={posting || preparing > 0} style={{ background: T.accent, border: "none", borderRadius: 999, padding: "6px 18px", fontSize: 13, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", opacity: preparing ? 0.6 : 1 }}>
+                  {posting ? "Envoi…" : "Publier"}
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -271,9 +344,14 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
             </div>
 
             {activity.type === "post" ? (
-              <div style={{ fontSize: 14, color: T.text, lineHeight: 1.6, marginBottom: 12 }}>
-                {activity.data?.content}
-              </div>
+              <>
+                {activity.data?.content && (
+                  <div style={{ fontSize: 14, color: T.text, lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                    {activity.data.content}
+                  </div>
+                )}
+                <PostImages images={activity.data?.images} T={T} />
+              </>
             ) : (
               <div style={{ borderLeft: `2px solid ${T.border}`, paddingLeft: 12, marginBottom: 12 }}>
                 <div style={{ fontSize: 14, fontWeight: 500, color: T.text, lineHeight: 1.4 }}>{meta.title}</div>
