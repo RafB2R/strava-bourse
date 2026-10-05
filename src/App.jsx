@@ -17,6 +17,8 @@ const KYC = lazy(() => import("./components/KYC"));
 const ProfilPublic = lazy(() => import("./components/ProfilPublic"));
 const Messages = lazy(() => import("./components/Messages"));
 const ChatDock = lazy(() => import("./components/ChatDock"));
+const ClubsWidget = lazy(() => import("./components/SideWidgets").then(m => ({ default: m.ClubsWidget })));
+const FriendSuggestions = lazy(() => import("./components/SideWidgets").then(m => ({ default: m.FriendSuggestions })));
 
 const TABS = [
   { id: "feed", label: "Fil", icon: "🏠" },
@@ -153,6 +155,8 @@ export default function App() {
   const [messageTarget, setMessageTarget] = useState(null);
   const clearMessageTarget = useCallback(() => setMessageTarget(null), []);
   const [dockOpen, setDockOpen] = useState(false);
+  // Écran d'Explore à ouvrir depuis la colonne de droite : { section, club }
+  const [exploreIntent, setExploreIntent] = useState(null);
   const [dockTarget, setDockTarget] = useState(null);
   const clearDockTarget = useCallback(() => setDockTarget(null), []);
 
@@ -218,8 +222,9 @@ export default function App() {
   }
 
   // Changer d'onglet ferme aussi le profil public éventuellement ouvert
-  function goToTab(id) {
+  function goToTab(id, exploreTarget = null) {
     setTab(id);
+    setExploreIntent(exploreTarget);
     setNavKey(k => k + 1);
     window.scrollTo(0, 0);
     setPublicUserId(null);
@@ -271,7 +276,7 @@ export default function App() {
       ) : (
         <>
           {tab === "feed" && <Feed key={navKey} session={session} T={T} onViewProfile={viewProfile} />}
-          {tab === "explore" && <Explore key={navKey} session={session} T={T} onViewProfile={viewProfile} />}
+          {tab === "explore" && <Explore key={navKey} session={session} T={T} onViewProfile={viewProfile} initialSection={exploreIntent?.section} initialClub={exploreIntent?.club} />}
           {tab === "portfolio" && <Portfolio key={navKey} session={session} T={T} />}
           {tab === "messages" && <Messages key={navKey} session={session} T={T} openWith={messageTarget} onOpened={clearMessageTarget} onViewProfile={viewProfile} onUnreadChange={setUnreadMessages} />}
           {tab === "profil" && <Profil key={navKey} profile={profile} session={session} T={T} onViewProfile={viewProfile} />}
@@ -324,7 +329,7 @@ export default function App() {
       </Suspense>
 
       {/* Droite */}
-      <div style={{ width: 280, flexShrink: 0, padding: "24px 16px", position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}>
+      <div style={{ width: 280, flexShrink: 0, padding: "24px 16px 72px", position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}>
         {publicUserId ? (
           <ComparisonWidget data={compareData} T={T} />
         ) : (
@@ -336,6 +341,13 @@ export default function App() {
               </div>
             </div>
             <MarketWidget T={T} />
+            <Suspense fallback={null}>
+              <ClubsWidget session={session} T={T}
+                onOpenClub={club => goToTab("explore", { section: "clubs", club })}
+                onAllClubs={() => goToTab("explore", { section: "clubs" })} />
+              <FriendSuggestions session={session} T={T} onViewProfile={viewProfile}
+                onFindFriends={() => goToTab("explore", { section: "amis" })} />
+            </Suspense>
           </>
         )}
       </div>

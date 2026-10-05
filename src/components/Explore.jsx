@@ -64,7 +64,7 @@ async function searchExplore(query, searchTab, userId) {
   return data || [];
 }
 
-export default function Explore({ session , T: TProp, onViewProfile }) {
+export default function Explore({ session , T: TProp, onViewProfile, initialSection, initialClub = null }) {
   const T = TProp || TLive;
   const [query, setQuery] = useState("");
   const [searchTab, setSearchTab] = useState("users");
@@ -76,8 +76,9 @@ export default function Explore({ session , T: TProp, onViewProfile }) {
   const [pendingIds, setPendingIds] = useState([]);
   const [myClubIds, setMyClubIds] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedClub, setSelectedClub] = useState(null);
-  const [section, setSection] = useState("marches");
+  const [selectedClub, setSelectedClub] = useState(initialClub);
+  // « amis » : pas une section, on ouvre Explore sur la recherche de membres
+  const [section, setSection] = useState(initialSection === "clubs" || initialSection === "super" ? initialSection : "marches");
   const [filterCat, setFilterCat] = useState("Tous");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", description: "", category: "", subcategory: "" });
@@ -152,7 +153,7 @@ export default function Explore({ session , T: TProp, onViewProfile }) {
     <div>
       {/* Barre de recherche */}
       <div style={{ position: "relative", marginBottom: 20 }}>
-        <input style={{ ...inp(T), paddingLeft: 40 }} placeholder="Rechercher un investisseur, un club…" value={query} onChange={e => setQuery(e.target.value)} />
+        <input style={{ ...inp(T), paddingLeft: 40 }} placeholder="Rechercher un investisseur, un club…" autoFocus={initialSection === "amis"} value={query} onChange={e => setQuery(e.target.value)} />
         <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, color: T.textFaint }}>🔍</span>
         {query && <button onClick={() => setQuery("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 14 }}>✕</button>}
       </div>
