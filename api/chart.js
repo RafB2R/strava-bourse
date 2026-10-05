@@ -10,6 +10,7 @@ export const PERIODS = {
   '5d': { range: '5d', interval: '30m', ttl: 900 },
   '1mo': { range: '1mo', interval: '1d', ttl: 3600 },
   '3mo': { range: '3mo', interval: '1d', ttl: 3600 },
+  '6mo': { range: '6mo', interval: '1d', ttl: 3600 },
   'ytd': { range: 'ytd', interval: '1d', ttl: 3600 },
   '1y': { range: '1y', interval: '1d', ttl: 3600 },
   '5y': { range: '5y', interval: '1wk', ttl: 21600 },

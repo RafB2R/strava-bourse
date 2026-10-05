@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { T as TLive, avatarColors } from "../theme";
-import { shortTime, fetchConversations, fetchMessages, sendMessage, markRead, startConversation, subscribeToConversation, fetchFriends, uploadMessageImages, signMessageImages } from "../messages";
-import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage } from "../media";
-import { PostImages, ComposerPreviews } from "./PostMedia";
+import { shortTime, fetchConversations, fetchMessages, sendMessage, markRead, startConversation, subscribeToConversation, fetchFriends, uploadMessageImages, signMessageImages, uploadMessageFiles, signMessageFile } from "../messages";
+import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage, MAX_FILES, FILE_ACCEPT_ATTR, checkFile } from "../media";
+import { PostImages, ComposerPreviews, PostFiles, ComposerFiles } from "./PostMedia";
 
 export function Avatar({ name, size = 40 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
@@ -23,6 +23,9 @@ export function Thread({ conversation, session, T, onBack, onViewProfile, onRead
   const [urls, setUrls] = useState({});          // chemin → adresse signée (ou aperçu local)
   const requested = useRef(new Set());
   const fileInput = useRef(null);
+  const docInput = useRef(null);
+  const [pendingFiles, setPendingFiles] = useState([]);
+  const [fileUrls, setFileUrls] = useState({});   // chemin → adresse signée (ouverture / téléchargement)
   const scrollRef = useRef(null);
   const dock = variant === "dock";
   const convId = conversation.conversation_id;
@@ -47,11 +50,21 @@ export function Thread({ conversation, session, T, onBack, onViewProfile, onRead
     signMessageImages(missing).then(signed => setUrls(prev => ({ ...signed, ...prev })));
   }, [messages, convId]);
 
+  // Adresses signées des fichiers joints (une par fichier, pour le nom de téléchargement)
+  useEffect(() => {
+    const missing = (messages || []).flatMap(m => m.files || [])
+      .filter(f => typeof f?.path === "string" && f.path.startsWith(`${convId}/`) && !requested.current.has(f.path));
+    if (missing.length === 0) return;
+    missing.forEach(f => requested.current.add(f.path));
+    Promise.all(missing.map(async f => [f.path, await signMessageFile(f)]))
+      .then(pairs => setFileUrls(prev => ({ ...prev, ...Object.fromEntries(pairs.filter(([, url]) => url)) })));
+  }, [messages, convId]);
+
   // Descend en bas de la zone des messages, sans faire défiler la page
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [messages, minimized, urls]);
+  }, [messages, minimized, urls, fileUrls]);
 
   async function addImages(fileList) {
     const files = [...(fileList || [])].filter(isImage);
@@ -77,19 +90,29 @@ export function Thread({ conversation, session, T, onBack, onViewProfile, onRead
     setPending(p => p.filter((_, j) => j !== i));
   }
 
-  const canSend = (input.trim() || pending.length > 0) && !sending && preparing === 0;
+  function addFiles(list) {
+    const files = [...(list || [])];
+    setError("");
+    const ok = files.filter(f => { const err = checkFile(f); if (err) setError(err); return !err; });
+    const room = MAX_FILES - pendingFiles.length;
+    if (ok.length > room) setError(`${MAX_FILES} fichiers maximum par message.`);
+    if (room > 0) setPendingFiles(p => [...p, ...ok.slice(0, room)]);
+  }
+
+  const canSend = (input.trim() || pending.length > 0 || pendingFiles.length > 0) && !sending && preparing === 0;
 
   async function send() {
     const text = input.trim();
     if (!canSend) return;
     setSending(true); setError("");
-    let images;
+    let images, files;
     try {
       images = await uploadMessageImages(convId, pending);
+      files = await uploadMessageFiles(convId, pendingFiles);
     } catch (e) {
       setSending(false); setError(e.message); return;
     }
-    const { message, error: err } = await sendMessage(convId, me, text, images);
+    const { message, error: err } = await sendMessage(convId, me, text, images, files);
     setSending(false);
     if (err) { setError("Message non envoyé : vous n'êtes peut-être plus amis."); return; }
     // Les images envoyées s'affichent tout de suite depuis l'aperçu local
@@ -97,6 +120,7 @@ export function Thread({ conversation, session, T, onBack, onViewProfile, onRead
     images.forEach((img, i) => { local[img.path] = pending[i].preview; requested.current.add(img.path); });
     setUrls(prev => ({ ...prev, ...local }));
     setPending([]);
+    setPendingFiles([]);
     setInput("");
     setMessages(prev => (prev.some(m => m.id === message.id) ? prev : [...prev, message]));
   }
@@ -138,6 +162,13 @@ export function Thread({ conversation, session, T, onBack, onViewProfile, onRead
                     : <div style={{ width: 160, height: 110, borderRadius: 10, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: T.textFaint }}>📷 Chargement…</div>}
                 </div>
               )}
+              {m.files?.length > 0 && (
+                <div style={{ maxWidth: "78%", marginBottom: m.content?.trim() ? 3 : 0 }}>
+                  {m.files.some(f => fileUrls[f.path])
+                    ? <PostFiles files={m.files} urls={fileUrls} T={T} compact />
+                    : <div style={{ fontSize: 12, color: T.textFaint, padding: "8px 12px", borderRadius: 10, background: T.bgSubtle }}>📎 Chargement…</div>}
+                </div>
+              )}
               {m.content?.trim() && (
                 <div style={{ maxWidth: "78%", padding: "8px 12px", borderRadius: 16, borderBottomRightRadius: mine ? 4 : 16, borderBottomLeftRadius: mine ? 16 : 4, background: mine ? T.accent : T.bgSubtle, color: mine ? T.onAccent : T.text, fontSize: 14, lineHeight: 1.45, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
                   {m.content}
@@ -151,12 +182,17 @@ export function Thread({ conversation, session, T, onBack, onViewProfile, onRead
       <div style={{ borderTop: `0.5px solid ${T.border}`, padding: 10 }}>
         {error && <div style={{ fontSize: 12, color: T.red, marginBottom: 6 }}>{error}</div>}
         {pending.length > 0 && <div style={{ marginTop: -8, marginBottom: 8 }}><ComposerPreviews items={pending} onRemove={removePending} T={T} /></div>}
+        {pendingFiles.length > 0 && <div style={{ marginTop: -8, marginBottom: 8 }}><ComposerFiles files={pendingFiles} onRemove={i => setPendingFiles(p => p.filter((_, j) => j !== i))} T={T} /></div>}
         {preparing > 0 && <div style={{ fontSize: 12, color: T.textFaint, marginBottom: 6 }}>Préparation de l'image…</div>}
         <div style={{ display: "flex", gap: dock ? 4 : 8, alignItems: "flex-end" }}>
           <input ref={fileInput} type="file" accept={ACCEPT_ATTR} multiple hidden onChange={e => { addImages(e.target.files); e.target.value = ""; }} />
           <button onClick={() => fileInput.current?.click()} aria-label="Joindre une image" title="Joindre une image"
             disabled={pending.length + preparing >= MAX_IMAGES}
-            style={{ background: "none", border: "none", fontSize: 20, padding: "6px 4px", cursor: "pointer", opacity: pending.length + preparing >= MAX_IMAGES ? 0.4 : 1 }}>🖼️</button>
+            style={{ background: "none", border: "none", fontSize: 20, padding: "6px 2px", cursor: "pointer", opacity: pending.length + preparing >= MAX_IMAGES ? 0.4 : 1 }}>🖼️</button>
+          <input ref={docInput} type="file" accept={FILE_ACCEPT_ATTR} multiple hidden onChange={e => { addFiles(e.target.files); e.target.value = ""; }} />
+          <button onClick={() => docInput.current?.click()} aria-label="Joindre un fichier" title="Joindre un fichier (PDF, Excel, Word… 10 Mo max)"
+            disabled={pendingFiles.length >= MAX_FILES}
+            style={{ background: "none", border: "none", fontSize: 19, padding: "6px 2px", cursor: "pointer", opacity: pendingFiles.length >= MAX_FILES ? 0.4 : 1 }}>📎</button>
           <textarea value={input} onChange={e => setInput(e.target.value)} rows={1} maxLength={2000} placeholder="Écris un message…"
             onPaste={e => { const files = [...e.clipboardData.files].filter(isImage); if (files.length) { e.preventDefault(); addImages(files); } }}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}

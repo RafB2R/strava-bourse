@@ -8,7 +8,7 @@
 // - Rien d'autre n'est mis en cache : ni /api (cours, taux…), ni Supabase
 //   (données personnelles), ni les autres sites.
 
-const VERSION = "verio-v1";
+const VERSION = "verio-v2";
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
 
@@ -64,4 +64,33 @@ self.addEventListener("fetch", event => {
       }))
     );
   }
+});
+
+// ---- Notifications push (envoyées par /api/push) ----
+self.addEventListener("push", event => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch { data = { body: event.data?.text() }; }
+  event.waitUntil(self.registration.showNotification(data.title || "Verio", {
+    body: data.body || "",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    tag: data.tag,
+    renotify: !!data.tag,
+    data: { url: data.url || "/" },
+  }));
+});
+
+// Clic sur la notification : revient sur Verio (fenêtre existante si possible) au bon endroit
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || "/", self.location.origin).href;
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const existing = windows.find(w => new URL(w.url).origin === self.location.origin);
+    if (existing) {
+      await existing.focus();
+      return existing.navigate(target);
+    }
+    return self.clients.openWindow(target);
+  })());
 });

@@ -87,6 +87,11 @@ const FILE_TYPES = {
   ppt: "application/vnd.ms-powerpoint",
   pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 };
+// Type d'un fichier d'après son extension (null si non accepté)
+export function fileMime(name) {
+  return FILE_TYPES[fileExt(name)] || null;
+}
+
 export const FILE_ACCEPT_ATTR = Object.keys(FILE_TYPES).map(e => `.${e}`).join(",");
 
 export function fileExt(name) {

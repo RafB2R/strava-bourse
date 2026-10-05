@@ -36,6 +36,35 @@ function FooterLinks({ onPage }) {
   );
 }
 
+// Nos engagements, à la place d'un témoignage (pas de faux avis)
+function Commitments({ className = "", style }) {
+  const items = [
+    ["🔒", "Tes montants ne sont jamais visibles : seulement des pourcentages."],
+    ["✉️", "Tes messages privés ne sont lisibles que par toi et ton ami."],
+    ["🧭", "Pas de conseils d'achat : chacun reste maître de ses choix."],
+  ];
+  return (
+    <div className={`lp-card ${className}`} style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 28, ...style }}>
+      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 14 }}>Nos engagements</div>
+      {items.map(([icon, text]) => (
+        <div key={text} style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 10 }}>
+          <span style={{ fontSize: 16 }}>{icon}</span>
+          <span style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>{text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LandingFooter({ onPage }) {
+  return (
+    <div style={{ textAlign: "center", padding: "28px 20px calc(28px + env(safe-area-inset-bottom))", borderTop: "0.5px solid rgba(255,255,255,0.05)", fontSize: 12, color: "rgba(255,255,255,0.15)" }}>
+      <FooterLinks onPage={onPage} />
+      © 2026 Verio · Les montants restent toujours privés
+    </div>
+  );
+}
+
 const dark = { background: "#111318", color: "#f0f0f0", fontFamily: "system-ui, -apple-system, sans-serif", minHeight: "100vh" };
 const navStyle = { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "24px 48px" };
 
@@ -58,12 +87,12 @@ function Nav({ onStart, onPage, onHome }) {
 
 function Fonctionnalites({ onStart, onPage, onHome }) {
   const features = [
-    { icon: "📊", title: "Portefeuille multi-broker", desc: "Connecte tous tes comptes en un seul endroit. Boursorama, Saxo, Trade Republic, Degiro — tout est agrégé automatiquement. Tu vois ta vraie allocation, ta vraie performance.", tag: "Portefeuille" },
-    { icon: "⚡", title: "Fil d'activités", desc: "Chaque investissement de tes amis apparaît automatiquement. Achat, renforcement, rebalancement, série de DCA. Pas de saisie manuelle — tout est détecté.", tag: "Social" },
-    { icon: "🏅", title: "Badges de discipline", desc: "100 mois de DCA. 5 ans sans vendre. Zéro cash depuis 3 ans. Des récompenses qui mesurent ce qui compte vraiment : la constance, pas la chance.", tag: "Gamification" },
-    { icon: "🏛️", title: "Clubs thématiques", desc: "Rejoins des communautés d'investisseurs qui partagent ta stratégie. ETF Monde, Dividendes, Value Investing, PEA France — chaque club a ses classements et discussions.", tag: "Communauté" },
-    { icon: "👥", title: "Comparaison entre amis", desc: "Compare tes performances avec tes proches. Les montants restent toujours privés — seuls les pourcentages sont visibles. Sain et motivant.", tag: "Social" },
-    { icon: "📈", title: "Stats avancées", desc: "Au-delà du rendement brut : Sharpe ratio, drawdown, exposition sectorielle, évolution de l'allocation dans le temps. Comprends vraiment comment tu investis.", tag: "Analyse" },
+    { icon: "📊", title: "Tout ton portefeuille au même endroit", desc: "Ajoute tes positions, quel que soit ton courtier : Boursorama, Trade Republic, Degiro, assurance vie… Verio calcule ta performance, ta répartition et tes dividendes à venir.", tag: "Portefeuille" },
+    { icon: "⚡", title: "Fil d'activités", desc: "Les mouvements de tes amis apparaissent dans ton fil : nouvelle position, renforcement, allègement, toujours en pourcentage. Publie aussi tes analyses, photos et sondages.", tag: "Social" },
+    { icon: "🏅", title: "Badges de discipline", desc: "12 mois d'affilée d'investissement, 10 ans d'ancienneté, un portefeuille diversifié… Des récompenses qui mesurent ce qui compte vraiment : la constance, pas la chance.", tag: "Gamification" },
+    { icon: "🏛️", title: "Clubs thématiques", desc: "Rejoins des communautés d'investisseurs qui partagent ta stratégie, ou crée la tienne : ETF Monde, Dividendes, PEA… Chaque club a ses discussions et son classement.", tag: "Communauté" },
+    { icon: "👥", title: "Comparaison entre amis", desc: "Compare ta performance, ta diversification et ta régularité avec tes proches. Les montants restent toujours privés : seuls les pourcentages sont visibles.", tag: "Social" },
+    { icon: "📈", title: "Marchés et revenus", desc: "Les grands indices, les secteurs et les taux d'État en un coup d'œil, et le calendrier des dividendes que ton portefeuille devrait te verser.", tag: "Analyse" },
   ];
 
   return (
@@ -92,25 +121,27 @@ function Fonctionnalites({ onStart, onPage, onHome }) {
           <button className="lp-cta" onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>Commencer gratuitement</button>
         </div>
       </div>
+      <LandingFooter onPage={onPage} />
     </div>
   );
 }
 
 function Communaute({ onStart, onPage, onHome }) {
   const values = [
-    { icon: "🧘", title: "Long terme avant tout", desc: "Verio est fait pour les investisseurs qui pensent en années, pas en heures. Pas de cours en temps réel, pas de signaux d'achat. Juste ton parcours." },
+    { icon: "🧘", title: "Long terme avant tout", desc: "Verio est fait pour les investisseurs qui pensent en années, pas en heures. Pas de signaux d'achat, pas de course au trading. Juste ton parcours." },
     { icon: "🤝", title: "Une communauté, pas une compétition", desc: "On ne compare pas les patrimoines — on compare les habitudes. Quelqu'un qui investit 100 € par mois avec discipline est plus inspirant qu'un coup de chance à 50 000 €." },
     { icon: "🔒", title: "Tes montants restent privés", desc: "Personne ne verra jamais combien tu investis. Seulement tes performances en pourcentage. Parce que l'argent, c'est personnel." },
     { icon: "📣", title: "Pas de fake gurus", desc: "Pas de screeners de trades, pas de '+400% ce mois'. Verio récompense la régularité et la discipline — pas la spéculation." },
   ];
 
+  // Thèmes de clubs possibles (aucun chiffre d'audience : Verio démarre)
   const clubs = [
-    { icon: "📊", name: "ETF Monde", members: "2 341 membres" },
-    { icon: "💰", name: "Dividendes", members: "1 876 membres" },
-    { icon: "📈", name: "Value Investing", members: "934 membres" },
-    { icon: "🏠", name: "SCPI & Immo", members: "721 membres" },
-    { icon: "💼", name: "PEA France", members: "1 203 membres" },
-    { icon: "₿", name: "Bitcoin", members: "654 membres" },
+    { icon: "📊", name: "ETF Monde", members: "Investir passivement" },
+    { icon: "💰", name: "Dividendes", members: "Revenus réguliers" },
+    { icon: "📈", name: "Value Investing", members: "Sociétés sous-cotées" },
+    { icon: "🏠", name: "SCPI & Immo", members: "Pierre-papier" },
+    { icon: "💼", name: "PEA", members: "Fiscalité française" },
+    { icon: "₿", name: "Bitcoin", members: "Long terme" },
   ];
 
   return (
@@ -132,7 +163,7 @@ function Communaute({ onStart, onPage, onHome }) {
           ))}
         </div>
 
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Les clubs les plus actifs</div>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Des clubs pour chaque stratégie</div>
         <div className="lp-grid3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 56 }}>
           {clubs.map(c => (
             <div key={c.name} style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "16px 14px", textAlign: "center" }}>
@@ -143,15 +174,13 @@ function Communaute({ onStart, onPage, onHome }) {
           ))}
         </div>
 
-        <div style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 28, marginBottom: 48 }}>
-          <p style={{ fontSize: 16, color: "rgba(255,255,255,0.6)", lineHeight: 1.7, fontStyle: "italic", marginBottom: 12 }}>« Pour la première fois, j'aime vraiment suivre mes investissements. »</p>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.25)" }}>Sophie L. · Membre Verio · 28 mois de DCA</div>
-        </div>
+        <Commitments style={{ marginBottom: 48 }} />
 
         <div style={{ textAlign: "center" }}>
           <button className="lp-cta" onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>Commencer gratuitement</button>
         </div>
       </div>
+      <LandingFooter onPage={onPage} />
     </div>
   );
 }
@@ -180,7 +209,7 @@ export default function Landing({ onStart }) {
           Construis ton patrimoine.<br /><span style={{ color: "#9FE1CB" }}>Entouré.</span>
         </h1>
         <div className="lp-lead" style={{ fontSize: 18, color: "rgba(255,255,255,0.4)", marginBottom: 12 }}>Investir, c'est un parcours. Pas une course.</div>
-        <div style={{ fontSize: 15, color: "rgba(255,255,255,0.25)", marginBottom: 48 }}>Suis ton portefeuille, rejoins des défis, progresse avec une communauté d'investisseurs qui pensent long terme.</div>
+        <div style={{ fontSize: 15, color: "rgba(255,255,255,0.25)", marginBottom: 48 }}>Suis ton portefeuille, partage ton parcours et progresse avec tes proches et une communauté d'investisseurs qui pensent long terme.</div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
           <button className="lp-cta" onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>Commencer gratuitement</button>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.2)" }}>Gratuit · Aucune carte requise</div>
@@ -201,9 +230,9 @@ export default function Landing({ onStart }) {
 
       <div className="lp-pad lp-grid" style={{ padding: "0 48px 80px", maxWidth: 700, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         {[
-          { icon: "📊", title: "Suis ta progression", text: "Ton portefeuille unifié, multi-broker. Tes performances dans le temps." },
-          { icon: "🏆", title: "Reste discipliné", text: "Séries de DCA. Défis mensuels. Badges. Investir comme une habitude." },
-          { icon: "👥", title: "Progresse avec les autres", text: "Suis des investisseurs. Partage ton parcours. Grandis ensemble." },
+          { icon: "📊", title: "Suis ta progression", text: "Toutes tes positions, tous courtiers confondus. Ta performance, ta répartition, tes dividendes." },
+          { icon: "🏆", title: "Reste discipliné", text: "Séries d'investissement mensuel, badges, moments clés. Investir comme une habitude." },
+          { icon: "👥", title: "Progresse avec les autres", text: "Ajoute tes amis, rejoins des clubs, partage ton parcours. Grandis ensemble." },
           { icon: "📈", title: "Au-delà des rendements", text: "La constance compte plus que la performance. Mesure ta discipline, pas juste tes gains." },
         ].map(f => (
           <div key={f.title} className="lp-card" style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 28 }}>
@@ -226,21 +255,15 @@ export default function Landing({ onStart }) {
         <p style={{ fontSize: 14, color: "rgba(255,255,255,0.25)", lineHeight: 1.7 }}>Que tu investisses 100 € ou 100 000 €, tout le monde commence de la même façon. Un investissement à la fois.</p>
       </div>
 
-      <div className="lp-quote lp-card" style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 28, maxWidth: 600, margin: "0 auto 80px" }}>
-        <p style={{ fontSize: 16, color: "rgba(255,255,255,0.6)", lineHeight: 1.7, fontStyle: "italic", marginBottom: 12 }}>« Pour la première fois, j'aime vraiment suivre mes investissements. »</p>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.25)" }}>Sophie L. · Membre Verio · 28 mois de DCA</div>
-      </div>
+      <Commitments className="lp-quote" style={{ maxWidth: 600, margin: "0 auto 80px" }} />
 
       <div className="lp-pad lp-section" style={{ textAlign: "center", padding: "80px 48px 100px" }}>
         <h2 className="lp-h2" style={{ fontSize: 36, fontWeight: 700, letterSpacing: -1, color: "#fff", marginBottom: 12 }}>Prêt à investir autrement ?</h2>
-        <p style={{ fontSize: 15, color: "rgba(255,255,255,0.35)", marginBottom: 36 }}>Des milliers d'investisseurs construisent leur patrimoine. Rejoins-les.</p>
+        <p style={{ fontSize: 15, color: "rgba(255,255,255,0.35)", marginBottom: 36 }}>Verio démarre : rejoins les premiers membres et invite tes proches.</p>
         <button className="lp-cta" onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>Commencer gratuitement</button>
       </div>
 
-      <div style={{ textAlign: "center", padding: "28px 20px calc(28px + env(safe-area-inset-bottom))", borderTop: "0.5px solid rgba(255,255,255,0.05)", fontSize: 12, color: "rgba(255,255,255,0.15)" }}>
-        <FooterLinks onPage={setPage} />
-        © 2026 Verio · Les montants restent toujours privés
-      </div>
+      <LandingFooter onPage={setPage} />
     </div>
   );
 }

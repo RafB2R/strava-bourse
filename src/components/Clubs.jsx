@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabase";
 import { syncBadges } from "../badges";
 import { T, T as TLive, avatarColors } from "../theme";
+import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage, uploadImages, removeImages, MAX_FILES, FILE_ACCEPT_ATTR, checkFile, uploadFiles, removeFiles } from "../media";
+import { PostImages, ComposerPreviews, PostFiles, ComposerFiles } from "./PostMedia";
 
 const CATEGORIES = {
   "📈 Actions": ["Actions France", "Actions Europe", "Actions USA", "Actions Monde", "Actions Émergents", "Small Caps", "Value Investing", "Growth Investing", "Dividendes", "Stock Picking"],
@@ -85,7 +87,9 @@ function Post({ post, session, isMember, onReact, onDelete }) {
               <button onClick={() => onDelete(post.id)} style={{ marginLeft: "auto", background: "transparent", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 11, fontFamily: "inherit" }}>✕</button>
             )}
           </div>
-          <div style={{ fontSize: 14, color: T.text, lineHeight: 1.6, marginBottom: 10, wordBreak: "break-word" }}>{post.content}</div>
+          {post.content?.trim() && <div style={{ fontSize: 14, color: T.text, lineHeight: 1.6, marginBottom: 10, wordBreak: "break-word", whiteSpace: "pre-wrap" }}>{post.content}</div>}
+          <PostImages images={post.images} T={T} />
+          <PostFiles files={post.files} T={T} />
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
             {REACTIONS.map(r => (
               <button key={r} onClick={() => isMember && onReact(post.id, r)} style={{ background: myReactions.includes(r) ? T.accentBg : T.bgCard, border: `0.5px solid ${myReactions.includes(r) ? T.accentBorder : T.border}`, borderRadius: 999, padding: "3px 10px", fontSize: 12, color: myReactions.includes(r) ? T.accent : T.textMuted, cursor: isMember ? "pointer" : "default", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
@@ -241,6 +245,12 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
   const [posts, setPosts] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [postImages, setPostImages] = useState([]);   // images préparées (compressées) avec aperçu
+  const [postFiles, setPostFiles] = useState([]);
+  const [preparing, setPreparing] = useState(0);
+  const [postError, setPostError] = useState("");
+  const imageInput = useRef(null);
+  const fileInput = useRef(null);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState("date");
   const [page, setPage] = useState(1);
@@ -260,14 +270,73 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
     return () => { ignore = true; };
   }, [club.id, sort, page, reloadKey]);
 
+  async function addImages(list) {
+    const files = [...(list || [])].filter(isImage);
+    if (files.length === 0) return;
+    setPostError("");
+    const room = MAX_IMAGES - postImages.length - preparing;
+    if (files.length > room) setPostError(`${MAX_IMAGES} images maximum par post.`);
+    const batch = files.slice(0, Math.max(0, room));
+    setPreparing(n => n + batch.length);
+    for (const file of batch) {
+      try {
+        const img = await compressImage(file);
+        setPostImages(p => [...p, { ...img, preview: URL.createObjectURL(img.blob) }]);
+      } catch (e) {
+        setPostError(e.message || "Image illisible.");
+      } finally {
+        setPreparing(n => n - 1);
+      }
+    }
+  }
+
+  function addFiles(list) {
+    const files = [...(list || [])];
+    setPostError("");
+    const ok = files.filter(f => { const err = checkFile(f); if (err) setPostError(err); return !err; });
+    const room = MAX_FILES - postFiles.length;
+    if (ok.length > room) setPostError(`${MAX_FILES} fichiers maximum par post.`);
+    if (room > 0) setPostFiles(p => [...p, ...ok.slice(0, room)]);
+  }
+
+  const canPost = (input.trim() || postImages.length > 0 || postFiles.length > 0) && !sending && preparing === 0;
+
   async function sendPost() {
-    if (!input.trim() || sending) return;
-    setSending(true);
-    await supabase.from("club_posts").insert({ club_id: club.id, user_id: session.user.id, content: input.trim() });
+    if (!canPost) return;
+    setSending(true); setPostError("");
+    let images = [], files;
+    try {
+      images = await uploadImages(session.user.id, postImages);
+      files = await uploadFiles(session.user.id, postFiles);
+    } catch (e) {
+      await removeImages(images.map(i => i.path));
+      setPostError(e.message); setSending(false); return;
+    }
+    const row = { club_id: club.id, user_id: session.user.id, content: input.trim() };
+    if (images.length) row.images = images;
+    if (files.length) row.files = files;
+    const { error } = await supabase.from("club_posts").insert(row);
+    if (error) {
+      await Promise.all([removeImages(images.map(i => i.path)), removeFiles(files.map(f => f.path))]);
+      setPostError("Publication impossible. Réessaie."); setSending(false); return;
+    }
+    postImages.forEach(i => URL.revokeObjectURL(i.preview));
+    setPostImages([]); setPostFiles([]);
     setInput(""); setSending(false); setPage(1); reloadPosts();
   }
 
-  async function deletePost(id) { await supabase.from("club_posts").delete().eq("id", id); reloadPosts(); }
+  // Supprime le post, puis ses images et fichiers du stockage
+  async function deletePost(id) {
+    const post = posts.find(p => p.id === id);
+    const { error } = await supabase.from("club_posts").delete().eq("id", id);
+    if (!error && post) {
+      await Promise.all([
+        removeImages((post.images || []).map(i => i.path).filter(Boolean)),
+        removeFiles((post.files || []).map(f => f.path).filter(Boolean)),
+      ]);
+    }
+    reloadPosts();
+  }
 
   async function handleReact(postId, type) {
     const post = posts.find(p => p.id === postId);
@@ -328,8 +397,23 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
         <div>
           {isMember && (
             <div style={{ ...card(T), marginBottom: 20 }}>
-              <textarea style={{ ...inp(T), marginBottom: 8, height: 80, resize: "none" }} placeholder="Partage une idée, une question, une analyse…" value={input} onChange={e => setInput(e.target.value)} />
-              <button style={{ ...btn(T), padding: "8px 20px" }} onClick={sendPost} disabled={sending || !input.trim()}>{sending ? "Publication…" : "Publier"}</button>
+              <textarea style={{ ...inp(T), marginBottom: 8, height: 80, resize: "none" }} placeholder="Partage une idée, une question, une analyse…" value={input}
+                onChange={e => setInput(e.target.value)}
+                onPaste={e => { const files = [...e.clipboardData.files].filter(isImage); if (files.length) { e.preventDefault(); addImages(files); } }} />
+              <ComposerPreviews items={postImages} onRemove={i => setPostImages(p => p.filter((_, j) => j !== i))} T={T} />
+              <ComposerFiles files={postFiles} onRemove={i => setPostFiles(p => p.filter((_, j) => j !== i))} T={T} />
+              {preparing > 0 && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 6 }}>Préparation de l'image…</div>}
+              {postError && <div role="alert" style={{ fontSize: 12, color: T.red, marginTop: 6 }}>{postError}</div>}
+              <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, flexWrap: "wrap" }}>
+                <input ref={imageInput} type="file" accept={ACCEPT_ATTR} multiple hidden onChange={e => { addImages(e.target.files); e.target.value = ""; }} />
+                <input ref={fileInput} type="file" accept={FILE_ACCEPT_ATTR} multiple hidden onChange={e => { addFiles(e.target.files); e.target.value = ""; }} />
+                <button onClick={() => imageInput.current?.click()} disabled={postImages.length + preparing >= MAX_IMAGES}
+                  style={{ background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit" }}>🖼️ Photo</button>
+                <button onClick={() => fileInput.current?.click()} disabled={postFiles.length >= MAX_FILES} title="PDF, Excel, Word, PowerPoint, CSV · 10 Mo max"
+                  style={{ background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit" }}>📎 Fichier</button>
+                <span style={{ flex: 1 }} />
+                <button style={{ ...btn(T), padding: "8px 20px", opacity: canPost ? 1 : 0.5 }} onClick={sendPost} disabled={!canPost}>{sending ? "Publication…" : "Publier"}</button>
+              </div>
             </div>
           )}
           {!isMember && <div style={{ textAlign: "center", padding: "1rem 0 1.5rem", fontSize: 13, color: T.textFaint }}>Rejoins ce club pour participer aux discussions</div>}

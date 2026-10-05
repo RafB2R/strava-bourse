@@ -4,7 +4,9 @@ import { supabase, PUBLIC_PROFILE_COLUMNS } from "../supabase";
 import Badges from "./Badges";
 import { syncBadges } from "../badges";
 import KYC from "./KYC";
+import { normalizeUsername, usernameFormatError, isUsernameAvailable } from "../usernames";
 import InstallBanner from "./InstallBanner";
+import PushSettings from "./PushSettings";
 
 const STRATEGIES = ["ETF passif", "Stock picking", "Dividendes", "Value investing", "DCA", "Mixte"];
 
@@ -107,6 +109,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
   const [showKYC, setShowKYC] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState("");
   const [saved, setSaved] = useState(false);
   const [stats, setStats] = useState({ positions: 0, perfPonderee: null, types: 0, brokers: 0, totalPct: 0 });
   const [friends, setFriends] = useState([]);
@@ -171,7 +174,13 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
     setTimeout(() => setMessage(""), 3000);
   }
 
-  async function acceptRequest(id) { await supabase.from("friendships").update({ status: "accepted" }).eq("id", id); reloadFriendships(); }
+  async function acceptRequest(id) {
+    const { error } = await supabase.from("friendships").update({ status: "accepted" }).eq("id", id);
+    // Prévient celui qui avait demandé (le nom de l'expéditeur est fixé par la base)
+    const request = received.find(f => f.id === id);
+    if (!error && request?.requester_id) await supabase.from("notifications").insert({ user_id: request.requester_id, type: "friend_accepted", data: {} });
+    reloadFriendships();
+  }
   async function declineRequest(id) { await supabase.from("friendships").delete().eq("id", id); reloadFriendships(); }
 
   function startEdit() {
@@ -180,10 +189,20 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
   }
 
   async function saveProfile() {
+    setEditError("");
+    const username = normalizeUsername(form.username);
+    if (username !== (profile.username || "")) {
+      const formatError = usernameFormatError(username);
+      if (formatError) { setEditError(`Nom d'utilisateur : ${formatError.toLowerCase()}`); return; }
+      setSaving(true);
+      if (await isUsernameAvailable(username) === false) { setEditError(`@${username} est déjà pris, choisis-en un autre.`); setSaving(false); return; }
+    }
     setSaving(true);
-    const { data, error } = await supabase.from("profiles").update({ full_name: form.full_name, username: form.username.toLowerCase().trim(), city: form.city, bio: form.bio, strategy: form.strategy, investing_since: form.investing_since || null }).eq("id", session.user.id).select(PUBLIC_PROFILE_COLUMNS).single();
-    if (!error && data) { setProfile(p => ({ ...p, ...data })); setSaved(true); setTimeout(() => setSaved(false), 2000); }
-    setEditing(false); setSaving(false);
+    const { data, error } = await supabase.from("profiles").update({ full_name: form.full_name, username, city: form.city, bio: form.bio, strategy: form.strategy, investing_since: form.investing_since || null }).eq("id", session.user.id).select(PUBLIC_PROFILE_COLUMNS).single();
+    setSaving(false);
+    if (error || !data) { setEditError("Enregistrement impossible. Réessaie."); return; }
+    setProfile(p => ({ ...p, ...data })); setSaved(true); setTimeout(() => setSaved(false), 2000);
+    setEditing(false);
   }
 
   const initials = profile.full_name ? profile.full_name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
@@ -195,6 +214,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
   return (
     <div>
       <InstallBanner T={T} always />
+      <PushSettings T={T} />
       <div style={card}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
           <div style={{ width: 52, height: 52, borderRadius: "50%", background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, flexShrink: 0 }}>{initials}</div>
@@ -249,6 +269,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
             📋 Modifier mon profil investisseur →
           </button>
           <div style={{ display: "flex", gap: 8 }}>
+            {editError && <div role="alert" style={{ fontSize: 13, color: T.red, marginBottom: 10 }}>⚠️ {editError}</div>}
             <button style={btn} onClick={saveProfile} disabled={saving}>{saving ? "Enregistrement…" : "Sauvegarder"}</button>
             <button style={btnSm} onClick={() => setEditing(false)}>Annuler</button>
           </div>

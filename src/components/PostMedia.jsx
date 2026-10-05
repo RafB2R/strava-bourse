@@ -74,11 +74,12 @@ export function ComposerPreviews({ items, onRemove, T }) {
 const FILE_ICONS = { pdf: "📕", xls: "📗", xlsx: "📗", csv: "📗", doc: "📘", docx: "📘", ppt: "📙", pptx: "📙", txt: "📄" };
 
 // Fichiers joints d'un post : nom, taille, ouverture (PDF) ou téléchargement
-export function PostFiles({ files, T }) {
-  const list = (files || []).map(f => ({ ...f, url: fileUrl(f) })).filter(f => f.url).slice(0, 3);
+// « urls » (messagerie) : adresses signées fournies par l'appelant, à la place des adresses publiques
+export function PostFiles({ files, T, urls = null, compact = false }) {
+  const list = (files || []).map(f => ({ ...f, url: urls ? urls[f.path] : fileUrl(f) })).filter(f => f.url).slice(0, 3);
   if (list.length === 0) return null;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: compact ? 0 : 12, width: compact ? 240 : undefined, maxWidth: "100%" }}>
       {list.map(f => {
         const ext = fileExt(f.path);
         return (
