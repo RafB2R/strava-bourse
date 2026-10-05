@@ -49,7 +49,17 @@ async function fetchExploreContext(userId) {
     const { count } = await supabase.from("club_members").select("*", { count: "exact", head: true }).eq("club_id", club.id);
     counts[club.id] = count || 0;
   }
-  return { friendIds, pendingIds, myClubIds: (m || []).map(x => x.club_id), clubs: c || [], counts };
+  const myClubIds = (m || []).map(x => x.club_id);
+
+  // Dernier message de chacun de mes clubs (espace « Mes clubs »)
+  const lastPosts = {};
+  if (myClubIds.length) {
+    const { data: posts } = await supabase.from("club_posts")
+      .select("club_id, content, created_at, author:profiles!club_posts_user_id_fkey(full_name)")
+      .in("club_id", myClubIds).order("created_at", { ascending: false }).limit(200);
+    for (const post of posts || []) if (!lastPosts[post.club_id]) lastPosts[post.club_id] = post;
+  }
+  return { friendIds, pendingIds, myClubIds, clubs: c || [], counts, lastPosts };
 }
 
 async function searchExplore(query, searchTab, userId) {
@@ -64,7 +74,14 @@ async function searchExplore(query, searchTab, userId) {
   return data || [];
 }
 
-export default function Explore({ session , T: TProp, onViewProfile, initialSection, initialClub = null }) {
+function timeAgo(date) {
+  const diff = (Date.now() - new Date(date)) / 1000;
+  if (diff < 3600) return `il y a ${Math.max(1, Math.floor(diff / 60))} min`;
+  if (diff < 86400) return `il y a ${Math.floor(diff / 3600)} h`;
+  return `il y a ${Math.floor(diff / 86400)} j`;
+}
+
+export default function Explore({ session , T: TProp, onViewProfile, initialSection, initialClub = null, initialClubView = null }) {
   const T = TProp || TLive;
   const [query, setQuery] = useState("");
   const [searchTab, setSearchTab] = useState("users");
@@ -75,6 +92,10 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
   const [friendIds, setFriendIds] = useState([]);
   const [pendingIds, setPendingIds] = useState([]);
   const [myClubIds, setMyClubIds] = useState([]);
+  const [lastPosts, setLastPosts] = useState({});
+  const [contextLoaded, setContextLoaded] = useState(false);
+  // « mes » ou « decouvrir » ; null = choix automatique (mes clubs si j'en ai)
+  const [clubView, setClubView] = useState(initialClubView);
   const [loading, setLoading] = useState(false);
   const [selectedClub, setSelectedClub] = useState(initialClub);
   // « amis » : pas une section, on ouvre Explore sur la recherche de membres
@@ -97,6 +118,8 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
       setMyClubIds(ctx.myClubIds);
       setAllClubs(ctx.clubs);
       setMemberCounts(ctx.counts);
+      setLastPosts(ctx.lastPosts);
+      setContextLoaded(true);
     });
     return () => { ignore = true; };
   }, [myId, reloadKey]);
@@ -146,6 +169,9 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
   }
 
   const filteredClubs = filterCat === "Tous" ? allClubs : allClubs.filter(c => c.category === filterCat);
+  const myClubs = allClubs.filter(c => myClubIds.includes(c.id))
+    .sort((a, b) => new Date(lastPosts[b.id]?.created_at || 0) - new Date(lastPosts[a.id]?.created_at || 0));
+  const activeClubView = clubView || (contextLoaded && myClubIds.length === 0 ? "decouvrir" : "mes");
 
   if (selectedClub) return <Clubs session={session} T={T} initialClub={selectedClub} onBack={() => setSelectedClub(null)} />;
 
@@ -217,7 +243,22 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
           {/* Clubs */}
           {section === "clubs" && (
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 14, paddingBottom: 12, borderBottom: `0.5px solid ${T.border}` }}>
+                <div style={{ display: "flex", gap: 4, background: T.bgSubtle, borderRadius: 10, padding: 3 }}>
+                  {[["mes", `Mes clubs${contextLoaded ? ` (${myClubIds.length})` : ""}`], ["decouvrir", "Découvrir"]].map(([id, label]) => (
+                    <button key={id} onClick={() => setClubView(id)} aria-pressed={activeClubView === id}
+                      style={{ padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: activeClubView === id ? 700 : 500, border: "none", background: activeClubView === id ? T.bgCard : "transparent", color: activeClubView === id ? T.text : T.textMuted, boxShadow: activeClubView === id ? T.cardShadow : "none", cursor: "pointer", fontFamily: "inherit" }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <button onClick={() => setShowForm(!showForm)} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
+                  {showForm ? "Annuler" : "+ Créer"}
+                </button>
+              </div>
+
+              {activeClubView === "decouvrir" && (
+              <div style={{ marginBottom: 14 }}>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {[["Tous","Tous"],["📈 Actions","Actions"],["📊 ETF","ETF"],["🏦 Fonds","Fonds"],["📉 Obligations","Oblig."],["🏠 Immobilier","Immo"],["💰 Patrimoine & Stratégie","Stratégie"],["₿ Crypto","Crypto"]].map(([key,label]) => (
                     <button key={key} onClick={() => setFilterCat(key)} style={{ padding: "5px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filterCat === key ? T.accent : T.border}`, background: filterCat === key ? T.accentBg : "none", color: filterCat === key ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
@@ -225,10 +266,8 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                     </button>
                   ))}
                 </div>
-                <button onClick={() => setShowForm(!showForm)} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", flexShrink: 0, marginLeft: 8 }}>
-                  {showForm ? "Annuler" : "+ Créer"}
-                </button>
               </div>
+              )}
 
               {showForm && (
                 <div style={{ ...card(T), marginBottom: 16 }}>
@@ -252,9 +291,45 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                 </div>
               )}
 
-              {filteredClubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}>Aucun club — crée le premier ! 🚀</div>}
+              {activeClubView === "mes" && !showForm && (
+                <>
+                  {contextLoaded && myClubs.length === 0 && (
+                    <div style={{ ...card(T), textAlign: "center", padding: "2rem 1rem" }}>
+                      <div style={{ fontSize: 28, marginBottom: 8 }}>👥</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: T.text, marginBottom: 6 }}>Tu n'as rejoint aucun club</div>
+                      <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 14 }}>Échange avec des investisseurs qui partagent ta stratégie.</div>
+                      <button onClick={() => setClubView("decouvrir")} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>Découvrir les clubs</button>
+                    </div>
+                  )}
+                  {myClubs.map(club => {
+                    const last = lastPosts[club.id];
+                    const n = memberCounts[club.id] || 0;
+                    return (
+                      <div key={club.id} onClick={() => setSelectedClub(club)} style={{ ...card(T), cursor: "pointer", padding: "1rem 1.25rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{(club.category || "👥").split(" ")[0]}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                              <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{club.name}</span>
+                              <span style={{ fontSize: 11, color: T.textFaint, flexShrink: 0 }}>👥 {n} membre{n > 1 ? "s" : ""}</span>
+                            </div>
+                            <div style={{ fontSize: 12, color: T.textMuted, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {last
+                                ? <>💬 <b style={{ fontWeight: 600 }}>{last.author?.full_name?.split(" ")[0] || "Un membre"}</b> : {last.content} <span style={{ color: T.textFaint }}>· {timeAgo(last.created_at)}</span></>
+                                : <span style={{ color: T.textFaint }}>Pas encore de discussion — lance la première !</span>}
+                            </div>
+                          </div>
+                          <span style={{ color: T.textFaint, fontSize: 16 }}>›</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
 
-              {filteredClubs.map(club => (
+              {activeClubView === "decouvrir" && filteredClubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}>Aucun club — crée le premier ! 🚀</div>}
+
+              {activeClubView === "decouvrir" && filteredClubs.map(club => (
                 <div key={club.id} onClick={() => setSelectedClub(club)} style={{ ...card(T), cursor: "pointer" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                     <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>

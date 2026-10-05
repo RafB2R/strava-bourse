@@ -48,7 +48,7 @@ export function ClubsWidget({ session, T, onOpenClub, onAllClubs }) {
           })}
         </div>
       )}
-      <button onClick={onAllClubs} style={linkBtn(T)}>{clubs.length ? "Voir tous les clubs" : "Découvrir les clubs"}</button>
+      <button onClick={() => onAllClubs(clubs.length > 0)} style={linkBtn(T)}>{clubs.length ? "Voir mes clubs" : "Découvrir les clubs"}</button>
     </div>
   );
 }
