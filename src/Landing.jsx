@@ -1,5 +1,41 @@
 import { useState } from "react";
 
+// Adaptation au téléphone : les styles en ligne décrivent la version ordinateur,
+// ces règles les remplacent sous 640 px de large.
+const RESPONSIVE_CSS = `
+@media (max-width: 640px) {
+  .lp-nav { padding: max(16px, env(safe-area-inset-top)) 20px 16px !important; }
+  .lp-navlink { display: none !important; }
+  .lp-pad { padding-left: 20px !important; padding-right: 20px !important; }
+  .lp-hero { padding-top: 48px !important; padding-bottom: 48px !important; }
+  .lp-section { padding-top: 48px !important; padding-bottom: 48px !important; }
+  .lp-h1 { font-size: 38px !important; letter-spacing: -1px !important; }
+  .lp-h1-page { font-size: 32px !important; letter-spacing: -1px !important; }
+  .lp-h2 { font-size: 28px !important; letter-spacing: -0.5px !important; }
+  .lp-lead { font-size: 16px !important; }
+  .lp-grid { grid-template-columns: 1fr !important; }
+  .lp-grid3 { grid-template-columns: 1fr 1fr !important; }
+  .lp-card { padding: 20px !important; }
+  .lp-quote { margin-left: 20px !important; margin-right: 20px !important; }
+  .lp-cta { width: 100%; max-width: 360px; }
+}
+`;
+
+function ResponsiveStyle() {
+  return <style>{RESPONSIVE_CSS}</style>;
+}
+
+function FooterLinks({ onPage }) {
+  const link = { fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer", background: "none", border: "none", fontFamily: "inherit", padding: 4 };
+  return (
+    <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 10 }}>
+      <button onClick={() => onPage("home")} style={link}>Accueil</button>
+      <button onClick={() => onPage("fonctionnalites")} style={link}>Fonctionnalités</button>
+      <button onClick={() => onPage("communaute")} style={link}>Communauté</button>
+    </div>
+  );
+}
+
 const dark = { background: "#111318", color: "#f0f0f0", fontFamily: "system-ui, -apple-system, sans-serif", minHeight: "100vh" };
 const navStyle = { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "24px 48px" };
 
@@ -9,11 +45,11 @@ function Logo({ onHome }) {
 
 function Nav({ onStart, onPage, onHome }) {
   return (
-    <nav style={navStyle}>
+    <nav className="lp-nav" style={navStyle}>
       <Logo onHome={onHome} />
       <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
-        <span onClick={() => onPage("fonctionnalites")} style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer" }}>Fonctionnalités</span>
-        <span onClick={() => onPage("communaute")} style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer" }}>Communauté</span>
+        <span className="lp-navlink" onClick={() => onPage("fonctionnalites")} style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer" }}>Fonctionnalités</span>
+        <span className="lp-navlink" onClick={() => onPage("communaute")} style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer" }}>Communauté</span>
         <button onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 600, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>Commencer</button>
       </div>
     </nav>
@@ -32,15 +68,16 @@ function Fonctionnalites({ onStart, onPage, onHome }) {
 
   return (
     <div style={dark}>
+      <ResponsiveStyle />
       <Nav onStart={onStart} onPage={onPage} onHome={onHome} />
-      <div style={{ maxWidth: 700, margin: "0 auto", padding: "60px 48px 100px" }}>
+      <div className="lp-pad lp-section" style={{ maxWidth: 700, margin: "0 auto", padding: "60px 48px 100px" }}>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Ce que Verio propose</div>
-        <h1 style={{ fontSize: 40, fontWeight: 700, letterSpacing: -1.5, color: "#fff", marginBottom: 12, lineHeight: 1.15 }}>Tout ce dont tu as besoin<br /><span style={{ color: "#9FE1CB" }}>pour investir mieux.</span></h1>
+        <h1 className="lp-h1-page" style={{ fontSize: 40, fontWeight: 700, letterSpacing: -1.5, color: "#fff", marginBottom: 12, lineHeight: 1.15 }}>Tout ce dont tu as besoin<br /><span style={{ color: "#9FE1CB" }}>pour investir mieux.</span></h1>
         <p style={{ fontSize: 15, color: "rgba(255,255,255,0.4)", marginBottom: 56, lineHeight: 1.7 }}>Verio réunit dans une seule app tout ce qu'il faut pour suivre, comprendre et partager ton parcours d'investisseur.</p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className="lp-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           {features.map(f => (
-            <div key={f.title} style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 24 }}>
+            <div key={f.title} className="lp-card" style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 24 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                 <div style={{ fontSize: 22 }}>{f.icon}</div>
                 <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: "rgba(159,225,203,0.08)", color: "#9FE1CB" }}>{f.tag}</span>
@@ -52,7 +89,7 @@ function Fonctionnalites({ onStart, onPage, onHome }) {
         </div>
 
         <div style={{ marginTop: 56, textAlign: "center" }}>
-          <button onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>Commencer gratuitement</button>
+          <button className="lp-cta" onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>Commencer gratuitement</button>
         </div>
       </div>
     </div>
@@ -78,15 +115,16 @@ function Communaute({ onStart, onPage, onHome }) {
 
   return (
     <div style={dark}>
+      <ResponsiveStyle />
       <Nav onStart={onStart} onPage={onPage} onHome={onHome} />
-      <div style={{ maxWidth: 700, margin: "0 auto", padding: "60px 48px 100px" }}>
+      <div className="lp-pad lp-section" style={{ maxWidth: 700, margin: "0 auto", padding: "60px 48px 100px" }}>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Notre état d'esprit</div>
-        <h1 style={{ fontSize: 40, fontWeight: 700, letterSpacing: -1.5, color: "#fff", marginBottom: 12, lineHeight: 1.15 }}>Un club,<br /><span style={{ color: "#9FE1CB" }}>pas une app.</span></h1>
+        <h1 className="lp-h1-page" style={{ fontSize: 40, fontWeight: 700, letterSpacing: -1.5, color: "#fff", marginBottom: 12, lineHeight: 1.15 }}>Un club,<br /><span style={{ color: "#9FE1CB" }}>pas une app.</span></h1>
         <p style={{ fontSize: 15, color: "rgba(255,255,255,0.4)", marginBottom: 56, lineHeight: 1.7 }}>Verio c'est l'opposé de WallStreetBets. Pas de hype, pas de spéculation. Une communauté d'investisseurs qui pensent long terme et s'entraident.</p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 56 }}>
+        <div className="lp-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 56 }}>
           {values.map(v => (
-            <div key={v.title} style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 24 }}>
+            <div key={v.title} className="lp-card" style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 24 }}>
               <div style={{ fontSize: 24, marginBottom: 12 }}>{v.icon}</div>
               <div style={{ fontSize: 14, fontWeight: 600, color: "#fff", marginBottom: 8 }}>{v.title}</div>
               <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", lineHeight: 1.6 }}>{v.desc}</div>
@@ -95,7 +133,7 @@ function Communaute({ onStart, onPage, onHome }) {
         </div>
 
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>Les clubs les plus actifs</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 56 }}>
+        <div className="lp-grid3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 56 }}>
           {clubs.map(c => (
             <div key={c.name} style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "16px 14px", textAlign: "center" }}>
               <div style={{ fontSize: 24, marginBottom: 8 }}>{c.icon}</div>
@@ -111,7 +149,7 @@ function Communaute({ onStart, onPage, onHome }) {
         </div>
 
         <div style={{ textAlign: "center" }}>
-          <button onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>Commencer gratuitement</button>
+          <button className="lp-cta" onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>Commencer gratuitement</button>
         </div>
       </div>
     </div>
@@ -126,33 +164,34 @@ export default function Landing({ onStart }) {
 
   return (
     <div style={dark}>
-      <nav style={navStyle}>
+      <ResponsiveStyle />
+      <nav className="lp-nav" style={navStyle}>
         <Logo onHome={() => setPage("home")} />
         <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
-          <span onClick={() => setPage("fonctionnalites")} style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer" }}>Fonctionnalités</span>
-          <span onClick={() => setPage("communaute")} style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer" }}>Communauté</span>
+          <span className="lp-navlink" onClick={() => setPage("fonctionnalites")} style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer" }}>Fonctionnalités</span>
+          <span className="lp-navlink" onClick={() => setPage("communaute")} style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer" }}>Communauté</span>
           <button onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 600, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>Commencer</button>
         </div>
       </nav>
 
-      <div style={{ textAlign: "center", padding: "100px 48px 80px", maxWidth: 700, margin: "0 auto" }}>
+      <div className="lp-pad lp-hero" style={{ textAlign: "center", padding: "100px 48px 80px", maxWidth: 700, margin: "0 auto" }}>
         <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 28 }}>Pour les investisseurs long terme</div>
-        <h1 style={{ fontSize: 56, fontWeight: 700, lineHeight: 1.1, letterSpacing: -2, color: "#fff", marginBottom: 12 }}>
+        <h1 className="lp-h1" style={{ fontSize: 56, fontWeight: 700, lineHeight: 1.1, letterSpacing: -2, color: "#fff", marginBottom: 12 }}>
           Construis ton patrimoine.<br /><span style={{ color: "#9FE1CB" }}>Entouré.</span>
         </h1>
-        <div style={{ fontSize: 18, color: "rgba(255,255,255,0.4)", marginBottom: 12 }}>Investir, c'est un parcours. Pas une course.</div>
+        <div className="lp-lead" style={{ fontSize: 18, color: "rgba(255,255,255,0.4)", marginBottom: 12 }}>Investir, c'est un parcours. Pas une course.</div>
         <div style={{ fontSize: 15, color: "rgba(255,255,255,0.25)", marginBottom: 48 }}>Suis ton portefeuille, rejoins des défis, progresse avec une communauté d'investisseurs qui pensent long terme.</div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-          <button onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>Commencer gratuitement</button>
+          <button className="lp-cta" onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>Commencer gratuitement</button>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.2)" }}>Gratuit · Aucune carte requise</div>
         </div>
       </div>
 
       <div style={{ width: "0.5px", height: 80, background: "rgba(255,255,255,0.08)", margin: "0 auto" }} />
 
-      <div style={{ padding: "80px 48px", maxWidth: 700, margin: "0 auto" }}>
+      <div className="lp-pad lp-section" style={{ padding: "80px 48px", maxWidth: 700, margin: "0 auto" }}>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 20 }}>Notre conviction</div>
-        <h2 style={{ fontSize: 36, fontWeight: 700, letterSpacing: -1, color: "#fff", lineHeight: 1.2, marginBottom: 16 }}>
+        <h2 className="lp-h2" style={{ fontSize: 36, fontWeight: 700, letterSpacing: -1, color: "#fff", lineHeight: 1.2, marginBottom: 16 }}>
           Conçu pour les investisseurs,<br />pas les <span style={{ color: "#9FE1CB" }}>traders.</span>
         </h2>
         <p style={{ fontSize: 16, color: "rgba(255,255,255,0.4)", lineHeight: 1.8, maxWidth: 500 }}>
@@ -160,14 +199,14 @@ export default function Landing({ onStart }) {
         </p>
       </div>
 
-      <div style={{ padding: "0 48px 80px", maxWidth: 700, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+      <div className="lp-pad lp-grid" style={{ padding: "0 48px 80px", maxWidth: 700, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         {[
           { icon: "📊", title: "Suis ta progression", text: "Ton portefeuille unifié, multi-broker. Tes performances dans le temps." },
           { icon: "🏆", title: "Reste discipliné", text: "Séries de DCA. Défis mensuels. Badges. Investir comme une habitude." },
           { icon: "👥", title: "Progresse avec les autres", text: "Suis des investisseurs. Partage ton parcours. Grandis ensemble." },
           { icon: "📈", title: "Au-delà des rendements", text: "La constance compte plus que la performance. Mesure ta discipline, pas juste tes gains." },
         ].map(f => (
-          <div key={f.title} style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 28 }}>
+          <div key={f.title} className="lp-card" style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 28 }}>
             <div style={{ fontSize: 22, marginBottom: 14 }}>{f.icon}</div>
             <div style={{ fontSize: 15, fontWeight: 600, color: "#fff", marginBottom: 8 }}>{f.title}</div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", lineHeight: 1.6 }}>{f.text}</div>
@@ -177,8 +216,8 @@ export default function Landing({ onStart }) {
 
       <div style={{ width: "0.5px", height: 80, background: "rgba(255,255,255,0.08)", margin: "0 auto" }} />
 
-      <div style={{ textAlign: "center", padding: "80px 48px", maxWidth: 600, margin: "0 auto" }}>
-        <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: -1, color: "#fff", marginBottom: 24, lineHeight: 1.2 }}>Investir n'est pas une compétition.<br />C'est une habitude.</h2>
+      <div className="lp-pad lp-section" style={{ textAlign: "center", padding: "80px 48px", maxWidth: 600, margin: "0 auto" }}>
+        <h2 className="lp-h2" style={{ fontSize: 32, fontWeight: 700, letterSpacing: -1, color: "#fff", marginBottom: 24, lineHeight: 1.2 }}>Investir n'est pas une compétition.<br />C'est une habitude.</h2>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 40 }}>
           {[["Discipline", true], ["Patience", true], ["Régularité", true], ["Sans hype", false], ["Progression", true], ["Sans spéculation", false], ["Communauté", true], ["Long terme", true]].map(([w, hi]) => (
             <span key={w} style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 500, border: `0.5px solid ${hi ? "rgba(159,225,203,0.3)" : "rgba(255,255,255,0.1)"}`, color: hi ? "#9FE1CB" : "rgba(255,255,255,0.45)", background: hi ? "rgba(159,225,203,0.06)" : "none" }}>{w}</span>
@@ -187,18 +226,19 @@ export default function Landing({ onStart }) {
         <p style={{ fontSize: 14, color: "rgba(255,255,255,0.25)", lineHeight: 1.7 }}>Que tu investisses 100 € ou 100 000 €, tout le monde commence de la même façon. Un investissement à la fois.</p>
       </div>
 
-      <div style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 28, maxWidth: 600, margin: "0 auto 80px" }}>
+      <div className="lp-quote lp-card" style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 28, maxWidth: 600, margin: "0 auto 80px" }}>
         <p style={{ fontSize: 16, color: "rgba(255,255,255,0.6)", lineHeight: 1.7, fontStyle: "italic", marginBottom: 12 }}>« Pour la première fois, j'aime vraiment suivre mes investissements. »</p>
         <div style={{ fontSize: 13, color: "rgba(255,255,255,0.25)" }}>Sophie L. · Membre Verio · 28 mois de DCA</div>
       </div>
 
-      <div style={{ textAlign: "center", padding: "80px 48px 100px" }}>
-        <h2 style={{ fontSize: 36, fontWeight: 700, letterSpacing: -1, color: "#fff", marginBottom: 12 }}>Prêt à investir autrement ?</h2>
+      <div className="lp-pad lp-section" style={{ textAlign: "center", padding: "80px 48px 100px" }}>
+        <h2 className="lp-h2" style={{ fontSize: 36, fontWeight: 700, letterSpacing: -1, color: "#fff", marginBottom: 12 }}>Prêt à investir autrement ?</h2>
         <p style={{ fontSize: 15, color: "rgba(255,255,255,0.35)", marginBottom: 36 }}>Des milliers d'investisseurs construisent leur patrimoine. Rejoins-les.</p>
-        <button onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>Commencer gratuitement</button>
+        <button className="lp-cta" onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>Commencer gratuitement</button>
       </div>
 
-      <div style={{ textAlign: "center", padding: 28, borderTop: "0.5px solid rgba(255,255,255,0.05)", fontSize: 12, color: "rgba(255,255,255,0.15)" }}>
+      <div style={{ textAlign: "center", padding: "28px 20px calc(28px + env(safe-area-inset-bottom))", borderTop: "0.5px solid rgba(255,255,255,0.05)", fontSize: 12, color: "rgba(255,255,255,0.15)" }}>
+        <FooterLinks onPage={setPage} />
         © 2026 Verio · Les montants restent toujours privés
       </div>
     </div>

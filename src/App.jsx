@@ -39,6 +39,13 @@ function tabFromUrl() {
   }
 }
 
+// Ordinateur : l'interface grandit avec la largeur de l'écran (×1 à 1 536 px, jusqu'à ×1,25 à 1 920 px),
+// pour ne pas paraître minuscule sur un grand écran affiché à 100 %.
+const DESIGN_WIDTH = 1536;
+function desktopZoom() {
+  return Math.round(Math.min(1.25, Math.max(1, window.innerWidth / DESIGN_WIDTH)) * 100) / 100;
+}
+
 function getGreeting(name) {
   const hour = new Date().getHours();
   const firstName = name?.split(" ")[0] || "";
@@ -161,6 +168,7 @@ export default function App() {
   const [showKYC, setShowKYC] = useState(false);
   const [themeKey, setThemeKey] = useState(getThemeKey);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth > 900);
+  const [zoom, setZoom] = useState(desktopZoom);
   const [publicUserId, setPublicUserId] = useState(null);
   const [compareData, setCompareData] = useState(null);
   // Incrémenté à chaque clic sur un onglet du menu : remet l'écran à son état de départ
@@ -184,13 +192,21 @@ export default function App() {
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", themes[themeKey].bgSecondary);
   }, [themeKey]);
 
+  // Agrandissement sur ordinateur, une fois connecté (--verio-zoom corrige les hauteurs en vh, agrandies elles aussi)
+  const scaled = !!session && isDesktop && zoom > 1;
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.zoom = scaled ? String(zoom) : "";
+    root.style.setProperty("--verio-zoom", scaled ? String(zoom) : "1");
+  }, [scaled, zoom]);
+
   // Retire ?tab=… de l'adresse une fois l'onglet ouvert (un rechargement revient au fil)
   useEffect(() => {
     if (urlTab || window.location.search.includes("source=pwa")) window.history.replaceState(null, "", window.location.pathname + window.location.hash);
   }, [urlTab]);
 
   useEffect(() => {
-    const handler = () => setIsDesktop(window.innerWidth > 900);
+    const handler = () => { setIsDesktop(window.innerWidth > 900); setZoom(desktopZoom()); };
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, []);
@@ -351,7 +367,7 @@ export default function App() {
       </Suspense>
 
       {/* Droite */}
-      <div style={{ width: 280, flexShrink: 0, padding: "24px 16px 72px", position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}>
+      <div style={{ width: 280, flexShrink: 0, padding: "24px 16px 72px", position: "sticky", top: 0, height: "calc(100vh / var(--verio-zoom, 1))", overflowY: "auto" }}>
         {publicUserId ? (
           <ComparisonWidget data={compareData} T={T} />
         ) : (

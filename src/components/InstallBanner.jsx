@@ -15,9 +15,10 @@ function recentlyDismissed() {
 
 // Bandeau « Installe Verio » (mobile) : bouton d'installation sur Android,
 // marche à suivre sur iPhone. Masqué une fois installé, ou 30 jours si fermé.
-export default function InstallBanner({ T }) {
+// « always » (page Profil) : toujours proposé tant que l'app n'est pas installée, sans bouton fermer.
+export default function InstallBanner({ T, always = false }) {
   const [canInstall, setCanInstall] = useState(canPromptInstall);
-  const [hidden, setHidden] = useState(() => isStandalone() || recentlyDismissed());
+  const [hidden, setHidden] = useState(() => isStandalone() || (!always && recentlyDismissed()));
   const ios = isIosSafari();
 
   useEffect(() => onInstallAvailable(() => setCanInstall(canPromptInstall())), []);
@@ -49,7 +50,7 @@ export default function InstallBanner({ T }) {
       {!ios && (
         <button onClick={install} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>Installer</button>
       )}
-      <button onClick={dismiss} aria-label="Fermer" style={{ background: "none", border: "none", color: T.textFaint, fontSize: 14, cursor: "pointer", padding: 4, flexShrink: 0 }}>✕</button>
+      {!always && <button onClick={dismiss} aria-label="Fermer" style={{ background: "none", border: "none", color: T.textFaint, fontSize: 14, cursor: "pointer", padding: 4, flexShrink: 0 }}>✕</button>}
     </div>
   );
 }
