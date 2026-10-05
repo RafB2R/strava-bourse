@@ -158,6 +158,11 @@ export default function App() {
 
   const T = themes[themeKey];
 
+  // Les éléments natifs du navigateur (listes déroulantes, barres de défilement) suivent le thème
+  useEffect(() => {
+    document.documentElement.style.colorScheme = themeKey;
+  }, [themeKey]);
+
   useEffect(() => {
     const handler = () => setIsDesktop(window.innerWidth > 900);
     window.addEventListener("resize", handler);
