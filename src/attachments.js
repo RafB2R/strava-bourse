@@ -20,7 +20,17 @@ export async function searchAssets(q) {
   }
 }
 
-export async function fetchQuote(symbol) {
+// Cours du moment, gardés une minute (une même valeur peut apparaître dans plusieurs posts)
+const quoteCache = new Map();
+export function fetchQuote(symbol) {
+  const hit = quoteCache.get(symbol);
+  if (hit && Date.now() - hit.at < 60000) return hit.promise;
+  const promise = loadQuote(symbol);
+  quoteCache.set(symbol, { at: Date.now(), promise });
+  return promise;
+}
+
+async function loadQuote(symbol) {
   try {
     const res = await fetch(`/api/quote?symbol=${encodeURIComponent(symbol)}`);
     const data = res.ok ? await res.json() : null;

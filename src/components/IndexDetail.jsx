@@ -71,9 +71,12 @@ function LineChart({ points, period, color, T }) {
   );
 }
 
-export default function IndexDetail({ index, onBack, T: TProp }) {
+// Fiche d'un indice (avec présentation et top 5) ou de n'importe quelle valeur
+// (action, ETF… : seulement la courbe). « backLabel » : texte du bouton retour.
+export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← Marchés", initialPeriod = DEFAULT_PERIOD }) {
   const T = TProp || TLive;
-  const [period, setPeriod] = useState(DEFAULT_PERIOD);
+  const [period, setPeriod] = useState(PERIODS.some(p => p.id === initialPeriod) ? initialPeriod : DEFAULT_PERIOD);
+  const top5 = index.top5 || [];
   const [chart, setChart] = useState(null); // { period, data }
   const [top, setTop] = useState(null); // { period, rows }
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
@@ -82,7 +85,7 @@ export default function IndexDetail({ index, onBack, T: TProp }) {
   useEffect(() => {
     let ignore = false;
     fetchChart(index.symbol, period).then(data => { if (!ignore) setChart({ period, data }); });
-    Promise.all(index.top5.map(async c => ({ ...c, data: await fetchChart(c.symbol, period) })))
+    Promise.all((index.top5 || []).map(async c => ({ ...c, data: await fetchChart(c.symbol, period) })))
       .then(rows => { if (!ignore) setTop({ period, rows }); });
     return () => { ignore = true; };
   }, [index, period]);
@@ -95,24 +98,24 @@ export default function IndexDetail({ index, onBack, T: TProp }) {
 
   return (
     <div>
-      <button onClick={onBack} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13, padding: 0, marginBottom: 14, fontFamily: "inherit" }}>← Marchés</button>
+      <button onClick={onBack} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13, padding: 0, marginBottom: 14, fontFamily: "inherit" }}>{backLabel}</button>
 
       {/* En-tête et encart explicatif */}
       <div style={card}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: T.text }}><Flag country={index.country} size={18} />{index.name}</div>
-          <div style={{ fontSize: 13, color: T.textFaint }}>{index.symbol}</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: T.text }}>{index.country && <Flag country={index.country} size={18} />}{index.name}</div>
+          <div style={{ fontSize: 13, color: T.textFaint }}>{index.symbol}{index.type ? ` · ${index.type}` : ""}</div>
         </div>
-        <div style={{ fontSize: 14, color: T.textMuted, lineHeight: 1.6, margin: "10px 0 14px" }}>{index.summary}</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginBottom: 12 }}>
+        {index.summary && <div style={{ fontSize: 14, color: T.textMuted, lineHeight: 1.6, margin: "10px 0 14px" }}>{index.summary}</div>}
+        {index.facts && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginBottom: 12 }}>
           {index.facts.map(([label, value]) => (
             <div key={label} style={{ background: T.bgSubtle, borderRadius: 10, padding: "10px 12px" }}>
               <div style={{ fontSize: 11, color: T.textFaint, marginBottom: 2 }}>{label}</div>
               <div style={{ fontSize: 13, fontWeight: 600, color: T.text, lineHeight: 1.4 }}>{value}</div>
             </div>
           ))}
-        </div>
-        <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.6, background: T.accentBg, borderRadius: 10, padding: "10px 12px" }}>💡 {index.dividends}</div>
+        </div>}
+        {index.dividends && <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.6, background: T.accentBg, borderRadius: 10, padding: "10px 12px" }}>💡 {index.dividends}</div>}
       </div>
 
       {/* Graphique */}
@@ -137,10 +140,10 @@ export default function IndexDetail({ index, onBack, T: TProp }) {
         {!loading && data && data.points.length > 1 && <LineChart key={period} points={data.points} period={period} color={color} T={T} />}
       </div>
 
-      {/* Top 5 */}
-      <div style={card}>
+      {/* Top 5 (indices seulement) */}
+      {top5.length > 0 && <div style={card}>
         <div style={sectionLabel}>🏆 Les poids lourds de l'indice</div>
-        {index.top5.map((c, i) => {
+        {top5.map((c, i) => {
           const row = top?.period === period ? top.rows[i] : null;
           const ch = row?.data?.change;
           return (
@@ -159,7 +162,7 @@ export default function IndexDetail({ index, onBack, T: TProp }) {
           );
         })}
         <div style={{ fontSize: 11, color: T.textFaint, marginTop: 10 }}>Liste indicative des plus gros poids de l'indice, mise à jour en {TOP5_UPDATED}.</div>
-      </div>
+      </div>}
     </div>
   );
 }

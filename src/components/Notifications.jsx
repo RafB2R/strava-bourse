@@ -22,6 +22,7 @@ function getNotifMeta(notif) {
     case "activity_like": return { icon: "👍", text: `${d.from_name} a aimé ton activité` };
     case "activity_comment": return { icon: "💬", text: `${d.from_name} a commenté : « ${d.excerpt} »` };
     case "moment": return { icon: d.moment_id?.startsWith("anniversaire") ? "🎂" : "🌟", text: momentNotification(d.moment_id) };
+    case "mention": return { icon: "💬", text: `${d.from_name} t'a mentionné : « ${d.excerpt} »` };
     case "poll_ended": return { icon: "📊", text: pollEndedText(d) };
     case "post_reaction": return { icon: d.reaction || "👍", text: `${d.from_name} a réagi à ton post` };
     default: return { icon: "🔔", text: "Nouvelle notification" };
