@@ -1,18 +1,20 @@
 export const config = { runtime: 'edge' };
 
-// Taux d'État à 10 ans : OAT (France) et Bund (Allemagne).
-// Sources officielles, de la plus fraîche à la moins fraîche :
-//   - OAT : Banque de France (Webstat, quotidien, TEC 10) si la variable BDF_API_KEY est définie
-//   - Bund : Bundesbank (quotidien, accès libre)
-//   - à défaut : BCE (moyenne mensuelle)
+// Taux d'État à 10 ans : OAT (France) et Bund (Allemagne), en quotidien.
+//   - OAT : Stooq (cours de clôture quotidien, accès libre, source non officielle)
+//   - Bund : Bundesbank (quotidien, officiel, accès libre)
+//   - à défaut : BCE (moyenne mensuelle officielle, un à deux mois de décalage)
 // GET /api/rates          → { fr: { value, date, previous, change, frequency, source }, de: { ... } }
 // GET /api/rates?debug=1  → ajoute le détail de chaque source essayée (pour diagnostiquer)
 
 const ECB_URL = 'https://data-api.ecb.europa.eu/service/data/IRS/M.FR+DE.L.L40.CI.0000.EUR.N.Z?lastNObservations=2&format=csvdata';
 const BUNDESBANK_URL = 'https://api.statistiken.bundesbank.de/rest/data/BBSIS/D.I.ZAR.ZI.EUR.S1311.B.A604.R10XX.R.A.A._Z._Z.A?lastNObservations=5';
-const BDF_SERIES = 'FM.D.FR.EUR.FR2.BB.FR10YT_RR.YLD'; // TEC 10 : taux de l'échéance constante 10 ans
-const BDF_URL = 'https://webstat.banque-france.fr/api/explore/v2.1/catalog/datasets/observations/records'
-  + `?where=${encodeURIComponent(`series_key="${BDF_SERIES}"`)}&order_by=${encodeURIComponent('time_period_start desc')}&limit=5`;
+
+// Historique quotidien Stooq des 3 dernières semaines (10fry.b = rendement OAT 10 ans)
+const ymd = d => d.toISOString().slice(0, 10).replace(/-/g, '');
+export function stooqUrl(symbol, now = new Date()) {
+  return `https://stooq.com/q/d/l/?s=${symbol}&i=d&d1=${ymd(new Date(now.getTime() - 21 * 86400e3))}&d2=${ymd(now)}`;
+}
 
 function splitCsvLine(line) {
   const out = [];
@@ -56,26 +58,17 @@ export function parseSdmxCsv(csv) {
   return byArea;
 }
 
-// Réponse Webstat (Opendatasoft) : results[].obs_value / time_period
-export function parseBdf(json) {
-  const rows = json?.results || json?.records?.map(r => r.record?.fields || r.fields) || [];
-  return rows.map(r => ({
-    date: String(r.time_period || r.time_period_start || r.date || '').slice(0, 10),
-    value: parseFloat(String(r.obs_value ?? r.value ?? '').replace(',', '.')),
-  })).filter(o => o.date);
-}
-
-// Clé collée dans Vercel avec espaces, retour à la ligne, guillemets ou préfixe « Apikey » :
-// ces caractères rendent l'en-tête HTTP invalide (« Invalid header value »)
-export function cleanKey(raw) {
-  if (!raw) return '';
-  return String(raw).trim().replace(/^["']+|["']+$/g, '').replace(/^apikey\s+/i, '').replace(/\s+/g, '');
-}
-
-// Indices sur la clé pour le diagnostic, sans jamais l'exposer
-function describeKey(raw, key) {
-  if (!raw) return 'absente';
-  return `${key.length} caractères après nettoyage${raw !== key ? ' (espaces, guillemets ou préfixe retirés)' : ''}${/[^\x21-\x7e]/.test(key) ? ', contient des caractères spéciaux' : ''}`;
+// CSV Stooq : Date,Open,High,Low,Close. Hors CSV (limite de requêtes, symbole inconnu) : erreur explicite
+export function parseStooq(csv) {
+  const text = String(csv || '').trim();
+  const lines = text.split(/\r?\n/);
+  const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+  const iDate = header.indexOf('date'), iClose = header.indexOf('close');
+  if (iDate < 0 || iClose < 0) throw new Error(`Réponse Stooq inattendue : « ${text.slice(0, 80)} »`);
+  return lines.slice(1).map(l => {
+    const v = l.split(',');
+    return { date: v[iDate], value: parseFloat(v[iClose]) };
+  });
 }
 
 async function attempt(name, fn, debug) {
@@ -91,9 +84,7 @@ async function attempt(name, fn, debug) {
 
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
-  const debug = [];
-  const rawKey = typeof process !== 'undefined' ? process.env?.BDF_API_KEY : undefined;
-  const key = cleanKey(rawKey);
+  const debug = [{ source: 'Version', ok: true, result: 'diagnostic v4 (Stooq)' }];
 
   const ecb = attempt('BCE (mensuel)', async () => {
     const res = await fetch(ECB_URL, { headers: { Accept: 'text/csv' } });
@@ -109,14 +100,11 @@ export default async function handler(req) {
     return latest(Object.values(byArea).flat(), 'daily', 'Bundesbank');
   }, debug);
 
-  const oat = key
-    ? attempt('Banque de France (quotidien)', async () => {
-      const res = await fetch(BDF_URL, { headers: { Authorization: `Apikey ${key}`, Accept: 'application/json' } });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return latest(parseBdf(await res.json()), 'daily', 'Banque de France');
-    }, debug)
-    : (debug.push({ source: 'Banque de France (quotidien)', ok: false, error: 'BDF_API_KEY absente dans Vercel' }), null);
-  if (key) debug.push({ source: 'Clé Banque de France', ok: true, result: describeKey(rawKey, key) });
+  const oat = attempt('Stooq (quotidien)', async () => {
+    const res = await fetch(stooqUrl('10fry.b'), { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return latest(parseStooq(await res.text()), 'daily', 'Stooq');
+  }, debug);
 
   const [monthly, de, fr] = await Promise.all([ecb, bund, oat]);
   const rates = { fr: fr || monthly?.fr || null, de: de || monthly?.de || null };
