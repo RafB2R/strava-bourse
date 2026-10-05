@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
+import { normalizeUsername, usernameFormatError, isUsernameAvailable } from "../usernames";
 
 const inp = (T) => ({ width: "100%", padding: "12px 14px", fontSize: 14, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: T.text, fontFamily: "inherit", marginBottom: 12, display: "block" });
 const btn = { width: "100%", padding: "12px", fontSize: 14, fontWeight: 700, borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "inherit" };
@@ -15,6 +16,27 @@ export default function Auth({ T: TProp }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  // Disponibilité du pseudo : { name, available } pour le dernier pseudo vérifié
+  const [check, setCheck] = useState(null);
+  const cleanUsername = normalizeUsername(username);
+  const formatError = username ? usernameFormatError(username) : null;
+
+  // Vérifie le pseudo 400 ms après la dernière frappe
+  useEffect(() => {
+    if (mode !== "register" || !cleanUsername || usernameFormatError(cleanUsername)) return;
+    let ignore = false;
+    const t = setTimeout(() => {
+      isUsernameAvailable(cleanUsername).then(available => { if (!ignore) setCheck({ name: cleanUsername, available }); });
+    }, 400);
+    return () => { ignore = true; clearTimeout(t); };
+  }, [mode, cleanUsername]);
+
+  const status = !username ? null
+    : formatError ? { ok: false, text: formatError }
+    : check?.name !== cleanUsername ? { ok: null, text: "Vérification…" }
+    : check.available === true ? { ok: true, text: `@${cleanUsername} est disponible` }
+    : check.available === false ? { ok: false, text: `@${cleanUsername} est déjà pris` }
+    : null;
 
   async function handleGoogle() {
     setLoading(true);
@@ -34,11 +56,13 @@ export default function Auth({ T: TProp }) {
     } else {
       if (!fullName.trim()) { setError("Entre ton prénom et nom."); setLoading(false); return; }
       if (!username.trim()) { setError("Entre un nom d'utilisateur."); setLoading(false); return; }
+      if (formatError) { setError(`Nom d'utilisateur : ${formatError.toLowerCase()}`); setLoading(false); return; }
+      if (await isUsernameAvailable(cleanUsername) === false) { setError(`@${cleanUsername} est déjà pris, choisis-en un autre.`); setLoading(false); return; }
       // Le profil est créé côté serveur à partir de ces métadonnées (trigger verio_create_profile)
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: fullName.trim(), username: username.trim().toLowerCase() } },
+        options: { data: { full_name: fullName.trim(), username: cleanUsername } },
       });
       if (error) { setError(error.message); setLoading(false); return; }
       setSuccess("Compte créé ! Vérifie ton email pour confirmer.");
@@ -79,7 +103,15 @@ export default function Auth({ T: TProp }) {
               <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Prénom et nom</label>
               <input style={inp(T)} placeholder="Raphaël Dupont" value={fullName} onChange={e => setFullName(e.target.value)} />
               <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Nom d'utilisateur</label>
-              <input style={inp(T)} placeholder="rafb2r" value={username} onChange={e => setUsername(e.target.value)} />
+              <input style={{ ...inp(T), marginBottom: status ? 4 : 12, ...(status?.ok === false ? { borderColor: T.red } : status?.ok ? { borderColor: T.accent } : {}) }}
+                placeholder="rafb2r" value={username} autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={21}
+                aria-invalid={status?.ok === false} aria-describedby="username-status"
+                onChange={e => setUsername(e.target.value.replace(/\s/g, ""))} />
+              {status && (
+                <div id="username-status" role="status" style={{ fontSize: 12, marginBottom: 12, color: status.ok === false ? T.red : status.ok ? T.accent : T.textFaint }}>
+                  {status.ok === true ? "✓ " : status.ok === false ? "✗ " : ""}{status.text}
+                </div>
+              )}
             </>
           )}
 
@@ -92,7 +124,7 @@ export default function Auth({ T: TProp }) {
           {error && <div style={{ fontSize: 13, color: T.red, marginBottom: 12 }}>⚠️ {error}</div>}
           {success && <div style={{ fontSize: 13, color: T.accent, marginBottom: 12 }}>✅ {success}</div>}
 
-          <button onClick={handleSubmit} disabled={loading} style={{ ...btn, background: T.accent, color: T.onAccent, marginBottom: 14 }}>
+          <button onClick={handleSubmit} disabled={loading || (mode === "register" && status?.ok === false)} style={{ ...btn, background: T.accent, color: T.onAccent, marginBottom: 14, opacity: mode === "register" && status?.ok === false ? 0.5 : 1 }}>
             {loading ? "Chargement…" : mode === "login" ? "Se connecter" : "Créer mon compte"}
           </button>
 

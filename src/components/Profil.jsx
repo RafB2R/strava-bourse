@@ -4,6 +4,7 @@ import { supabase, PUBLIC_PROFILE_COLUMNS } from "../supabase";
 import Badges from "./Badges";
 import { syncBadges } from "../badges";
 import KYC from "./KYC";
+import { normalizeUsername, usernameFormatError, isUsernameAvailable } from "../usernames";
 import InstallBanner from "./InstallBanner";
 
 const STRATEGIES = ["ETF passif", "Stock picking", "Dividendes", "Value investing", "DCA", "Mixte"];
@@ -107,6 +108,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
   const [showKYC, setShowKYC] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState("");
   const [saved, setSaved] = useState(false);
   const [stats, setStats] = useState({ positions: 0, perfPonderee: null, types: 0, brokers: 0, totalPct: 0 });
   const [friends, setFriends] = useState([]);
@@ -180,10 +182,20 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
   }
 
   async function saveProfile() {
+    setEditError("");
+    const username = normalizeUsername(form.username);
+    if (username !== (profile.username || "")) {
+      const formatError = usernameFormatError(username);
+      if (formatError) { setEditError(`Nom d'utilisateur : ${formatError.toLowerCase()}`); return; }
+      setSaving(true);
+      if (await isUsernameAvailable(username) === false) { setEditError(`@${username} est déjà pris, choisis-en un autre.`); setSaving(false); return; }
+    }
     setSaving(true);
-    const { data, error } = await supabase.from("profiles").update({ full_name: form.full_name, username: form.username.toLowerCase().trim(), city: form.city, bio: form.bio, strategy: form.strategy, investing_since: form.investing_since || null }).eq("id", session.user.id).select(PUBLIC_PROFILE_COLUMNS).single();
-    if (!error && data) { setProfile(p => ({ ...p, ...data })); setSaved(true); setTimeout(() => setSaved(false), 2000); }
-    setEditing(false); setSaving(false);
+    const { data, error } = await supabase.from("profiles").update({ full_name: form.full_name, username, city: form.city, bio: form.bio, strategy: form.strategy, investing_since: form.investing_since || null }).eq("id", session.user.id).select(PUBLIC_PROFILE_COLUMNS).single();
+    setSaving(false);
+    if (error || !data) { setEditError("Enregistrement impossible. Réessaie."); return; }
+    setProfile(p => ({ ...p, ...data })); setSaved(true); setTimeout(() => setSaved(false), 2000);
+    setEditing(false);
   }
 
   const initials = profile.full_name ? profile.full_name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
@@ -249,6 +261,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
             📋 Modifier mon profil investisseur →
           </button>
           <div style={{ display: "flex", gap: 8 }}>
+            {editError && <div role="alert" style={{ fontSize: 13, color: T.red, marginBottom: 10 }}>⚠️ {editError}</div>}
             <button style={btn} onClick={saveProfile} disabled={saving}>{saving ? "Enregistrement…" : "Sauvegarder"}</button>
             <button style={btnSm} onClick={() => setEditing(false)}>Annuler</button>
           </div>
