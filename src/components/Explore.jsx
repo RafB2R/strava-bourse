@@ -173,7 +173,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
     .sort((a, b) => new Date(lastPosts[b.id]?.created_at || 0) - new Date(lastPosts[a.id]?.created_at || 0));
   const activeClubView = clubView || (contextLoaded && myClubIds.length === 0 ? "decouvrir" : "mes");
 
-  if (selectedClub) return <Clubs session={session} T={T} initialClub={selectedClub} onBack={() => setSelectedClub(null)} />;
+  if (selectedClub) return <Clubs session={session} T={T} initialClub={selectedClub} onBack={() => setSelectedClub(null)} onViewProfile={onViewProfile} />;
 
   return (
     <div>
