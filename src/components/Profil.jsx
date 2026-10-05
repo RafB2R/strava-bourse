@@ -6,6 +6,7 @@ import { syncBadges } from "../badges";
 import KYC from "./KYC";
 import { normalizeUsername, usernameFormatError, isUsernameAvailable } from "../usernames";
 import InstallBanner from "./InstallBanner";
+import PushSettings from "./PushSettings";
 
 const STRATEGIES = ["ETF passif", "Stock picking", "Dividendes", "Value investing", "DCA", "Mixte"];
 
@@ -207,6 +208,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
   return (
     <div>
       <InstallBanner T={T} always />
+      <PushSettings T={T} />
       <div style={card}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
           <div style={{ width: 52, height: 52, borderRadius: "50%", background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, flexShrink: 0 }}>{initials}</div>
