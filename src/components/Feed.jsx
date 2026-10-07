@@ -12,7 +12,7 @@ import { PostImages, ComposerPreviews, PostFiles, ComposerFiles, PollEditor, Pol
 import { AssetCard, AllocationCard, AssetPicker, AllocationPicker, AttachedChip } from "./PostAttachments";
 import { CHART_PERIODS } from "../attachments";
 import { RichText, TickerChips, TagSuggestions, TagField } from "./PostText";
-import { tagAtCaret, finalizeTags } from "../tags";
+import { tagAtCaret, finalizeTags, hasHashtag } from "../tags";
 import IndexDetail from "./IndexDetail";
 import { detailFor } from "../indices";
 
@@ -77,14 +77,16 @@ const COMMENT_COLUMNS = "id, activity_id, user_id, content, tags, created_at, au
 
 // Amis acceptés (moi inclus), activités à afficher selon le périmètre, avec leurs likes et commentaires
 // Posts récents des clubs dont je suis membre (affichés dans le fil, avec « Tout » et « Posts »)
-async function fetchMyClubPosts(userId) {
+async function fetchMyClubPosts(userId, hashtag = null) {
   const { data: memberships } = await supabase.from("club_members").select("club_id").eq("user_id", userId);
   const clubIds = (memberships || []).map(m => m.club_id);
   if (clubIds.length === 0) return [];
-  const { data } = await supabase.from("club_posts")
+  let query = supabase.from("club_posts")
     .select("*, author:profiles!club_posts_user_id_fkey(full_name, username), club:clubs(*)")
     .in("club_id", clubIds).order("created_at", { ascending: false }).limit(50);
-  const posts = data || [];
+  if (hashtag) query = query.ilike("content", `%#${hashtag}%`);
+  const { data } = await query;
+  const posts = (data || []).filter(p => !hashtag || hasHashtag(p.content, hashtag));
   // Nombre de réponses par post, en une seule requête
   if (posts.length) {
     const { data: replies } = await supabase.from("club_replies").select("post_id").in("post_id", posts.map(p => p.id));
@@ -97,7 +99,8 @@ async function fetchMyClubPosts(userId) {
 
 // « onlyUserId » : seulement les activités de ce membre, des types « onlyTypes »
 // (onglets Activité et Posts d'un profil public)
-async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYPES) {
+// « hashtag » : les posts qui contiennent ce hashtag (page Explore), dans tout Verio et mes clubs
+async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYPES, hashtag = null) {
   closeFinishedPolls();
   const { data: friendships } = await supabase.from("friendships").select("requester_id, receiver_id").eq("status", "accepted").or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
   const ids = [userId];
@@ -106,13 +109,15 @@ async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYP
     if (f.receiver_id !== userId) ids.push(f.receiver_id);
   });
   let query = supabase.from("activities").select("*, author:profiles!activities_user_id_fkey(full_name, username)").order("created_at", { ascending: false }).limit(100);
-  if (onlyUserId) query = query.eq("user_id", onlyUserId).in("type", onlyTypes);
+  if (hashtag) query = query.eq("type", "post").ilike("data->>content", `%#${hashtag}%`);
+  else if (onlyUserId) query = query.eq("user_id", onlyUserId).in("type", onlyTypes);
   else {
     query = query.in("type", FEED_TYPES);
     if (scope === "amis") query = query.in("user_id", ids);
   }
   const { data } = await query;
-  const activities = data || [];
+  // « #dividende » ne doit pas ramener « #dividendes »
+  const activities = (data || []).filter(a => !hashtag || hasHashtag(a.data?.content, hashtag));
 
   // Likes et commentaires des activités affichées
   const likes = {}, comments = {};
@@ -130,15 +135,16 @@ async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYP
     for (const c of commentRows || []) (comments[c.activity_id] ||= []).push(c);
   }
   const pollIds = activities.filter(a => a.type === "post" && a.data?.poll).map(a => a.id);
-  const [polls, clubPosts] = await Promise.all([fetchPolls(pollIds, userId), onlyUserId ? [] : fetchMyClubPosts(userId)]);
+  const [polls, clubPosts] = await Promise.all([fetchPolls(pollIds, userId), onlyUserId ? [] : fetchMyClubPosts(userId, hashtag)]);
   return { ids, activities, likes, comments, polls, clubPosts };
 }
 
 // « onlyUserId » : version intégrée au profil public — mêmes cartes que le fil, limitées à ce
 // membre, sans encadré de publication, choix Amis / Verio ni filtres.
 // « only » : "trades" (onglet Activité, mouvements) ou "posts" (onglet Posts).
-export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = null, only = "trades", onOpenClub }) {
-  const embedded = !!onlyUserId;
+// « hashtag » : page Explore d'un hashtag — ses posts (Verio et mes clubs), sans encadré ni filtres.
+export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = null, only = "trades", onOpenClub, hashtag = null }) {
+  const embedded = !!onlyUserId || !!hashtag;
   const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
   const toolBtn = { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, minWidth: 34, minHeight: 36, background: "none", border: "none", borderRadius: 8, padding: "5px 6px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit" };
@@ -195,7 +201,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
 
   useEffect(() => {
     let ignore = false;
-    fetchFeed(userId, scope, onlyUserId, only === "posts" ? ["post"] : TRADE_TYPES).then(({ ids, activities, likes, comments, polls, clubPosts }) => {
+    fetchFeed(userId, scope, onlyUserId, only === "posts" ? ["post"] : TRADE_TYPES, hashtag).then(({ ids, activities, likes, comments, polls, clubPosts }) => {
       if (ignore) return;
       setClubPosts(clubPosts);
       setPolls(polls);
@@ -206,7 +212,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
       setLoading(false);
     });
     return () => { ignore = true; };
-  }, [userId, scope, reloadKey, onlyUserId, only]);
+  }, [userId, scope, reloadKey, onlyUserId, only, hashtag]);
 
   // Images choisies (bouton, coller ou glisser-déposer) : compressées tout de suite pour l'aperçu
   async function addImages(fileList) {
@@ -542,10 +548,10 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
         <div style={{ ...card, textAlign: "center", padding: "2.5rem 1rem" }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>👥</div>
           <div style={{ fontSize: 14, fontWeight: 600, color: T.textMuted, marginBottom: 8 }}>
-            {embedded ? (only === "posts" ? "Aucun post pour le moment" : "Aucun mouvement pour le moment") : scope === "amis" && friendIds.length <= 1 ? "Ajoute des amis pour voir leurs investissements" : "Aucune activité dans cette catégorie"}
+            {hashtag ? `Aucun post avec #${hashtag} pour le moment` : embedded ? (only === "posts" ? "Aucun post pour le moment" : "Aucun mouvement pour le moment") : scope === "amis" && friendIds.length <= 1 ? "Ajoute des amis pour voir leurs investissements" : "Aucune activité dans cette catégorie"}
           </div>
           <div style={{ fontSize: 13, color: T.textFaint, lineHeight: 1.6 }}>
-            {embedded && only === "posts" ? "Ses publications apparaîtront ici" : !embedded && scope === "amis" && friendIds.length <= 1 ? "Va dans Explore pour trouver des investisseurs" : "Les mouvements apparaîtront ici automatiquement"}
+            {hashtag ? "Ajoute ce hashtag à un post pour lancer le sujet" : embedded && only === "posts" ? "Ses publications apparaîtront ici" : !embedded && scope === "amis" && friendIds.length <= 1 ? "Va dans Explore pour trouver des investisseurs" : "Les mouvements apparaîtront ici automatiquement"}
           </div>
         </div>
       )}

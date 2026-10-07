@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { tagAtCaret, addTag } from "../tags";
+import { tagAtCaret, addTag, openHashtag } from "../tags";
 import { supabase } from "../supabase";
 import { searchAssets, fetchQuote } from "../attachments";
 import { fmtChange } from "../indices";
@@ -8,7 +8,8 @@ import { fmtChange } from "../indices";
 // Seuls les tags choisis dans les suggestions (data.tickers / data.mentions) sont
 // mis en valeur : un « $ » tapé à la main reste du texte.
 
-const TOKEN = /([$@])([A-Za-z0-9._^=-]{1,24})/g;
+// $valeur et @membre (choisis dans les suggestions), ou #hashtag (toujours reconnu)
+const TOKEN = /([$@])([A-Za-z0-9._^=-]{1,24})|#([\p{L}\p{N}_]{2,30})/gu;
 
 // Retire la ponctuation de fin collée au tag (« $TTE.PA. » → « TTE.PA »)
 const trimToken = t => t.replace(/[.\-_]+$/, "");
@@ -20,6 +21,20 @@ export function RichText({ text, tickers = [], mentions = [], T, onAsset, onProf
   const parts = [];
   let last = 0;
   for (const match of text.matchAll(TOKEN)) {
+    if (match[3]) {
+      // Hashtag : cliquable partout, ouvre Explore sur ce hashtag
+      const start = match.index, before = start === 0 ? " " : text[start - 1];
+      if (!/[\s(«"']/.test(before)) continue;
+      parts.push(text.slice(last, start));
+      parts.push(
+        <button key={start} onClick={() => openHashtag(match[3])} title={`Voir les posts #${match[3]}`}
+          style={{ background: "none", border: "none", padding: 0, font: "inherit", fontWeight: 600, color: T.accent, cursor: "pointer" }}>
+          #{match[3]}
+        </button>
+      );
+      last = start + match[0].length;
+      continue;
+    }
     const [, sign, raw] = match;
     const value = trimToken(raw);
     const start = match.index, end = start + 1 + value.length;

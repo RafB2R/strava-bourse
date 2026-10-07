@@ -28,3 +28,16 @@ export function finalizeTags(content, tags) {
   const mentions = t.mentions.filter(x => typeof x?.username === "string" && new RegExp(`@${escapeRe(x.username)}(?![A-Za-z0-9_])`, "i").test(content));
   return tickers.length || mentions.length ? { tickers, mentions } : null;
 }
+
+// Hashtags (#dividendes) : jamais choisis dans une liste, reconnus directement dans le texte
+export const HASHTAG = /#([\p{L}\p{N}_]{2,30})/u;
+
+// Un clic sur un hashtag, où qu'il soit, ouvre Explore sur ce hashtag (écouté par App)
+export function openHashtag(tag) {
+  window.dispatchEvent(new CustomEvent("verio:hashtag", { detail: String(tag).toLowerCase() }));
+}
+
+// Le texte contient-il exactement ce hashtag (#dividende ≠ #dividendes) ?
+export function hasHashtag(text, tag) {
+  return new RegExp(`#${tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}\\p{N}_])`, "iu").test(text || "");
+}

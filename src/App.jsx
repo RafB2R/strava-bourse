@@ -201,6 +201,20 @@ export default function App() {
     root.style.setProperty("--verio-zoom", scaled ? String(zoom) : "1");
   }, [scaled, zoom]);
 
+  // Un clic sur un #hashtag (n'importe où) ouvre Explore sur ce hashtag
+  useEffect(() => {
+    const onHashtag = e => {
+      setTab("explore");
+      setExploreIntent({ hashtag: e.detail });
+      setNavKey(k => k + 1);
+      setPublicUserId(null);
+      setCompareData(null);
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener("verio:hashtag", onHashtag);
+    return () => window.removeEventListener("verio:hashtag", onHashtag);
+  }, []);
+
   // Retire ?tab=… de l'adresse une fois l'onglet ouvert (un rechargement revient au fil)
   useEffect(() => {
     if (urlTab || window.location.search.includes("source=pwa")) window.history.replaceState(null, "", window.location.pathname + window.location.hash);
@@ -315,7 +329,7 @@ export default function App() {
       ) : (
         <>
           {tab === "feed" && <Feed key={navKey} session={session} T={T} onViewProfile={viewProfile} onOpenClub={club => goToTab("explore", { section: "clubs", club })} />}
-          {tab === "explore" && <Explore key={navKey} session={session} T={T} onViewProfile={viewProfile} initialSection={exploreIntent?.section} initialClub={exploreIntent?.club} initialClubView={exploreIntent?.clubView} />}
+          {tab === "explore" && <Explore key={navKey} session={session} T={T} onViewProfile={viewProfile} initialSection={exploreIntent?.section} initialClub={exploreIntent?.club} initialClubView={exploreIntent?.clubView} initialHashtag={exploreIntent?.hashtag} />}
           {tab === "portfolio" && <Portfolio key={navKey} session={session} T={T} />}
           {tab === "messages" && <Messages key={navKey} session={session} T={T} openWith={messageTarget} onOpened={clearMessageTarget} onViewProfile={viewProfile} onUnreadChange={setUnreadMessages} />}
           {tab === "profil" && <Profil key={navKey} profile={profile} session={session} T={T} onViewProfile={viewProfile} />}
