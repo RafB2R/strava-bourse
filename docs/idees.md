@@ -21,6 +21,11 @@ Pistes validées mais repoussées, avec ce qui les bloque aujourd'hui.
 
 ## Badges
 
+- **Badges cliquables sur le profil des autres** : aujourd'hui, dans la
+  vitrine « Badges › » d'un profil public, les badges ne s'ouvrent pas.
+  Idée : un clic affiche ce que récompense le badge, quand il a été débloqué
+  et le palier suivant (comme sur son propre profil).
+
 - **Builder et Diversification comptent la même chose** (le nombre de
   positions). Diversification pourrait compter les classes d'actifs, mais il
   n'y en a que 7, donc revoir les paliers 8 et 10.

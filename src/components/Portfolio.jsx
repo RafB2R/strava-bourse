@@ -7,6 +7,9 @@ import { tradeActivity } from "../trades";
 import { SHOW_PLUS } from "../features";
 import { fetchMyIncome, incomeStats, incomeTypeFor, fmtYield, fetchDividendInfo, dividendForecast } from "../income";
 import ShareCard from "./ShareCard";
+import IndexDetail from "./IndexDetail";
+import { resolveAsset } from "../attachments";
+import { detailFor } from "../indices";
 
 const VEHICULES = ["ETF", "Action directe", "Fonds actif", "Obligation directe", "SCPI", "Crypto", "Autre"];
 const EXPOSITIONS = ["Actions", "Obligations", "Immobilier", "Multi-actifs", "Monétaire", "Crypto", "Matières premières"];
@@ -183,6 +186,8 @@ export default function Portfolio({ session, T: TProp }) {
   const [form, setForm] = useState({ label: "", isin: "", vehicule: "ETF", exposition: "Actions", percentage: "", prix_achat: "", prix_actuel: "", nombre_parts: "", broker: "" });
   const [error, setError] = useState("");
   const [openDetail, setOpenDetail] = useState({});
+  const [assetView, setAssetView] = useState(null);       // fiche de la valeur d'une position
+  const [resolving, setResolving] = useState(null);       // { id, error } pendant la recherche du cours
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [editSaving, setEditSaving] = useState(false);
@@ -347,6 +352,18 @@ export default function Portfolio({ session, T: TProp }) {
 
   const formValeur = form.prix_actuel && form.nombre_parts ? Number(form.prix_actuel) * Number(form.nombre_parts) : null;
   const formValeurAchat = form.prix_achat && form.nombre_parts ? Number(form.prix_achat) * Number(form.nombre_parts) : null;
+
+  // Cours et courbe de la valeur d'une position (retrouvée par son ISIN, sinon son nom)
+  async function openAsset(entry) {
+    setResolving({ id: entry.id, error: null });
+    const asset = await resolveAsset(entry);
+    if (!asset) { setResolving({ id: entry.id, error: "Cours introuvable pour cette position (vérifie son ISIN)." }); return; }
+    setResolving(null);
+    setAssetView({ ...asset, name: entry.label || asset.name });
+    window.scrollTo(0, 0);
+  }
+
+  if (assetView) return <IndexDetail index={detailFor(assetView)} T={T} backLabel="← Portefeuille" onBack={() => setAssetView(null)} />;
 
   return (
     <div>
@@ -549,7 +566,11 @@ export default function Portfolio({ session, T: TProp }) {
                 <IncomeSection entry={e} stats={income.byEntry[e.id]} form={incomeForm[e.id] || {}} T={T} btnSm={btnSm}
                   onChange={f => setIncomeForm(p => ({ ...p, [e.id]: { ...(p[e.id] || {}), ...f, error: null } }))}
                   onAdd={() => addIncome(e)} onDelete={deleteIncome} />
+                {resolving?.id === e.id && resolving.error && <div role="alert" style={{ fontSize: 12, color: T.red, marginTop: 8 }}>{resolving.error}</div>}
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <button onClick={() => openAsset(e)} disabled={resolving?.id === e.id && !resolving.error} style={{ ...btnSm, flex: 1, textAlign: "center", borderColor: T.accent, color: T.accent }}>
+                    {resolving?.id === e.id && !resolving.error ? "Recherche…" : "📈 Voir le cours"}
+                  </button>
                   <button onClick={() => { startEdit(e); setOpenDetail(p => ({ ...p, [e.id]: false })); }} style={{ ...btnSm, flex: 1, textAlign: "center" }}>Modifier</button>
                   <button onClick={() => deleteEntry(e.id)} style={{ ...btnSm, flex: 1, textAlign: "center", borderColor: T.red, color: T.red }}>Supprimer</button>
                 </div>

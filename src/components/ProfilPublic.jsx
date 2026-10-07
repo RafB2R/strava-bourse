@@ -3,6 +3,9 @@ import { supabase, PUBLIC_PROFILE_COLUMNS } from "../supabase";
 import { T as TLive, avatarColors } from "../theme";
 import { getBadgeInfo } from "../badges";
 import Feed from "./Feed";
+import IndexDetail from "./IndexDetail";
+import { resolveAsset } from "../attachments";
+import { detailFor } from "../indices";
 
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
 // Colonnes visibles par les autres membres : jamais prix_achat ni nombre_parts
@@ -149,6 +152,8 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("holdings");
+  const [assetView, setAssetView] = useState(null);   // fiche de la valeur d'une position
+  const [resolving, setResolving] = useState(null);   // { id, error }
   const [isFriend, setIsFriend] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [compareStats, setCompareStats] = useState(null);
@@ -195,6 +200,17 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
     return () => { if (onCompareData) onCompareData(null); };
   }, [onCompareData]);
 
+  // Cours et courbe de la valeur d'une position (retrouvée par son nom : l'ISIN n'est pas public)
+  async function openAsset(entry) {
+    setResolving({ id: entry.id, error: null });
+    const asset = await resolveAsset({ label: entry.label });
+    if (!asset) { setResolving({ id: entry.id, error: "Cours introuvable pour cette position." }); return; }
+    setResolving(null);
+    setAssetView({ ...asset, name: entry.label || asset.name });
+    window.scrollTo(0, 0);
+  }
+
+  if (assetView) return <IndexDetail index={detailFor(assetView)} T={T} backLabel={`← ${profile?.full_name || "Profil"}`} onBack={() => setAssetView(null)} />;
   if (loading) return <div style={{ textAlign: "center", padding: "3rem", color: T.textFaint, fontSize: 13 }}>Chargement…</div>;
   if (!profile) return <div style={{ textAlign: "center", padding: "3rem", color: T.textFaint, fontSize: 13 }}>Profil introuvable</div>;
 
@@ -281,7 +297,9 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
             <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Positions ({entries.length})</div>
             {entries.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>Aucune position publique</div>}
             {entries.map((e, i) => (
-              <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}` }}>
+              <div key={e.id}>
+              <button onClick={() => openAsset(e)} aria-label={`Voir le cours de ${e.label}`}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}`, background: "none", borderLeft: "none", borderRight: "none", borderBottom: "none", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", opacity: resolving?.id === e.id && !resolving.error ? 0.6 : 1 }}>
                 <div style={{ width: 8, height: 8, borderRadius: "50%", background: EXP_COLORS[e.exposition] || "#888", flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{e.label}</div>
@@ -291,6 +309,8 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
                   <div style={{ fontSize: 13, color: T.textMuted }}>{e.percentage}%</div>
                   {e.performance !== null && <div style={{ fontSize: 12, fontWeight: 600, color: e.performance >= 0 ? T.accent : T.red }}>{e.performance >= 0 ? "+" : ""}{Number(e.performance).toFixed(1)}%</div>}
                 </div>
+              </button>
+              {resolving?.id === e.id && resolving.error && <div role="alert" style={{ fontSize: 12, color: T.red, paddingBottom: 8 }}>{resolving.error}</div>}
               </div>
             ))}
           </div>
