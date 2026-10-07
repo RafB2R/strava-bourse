@@ -30,6 +30,31 @@ function pieData(entries, group) {
   return slices;
 }
 
+// Courbe de performance du portefeuille, période au choix. L'historique n'existe pas
+// encore (comme sur le portefeuille privé) : la courbe se construira jour après jour.
+const PERF_PERIODS = [["1m", "1M", "sur 1 mois"], ["3m", "3M", "sur 3 mois"], ["ytd", "YTD", "depuis le 1er janvier"], ["1y", "1A", "sur 1 an"], ["5y", "5A", "sur 5 ans"], ["max", "Max", "depuis le début"]];
+function PerfHistory({ T, card }) {
+  const [period, setPeriod] = useState("1y");
+  const label = PERF_PERIODS.find(p => p[0] === period)[2];
+  return (
+    <div style={{ ...card, display: "flex", flexDirection: "column" }}>
+      <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Performance</div>
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 12 }}>
+        {PERF_PERIODS.map(([id, short]) => (
+          <button key={id} onClick={() => setPeriod(id)} aria-pressed={period === id}
+            style={{ padding: "4px 10px", borderRadius: 999, fontSize: 12, fontFamily: "inherit", cursor: "pointer", border: `0.5px solid ${period === id ? T.accent : T.border}`, background: period === id ? T.accentBg : "none", color: period === id ? T.accent : T.textMuted, fontWeight: period === id ? 700 : 400 }}>
+            {short}
+          </button>
+        ))}
+      </div>
+      <div style={{ flex: 1, minHeight: 110, borderRadius: 10, border: `0.5px dashed ${T.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: 12, textAlign: "center" }}>
+        <div style={{ fontSize: 13, color: T.textMuted }}>📈 Courbe en cours de construction</div>
+        <div style={{ fontSize: 11, color: T.textFaint }}>La performance {label} se construira jour après jour</div>
+      </div>
+    </div>
+  );
+}
+
 function PieChart({ data, T, count = data.length }) {
   // data = [{ label, value, color }]
   const [hovered, setHovered] = useState(null);
@@ -368,13 +393,18 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       {tab === "holdings" && (
         <div>
           {entries.length > 0 && (
-            <div style={card}>
-              <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Allocation</div>
-              <PieChart
-                T={T}
-                data={pieData(entries, !!superInv)}
-                count={entries.length}
-              />
+            // Répartition et courbe de performance côte à côte (l'une sous l'autre sur mobile)
+            <div className="holdings-top" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12, marginBottom: 12 }}>
+              <style>{`@media (max-width: 760px) { .holdings-top { grid-template-columns: minmax(0, 1fr) !important; } }`}</style>
+              <div style={{ ...card, marginBottom: 0 }}>
+                <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Allocation</div>
+                <PieChart
+                  T={T}
+                  data={pieData(entries, !!superInv)}
+                  count={entries.length}
+                />
+              </div>
+              <PerfHistory T={T} card={{ ...card, marginBottom: 0 }} />
             </div>
           )}
           <div style={card}>
