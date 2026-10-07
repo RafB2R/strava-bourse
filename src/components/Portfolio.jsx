@@ -173,6 +173,9 @@ function IncomeSection({ entry, stats, form, T, btnSm, onChange, onAdd, onDelete
   );
 }
 
+// Fiche de la valeur d'une position : gardée dans l'adresse (symbole, nom, type)
+const PORTEFEUILLE_URL = { urlKey: "portefeuille", toUrl: a => ({ symbol: a.symbol, name: a.name, type: a.type }) };
+
 export default function Portfolio({ session, T: TProp }) {
   const T = TProp || TLive;
   const inp = { width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.input.border}`, background: T.input.background, color: T.input.color, fontFamily: "inherit", marginBottom: 10, display: "block" };
@@ -187,7 +190,7 @@ export default function Portfolio({ session, T: TProp }) {
   const [form, setForm] = useState({ label: "", isin: "", vehicule: "ETF", exposition: "Actions", percentage: "", prix_achat: "", prix_actuel: "", nombre_parts: "", broker: "" });
   const [error, setError] = useState("");
   const [openDetail, setOpenDetail] = useState({});
-  const [assetView, showAssetView, closeAssetView] = useDetailView(); // fiche de la valeur d'une position
+  const [assetView, showAssetView, closeAssetView] = useDetailView(PORTEFEUILLE_URL); // fiche de la valeur d'une position
   const [resolving, setResolving] = useState(null);       // { id, error } pendant la recherche du cours
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
