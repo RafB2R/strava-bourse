@@ -394,6 +394,8 @@ export default function Portfolio({ session, T: TProp }) {
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 16 }}>
           {perfGlobale !== null && <span style={{ fontSize: 17, fontWeight: 600, color: perfGlobale >= 0 ? T.accent : T.red }}>{perfGlobale >= 0 ? "+" : ""}{perfGlobale.toFixed(2)}%</span>}
           {gainTotal !== null && <span style={{ fontSize: 14, color: gainTotal >= 0 ? T.accent : T.red }}>{gainTotal >= 0 ? "+" : ""}{formatEur(gainTotal)}</span>}
+          {/* Performance = évolution du cours depuis le prix d'achat de chaque position (hors dividendes) */}
+          {perfGlobale !== null && <span title="Évolution du cours depuis ton prix d'achat, pondérée par le poids de chaque position (hors dividendes)" style={{ fontSize: 12, color: T.textFaint }}>depuis l'achat</span>}
           {!hasValeur && <span style={{ fontSize: 13, color: T.textFaint }}>Ajoute le nombre de parts pour voir la valeur</span>}
           {lastRefresh && <span style={{ fontSize: 11, color: T.textFaint }}>· {lastRefresh.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>}
         </div>
@@ -437,7 +439,7 @@ export default function Portfolio({ session, T: TProp }) {
       {/* 3. POSITIONS */}
       <div style={card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div style={sectionLabel}>Positions ({entries.length})</div>
+          <div style={sectionLabel}>Positions ({entries.length}){avecPerf.length > 0 && <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400 }}> · perf. depuis l'achat</span>}</div>
           <button style={btn} onClick={() => setShowForm(!showForm)}>{showForm ? "Annuler" : "+ Ajouter"}</button>
         </div>
 
@@ -694,7 +696,7 @@ export default function Portfolio({ session, T: TProp }) {
 
           {perfGlobale !== null && (
             <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.7, marginBottom: 16, padding: "10px 12px", background: T.accentBg, borderRadius: 8 }}>
-              Ton portefeuille a fait <strong style={{ color: T.accent }}>+{perfGlobale.toFixed(1)}%</strong>. Découvre si cette performance vient du marché, de ton allocation ou de ta prise de risque.
+              Ton portefeuille a fait <strong style={{ color: T.accent }}>{perfGlobale >= 0 ? "+" : ""}{perfGlobale.toFixed(1)}%</strong> depuis tes achats. Découvre si cette performance vient du marché, de ton allocation ou de ta prise de risque.
             </div>
           )}
 

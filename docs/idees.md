@@ -26,6 +26,20 @@ Pistes validées mais repoussées, avec ce qui les bloque aujourd'hui.
   Idée : un clic affiche ce que récompense le badge, quand il a été débloqué
   et le palier suivant (comme sur son propre profil).
 
+### Décisions (octobre 2026)
+
+- **6 familles** : Régularité, Milestones, Builder, Explorer, Diversification,
+  Climber (gardé : la performance compte). **Community est supprimée.**
+- **Badges secrets gardés** : 🧘 Never Panic, 💎 Diamond Hands, 🎂 Anniversaire,
+  🎄 Noël. **Night Owl est retiré** (comportement de trader). Monday Investor à
+  rediscuter.
+- **Les « identités » sont remplacées par les étiquettes automatiques**
+  (section suivante).
+- Reste à régler : noms mélangés anglais / français, « Premiers pas » en
+  double, 💎 à la fois palier et badge Diamond Hands.
+
+### À corriger
+
 - **Builder et Diversification comptent la même chose** (le nombre de
   positions). Diversification pourrait compter les classes d'actifs, mais il
   n'y en a que 7, donc revoir les paliers 8 et 10.
@@ -34,6 +48,34 @@ Pistes validées mais repoussées, avec ce qui les bloque aujourd'hui.
 - **La série peut être gonflée** en créant de fausses activités
   « nouvelle position » via l'API. Pour la verrouiller, il faut que ces
   activités soient créées côté serveur.
+
+## Étiquettes automatiques du profil (validé, à coder)
+
+La stratégie n'est plus choisie à la main (questionnaire d'inscription,
+« Modifier mon profil ») : Verio classe chaque membre d'après son
+portefeuille, et l'étiquette change quand le portefeuille change. Fini
+« Dividendes » affiché avec 100 % d'obligations.
+
+| Étiquette | Règle |
+|---|---|
+| 🐢 Investisseur passif | ETF ≥ 70 % du portefeuille |
+| 🎯 Stock picker | actions en direct ≥ 50 % |
+| 🛡️ Prudent | obligations + monétaire ≥ 50 % |
+| 🏠 Pierre | immobilier (SCPI…) ≥ 40 % |
+| ₿ Crypto | crypto ≥ 30 % |
+| 🌍 Diversifié | au moins 4 expositions, aucune ligne au-dessus de 20 % |
+| 💰 Chasseur de dividendes | rendement des revenus ≥ 3 % sur 12 mois : d'abord avec les revenus saisis dans Portef., puis avec les vrais dividendes de Powens |
+| ⚖️ Mixte | aucune des règles ci-dessus |
+
+- **Au plus 2 étiquettes**, les plus marquées (« 🐢 Investisseur passif ·
+  🌍 Diversifié »), à côté de « 🔥 14 mois » et « Depuis 2019 ».
+- Un clic explique la règle (« 78 % de ton portefeuille est en ETF »).
+- Elles remplacent la stratégie choisie partout où elle apparaît (profil,
+  recherche, suggestions d'amis, classements…).
+- Value / Growth abandonnés (impossible à déduire) ; le DCA est déjà affiché
+  par la série « 🔥 x mois ».
+- Comme le reste, tout deviendra fiable avec Powens (vraies positions, vrais
+  dividendes).
 
 ## Comptes
 

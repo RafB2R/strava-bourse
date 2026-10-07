@@ -232,7 +232,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
           {[
             ["Positions", stats.positions, T.accent],
-            ["Perf. totale", perf === null ? "—" : `${perf >= 0 ? "+" : ""}${perf.toFixed(2)}%`, perf === null ? T.textFaint : perf >= 0 ? T.accent : T.red],
+            ["Perf. depuis l'achat", perf === null ? "—" : `${perf >= 0 ? "+" : ""}${perf.toFixed(2)}%`, perf === null ? T.textFaint : perf >= 0 ? T.accent : T.red],
             ["Depuis", profile.investing_since || "—", T.text],
           ].map(([label, val, color]) => (
             <div key={label} style={{ background: T.bgSubtle, borderRadius: 10, padding: 12 }}>
