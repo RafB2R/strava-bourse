@@ -168,7 +168,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
   const [pollDays, setPollDays] = useState(1);
   const [postAsset, setPostAsset] = useState(null);           // valeur citée { symbol, name, type, chart }
   const [postAllocation, setPostAllocation] = useState(null); // répartition { mode, rows }
-  const [picker, setPicker] = useState(null);                 // "asset" | "chart" | "allocation"
+  const [picker, setPicker] = useState(null);                 // "chart" | "allocation" (une valeur se cite avec $ dans le texte)
   const [postTickers, setPostTickers] = useState([]);         // valeurs identifiées dans le texte ($TTE.PA)
   const [postMentions, setPostMentions] = useState([]);       // membres identifiés (@pseudo)
   const [caret, setCaret] = useState(0);
@@ -470,8 +470,8 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
               <AttachedChip T={T} icon="🥧" onRemove={() => setPostAllocation(null)}
                 label={`Ma répartition ${postAllocation.mode === "positions" ? "par position" : "par classe d'actifs"} (${postAllocation.rows.length} lignes, en %)`} />
             )}
-            {(picker === "asset" || picker === "chart") && (
-              <AssetPicker key={picker} T={T} withChart={picker === "chart"} onClose={() => setPicker(null)}
+            {picker === "chart" && (
+              <AssetPicker key={picker} T={T} onClose={() => setPicker(null)}
                 onPick={a => { setPostAsset(a); setPicker(null); }} />
             )}
             {picker === "allocation" && (
@@ -498,10 +498,6 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
               <button onClick={() => setPollOptions(o => (o ? null : ["", ""]))} aria-pressed={!!pollOptions} aria-label="Sondage"
                 title="Ajouter un sondage" style={{ ...toolBtn, ...(pollOptions ? { background: T.accentBg } : {}) }}>
                 <span style={{ fontSize: 18 }} aria-hidden="true">📊</span><span className="tool-label">Sondage</span>
-              </button>
-              <button onClick={() => setPicker(p => (p === "asset" ? null : "asset"))} aria-pressed={picker === "asset"} aria-label="Valeur" title="Citer une action, un ETF ou un indice avec son cours"
-                style={{ ...toolBtn, ...(picker === "asset" || (postAsset && !postAsset.chart) ? { background: T.accentBg } : {}) }}>
-                <span style={{ fontSize: 17, fontWeight: 800, width: 18, textAlign: "center" }} aria-hidden="true">$</span><span className="tool-label">Valeur</span>
               </button>
               <button onClick={() => setPicker(p => (p === "chart" ? null : "chart"))} aria-pressed={picker === "chart"} aria-label="Graphique" title="Joindre la courbe d'une valeur ou d'un indice"
                 style={{ ...toolBtn, ...(picker === "chart" || postAsset?.chart ? { background: T.accentBg } : {}) }}>

@@ -109,11 +109,11 @@ export function AllocationCard({ allocation: raw, T, title }) {
 const panel = T => ({ marginTop: 8, padding: 10, borderRadius: 10, border: `0.5px solid ${T.border}`, background: T.bgSubtle });
 const closeBtn = T => ({ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12 });
 
-// Choix d'une valeur : recherche par nom, ticker ou ISIN ; graphique facultatif
-export function AssetPicker({ T, withChart, onPick, onClose }) {
+// Graphique à joindre : recherche de la valeur (nom, ticker ou ISIN) et période
+export function AssetPicker({ T, onPick, onClose }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(null);
-  const [chart, setChart] = useState(withChart ? "1y" : null);
+  const [chart, setChart] = useState("1y");
 
   useEffect(() => {
     if (query.trim().length < 2) return;
@@ -126,14 +126,13 @@ export function AssetPicker({ T, withChart, onPick, onClose }) {
   return (
     <div style={panel(T)}>
       <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
-        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: T.textMuted }}>{withChart ? "📈 Joindre un graphique" : "$ Citer une valeur"}</span>
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: T.textMuted }}>📈 Joindre un graphique</span>
         <button onClick={onClose} aria-label="Fermer" style={closeBtn(T)}>✕</button>
       </div>
       <input autoFocus value={query} onChange={e => setQuery(e.target.value)} placeholder="TotalEnergies, CW8, FR0000120271…" aria-label="Rechercher une valeur"
         style={{ width: "100%", padding: "8px 10px", fontSize: 13, borderRadius: 8, border: `0.5px solid ${T.border}`, background: T.bgCard, color: T.text, fontFamily: "inherit" }} />
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-        <span style={{ fontSize: 12, color: T.textMuted }}>Graphique :</span>
-        <button onClick={() => setChart(null)} style={chip(T, !chart)}>Aucun</button>
+        <span style={{ fontSize: 12, color: T.textMuted }}>Période :</span>
         {CHART_PERIODS.map(p => <button key={p.id} onClick={() => setChart(p.id)} style={chip(T, chart === p.id)}>{p.label}</button>)}
       </div>
       {shown === null && query.trim().length >= 2 && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 8 }}>Recherche…</div>}
