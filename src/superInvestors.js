@@ -11,7 +11,7 @@ export async function fetchSuperInvestor(userId, myId) {
     supabase.from("super_investor_follows").select("investor_id").eq("user_id", myId).eq("investor_id", userId).maybeSingle(),
     supabase.rpc("super_investor_followers", { investor: userId }),
   ]);
-  return { ...data, following: !!follow, followers: followers ?? 0 };
+  return { ...data, following: !!follow, followers: Math.max(0, followers ?? 0) };
 }
 
 export async function setFollowing(investorId, myId, follow) {

@@ -172,6 +172,8 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   const [isPending, setIsPending] = useState(false);
   const [compareStats, setCompareStats] = useState(null);
   const [superInv, setSuperInv] = useState(null);     // Super Investor (null pour un membre)
+  const [followBusy, setFollowBusy] = useState(false);
+  const [followError, setFollowError] = useState("");
 
   const myId = session.user.id;
 
@@ -202,10 +204,18 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   }
 
   // Suivre / ne plus suivre un Super Investor (abonnement immédiat, sans demande)
+  // Un seul clic à la fois ; en cas d'échec, l'état d'avant revient et un message s'affiche
   async function toggleFollow() {
-    const next = !superInv.following;
-    setSuperInv(s => ({ ...s, following: next, followers: s.followers + (next ? 1 : -1) }));
-    if (!(await setFollowing(userId, myId, next))) setSuperInv(s => ({ ...s, following: !next, followers: s.followers + (next ? -1 : 1) }));
+    if (followBusy) return;
+    const before = superInv;
+    const next = !before.following;
+    setFollowBusy(true); setFollowError("");
+    setSuperInv({ ...before, following: next, followers: Math.max(0, before.followers + (next ? 1 : -1)) });
+    if (!(await setFollowing(userId, myId, next))) {
+      setSuperInv(before);
+      setFollowError("Impossible pour le moment. Réessaie plus tard.");
+    }
+    setFollowBusy(false);
   }
 
   const avecPerf = entries.filter(e => e.performance !== null);
@@ -259,10 +269,13 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
             </div>
           </div>
           {superInv ? (
-            <button onClick={toggleFollow} aria-pressed={superInv.following}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+            <button onClick={toggleFollow} disabled={followBusy} aria-pressed={superInv.following}
               style={{ ...btnSm, ...(superInv.following ? { color: T.accent, borderColor: T.accentBorder, background: T.accentBg } : { borderColor: T.accent, background: T.accent, color: T.onAccent, fontWeight: 700 }) }}>
               {superInv.following ? "Suivi ✓" : "+ Suivre"}
             </button>
+            {followError && <span role="alert" style={{ fontSize: 11, color: T.red, maxWidth: 140, textAlign: "right" }}>{followError}</span>}
+            </div>
           ) : userId !== session.user.id && (
             isFriend ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
