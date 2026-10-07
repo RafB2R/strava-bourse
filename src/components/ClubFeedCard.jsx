@@ -22,7 +22,10 @@ export default function ClubFeedCard({ post, T, card, btnAct, onOpenClub, onAsse
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
         <div style={{ width: 36, height: 36, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{initials}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: T.text, cursor: "pointer" }} onClick={() => onProfile?.(post.user_id)}>{name}</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: T.text, cursor: "pointer" }} onClick={() => onProfile?.(post.user_id)}>
+            {name}
+            {post.author?.username && <span style={{ fontSize: 12, fontWeight: 400, color: T.textFaint, marginLeft: 6 }}>@{post.author.username}</span>}
+          </div>
           <div style={{ fontSize: 12, color: T.textFaint }}>{timeAgo(post.created_at)}</div>
         </div>
         {post.club && (
