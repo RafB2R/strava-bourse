@@ -6,6 +6,8 @@ export const config = { runtime: 'edge' };
 //   - à défaut : BCE (moyenne mensuelle officielle, un à deux mois de décalage)
 // GET /api/rates          → { fr: { value, date, previous, change, frequency, source }, de: { ... } }
 // GET /api/rates?debug=1  → ajoute le détail de chaque source essayée (pour diagnostiquer)
+// GET /api/rates?history=fr&period=5y → historique mensuel BCE pour la fiche du taux
+//   { symbol, period, price, points: [[timestamp_ms, taux], ...], change, annualized: null, date, source }
 
 const ECB_URL = 'https://data-api.ecb.europa.eu/service/data/IRS/M.FR+DE.L.L40.CI.0000.EUR.N.Z?lastNObservations=2&format=csvdata';
 const BUNDESBANK_URL = 'https://api.statistiken.bundesbank.de/rest/data/BBSIS/D.I.ZAR.ZI.EUR.S1311.B.A604.R10XX.R.A.A._Z._Z.A?lastNObservations=5';
@@ -82,8 +84,41 @@ async function attempt(name, fn, debug) {
   }
 }
 
+// Historique mensuel officiel (BCE, depuis les années 1990) d'un taux à 10 ans, coupé à la période
+const HISTORY_YEARS = { '1y': 1, '5y': 5, '10y': 10, 'max': null };
+export function historyFromCsv(csv, period, now = new Date()) {
+  const rows = Object.values(parseSdmxCsv(csv)).flat()
+    .filter(o => Number.isFinite(o.value) && /^\d{4}-\d{2}$/.test(o.date))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const years = HISTORY_YEARS[period];
+  const from = years ? new Date(now.getFullYear() - years, now.getMonth(), 1).getTime() : -Infinity;
+  const points = rows.map(o => [Date.UTC(+o.date.slice(0, 4), +o.date.slice(5, 7) - 1, 15), o.value]).filter(([t]) => t >= from);
+  if (points.length === 0) return null;
+  const first = points[0][1], last = points[points.length - 1][1];
+  return { price: last, points, change: first ? ((last - first) / first) * 100 : null, annualized: null, date: rows[rows.length - 1].date, source: 'BCE' };
+}
+
+async function historyResponse(country, period) {
+  const json = (body, status, cache) => new Response(JSON.stringify(body), {
+    status, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': cache },
+  });
+  if (!['fr', 'de'].includes(country)) return json({ error: 'Pays inconnu' }, 400, 'no-store');
+  const p = HISTORY_YEARS[period] !== undefined ? period : '5y';
+  try {
+    const res = await fetch(`https://data-api.ecb.europa.eu/service/data/IRS/M.${country.toUpperCase()}.L.L40.CI.0000.EUR.N.Z?format=csvdata`, { headers: { Accept: 'text/csv' } });
+    if (!res.ok) return json({ error: `BCE : HTTP ${res.status}` }, 502, 'no-store');
+    const summary = historyFromCsv(await res.text(), p);
+    if (!summary) return json({ error: 'Pas de données' }, 404, 'no-store');
+    // Série mensuelle : un jour de cache suffit
+    return json({ symbol: `RATE:${country}`, period: p, ...summary }, 200, 'public, s-maxage=86400, stale-while-revalidate=604800');
+  } catch (e) {
+    return json({ error: String(e?.message || e) }, 502, 'no-store');
+  }
+}
+
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
+  if (searchParams.get('history')) return historyResponse(searchParams.get('history'), searchParams.get('period'));
   const debug = [{ source: 'Version', ok: true, result: 'diagnostic v4 (Stooq)' }];
 
   const ecb = attempt('BCE (mensuel)', async () => {

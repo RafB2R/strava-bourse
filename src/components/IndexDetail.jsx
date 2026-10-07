@@ -1,9 +1,16 @@
 import { useState, useEffect } from "react";
 import { T as TLive } from "../theme";
 import Flag from "./Flag";
-import { PERIODS, DEFAULT_PERIOD, TOP5_UPDATED, fetchChart, fmtChange } from "../indices";
+import { PERIODS, DEFAULT_PERIOD, TOP5_UPDATED, fetchChart, fmtChange, periodPhrase } from "../indices";
 
-const fmtPrice = p => (p === null || p === undefined ? "—" : p.toLocaleString("fr-FR", { maximumFractionDigits: p > 1000 ? 0 : 2 }));
+// 0 décimale au-delà de 1 000, 4 sous 10 (devises), 2 sinon
+const fmtPrice = p => (p === null || p === undefined ? "—" : p.toLocaleString("fr-FR", { maximumFractionDigits: p > 1000 ? 0 : p < 10 ? 4 : 2 }));
+// Valeur affichée selon le type : taux en %, sinon cours avec son unité ($/oz…)
+const valueFormatter = index => (index.isRate
+  ? v => (v === null || v === undefined ? "—" : `${v.toFixed(2).replace(".", ",")} %`)
+  : v => `${fmtPrice(v)}${index.unit && v != null ? ` ${index.unit}` : ""}`);
+// Variation d'un taux en points de pourcentage (la variation en % d'un taux n'a pas de sens)
+const fmtPoints = d => `${d >= 0 ? "+" : "−"}${Math.abs(d).toFixed(2).replace(".", ",")} pt`;
 
 function fmtDate(ts, period) {
   const d = new Date(ts);
@@ -26,7 +33,7 @@ export function Sparkline({ points, color, width = 96, height = 32 }) {
 }
 
 // Courbe interactive : survol ou doigt pour lire la date et le cours
-function LineChart({ points, period, color, T }) {
+function LineChart({ points, period, color, T, fmt = fmtPrice }) {
   const [hover, setHover] = useState(null);
   const W = 600, H = 220, padY = 12;
   const ys = points.map(p => p[1]);
@@ -47,7 +54,7 @@ function LineChart({ points, period, color, T }) {
   return (
     <div style={{ position: "relative" }}>
       <div style={{ height: 22, fontSize: 12, color: T.textMuted, marginBottom: 4 }}>
-        {h ? <><strong style={{ color: T.text }}>{fmtPrice(h[1])}</strong> · {fmtDate(h[0], period)}</> : <span style={{ color: T.textFaint }}>Survole la courbe pour lire un point</span>}
+        {h ? <><strong style={{ color: T.text }}>{fmt(h[1])}</strong> · {fmtDate(h[0], period)}</> : <span style={{ color: T.textFaint }}>Survole la courbe pour lire un point</span>}
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label="Évolution de l'indice sur la période"
         style={{ width: "100%", height: 220, display: "block", touchAction: "pan-y", cursor: "crosshair" }}
@@ -75,8 +82,12 @@ function LineChart({ points, period, color, T }) {
 // (action, ETF… : seulement la courbe). « backLabel » : texte du bouton retour.
 export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← Marchés", initialPeriod = DEFAULT_PERIOD }) {
   const T = TProp || TLive;
-  const [period, setPeriod] = useState(PERIODS.some(p => p.id === initialPeriod) ? initialPeriod : DEFAULT_PERIOD);
+  // « index.periods » : périodes proposées (historique mensuel des taux OAT et Bund : pas de 1J…)
+  const periods = index.periods ? PERIODS.filter(p => index.periods.includes(p.id)) : PERIODS;
+  const firstPeriod = [initialPeriod, DEFAULT_PERIOD, periods[0]?.id].find(id => periods.some(p => p.id === id));
+  const [period, setPeriod] = useState(firstPeriod);
   const top5 = index.top5 || [];
+  const fmtValue = valueFormatter(index);
   const [chart, setChart] = useState(null); // { period, data }
   const [top, setTop] = useState(null); // { period, rows }
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
@@ -92,7 +103,9 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
 
   const data = chart?.period === period ? chart.data : null;
   const loading = chart?.period !== period;
-  const up = (data?.change ?? 0) >= 0;
+  // Taux : écart en points entre le début et la fin de la période
+  const rateDelta = index.isRate && data?.points?.length > 1 ? data.points[data.points.length - 1][1] - data.points[0][1] : null;
+  const up = (rateDelta ?? data?.change ?? 0) >= 0;
   const color = up ? T.accent : T.red;
   const periodInfo = PERIODS.find(p => p.id === period);
 
@@ -104,7 +117,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
       <div style={card}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
           <div style={{ fontSize: 22, fontWeight: 800, color: T.text }}>{index.country && <Flag country={index.country} size={18} />}{index.name}</div>
-          <div style={{ fontSize: 13, color: T.textFaint }}>{index.symbol}{index.type ? ` · ${index.type}` : ""}</div>
+          <div style={{ fontSize: 13, color: T.textFaint }}>{index.symbol.startsWith("RATE:") ? "BCE · moyenne mensuelle" : index.symbol}{index.type ? ` · ${index.type}` : ""}</div>
         </div>
         {index.summary && <div style={{ fontSize: 14, color: T.textMuted, lineHeight: 1.6, margin: "10px 0 14px" }}>{index.summary}</div>}
         {index.facts && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginBottom: 12 }}>
@@ -121,15 +134,15 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
       {/* Graphique */}
       <div style={card}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 4 }}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: T.text }}>{fmtPrice(data?.price)}</div>
-          {data && <div style={{ fontSize: 15, fontWeight: 700, color }}>{fmtChange(data.change)}</div>}
-          {data && <div style={{ fontSize: 12, color: T.textFaint }}>sur {periodInfo.long}</div>}
+          <div style={{ fontSize: 28, fontWeight: 800, color: T.text }}>{fmtValue(data?.price)}</div>
+          {data && <div style={{ fontSize: 15, fontWeight: 700, color }}>{rateDelta != null ? fmtPoints(rateDelta) : fmtChange(data.change)}</div>}
+          {data && periodInfo && <div style={{ fontSize: 12, color: T.textFaint }}>{periodPhrase(periodInfo)}</div>}
         </div>
-        {data?.annualized != null && (period === "5y" || period === "10y") && (
+        {!index.isRate && data?.annualized != null && (period === "5y" || period === "10y" || period === "max") && (
           <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 8 }}>soit ≈ {fmtChange(data.annualized)} par an</div>
         )}
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap", margin: "8px 0 14px" }}>
-          {PERIODS.map(p => (
+          {periods.map(p => (
             <button key={p.id} onClick={() => setPeriod(p.id)} style={{ padding: "5px 11px", borderRadius: 999, fontSize: 12, fontFamily: "inherit", cursor: "pointer", border: `0.5px solid ${period === p.id ? T.accent : T.border}`, background: period === p.id ? T.accentBg : "none", color: period === p.id ? T.accent : T.textMuted, fontWeight: period === p.id ? 700 : 400 }}>
               {p.label}
             </button>
@@ -137,7 +150,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
         </div>
         {loading && <div style={{ height: 250, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: T.textFaint }}>Chargement…</div>}
         {!loading && !data && <div style={{ height: 250, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: T.textFaint }}>Données indisponibles pour le moment.</div>}
-        {!loading && data && data.points.length > 1 && <LineChart key={period} points={data.points} period={period} color={color} T={T} />}
+        {!loading && data && data.points.length > 1 && <LineChart key={period} points={data.points} period={period} color={color} T={T} fmt={fmtValue} />}
       </div>
 
       {/* Top 5 (indices seulement) */}
