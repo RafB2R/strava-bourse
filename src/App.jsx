@@ -275,13 +275,34 @@ export default function App() {
   }
 
   // Changer d'onglet ferme aussi le profil public éventuellement ouvert
-  function goToTab(id, exploreTarget = null) {
+  // « target » : écran à ouvrir dans l'onglet — Explore : { section, club, clubView, hashtag } ;
+  // Profil : { section } ; « post » : { activityId }
+  function goToTab(id, target = null) {
     setTab(id);
-    setExploreIntent(exploreTarget);
+    setExploreIntent(target);
     setNavKey(k => k + 1);
     window.scrollTo(0, 0);
     setPublicUserId(null);
     setCompareData(null);
+  }
+
+  // Clic sur une notification : ouvre ce dont elle parle
+  async function openNotification(n) {
+    const d = n.data || {};
+    const openClub = async clubId => {
+      const { data: club } = await supabase.from("clubs").select("*").eq("id", clubId).single();
+      if (club) goToTab("explore", { section: "clubs", club });
+    };
+    if (n.type === "mention" && d.club_id) return openClub(d.club_id);
+    if (["activity_like", "activity_comment", "mention", "poll_ended"].includes(n.type) && d.activity_id != null) return goToTab("post", { activityId: d.activity_id });
+    if (n.type === "post_reaction" && d.post_id != null) {
+      const { data: post } = await supabase.from("club_posts").select("club_id").eq("id", d.post_id).single();
+      if (post) return openClub(post.club_id);
+    }
+    if (n.type === "friend_request") return goToTab("profil", { section: "reseau" });
+    if (n.type === "friend_accepted" && d.from_id) return viewProfile(d.from_id);
+    if (n.type === "badge_unlocked") return goToTab("profil", { section: "badges" });
+    if (n.type === "moment") return goToTab("feed");
   }
 
   // Ouvre le profil d'un membre ; son propre nom mène à l'onglet Profil
@@ -332,7 +353,14 @@ export default function App() {
           {tab === "explore" && <Explore key={navKey} session={session} T={T} onViewProfile={viewProfile} initialSection={exploreIntent?.section} initialClub={exploreIntent?.club} initialClubView={exploreIntent?.clubView} initialHashtag={exploreIntent?.hashtag} />}
           {tab === "portfolio" && <Portfolio key={navKey} session={session} T={T} />}
           {tab === "messages" && <Messages key={navKey} session={session} T={T} openWith={messageTarget} onOpened={clearMessageTarget} onViewProfile={viewProfile} onUnreadChange={setUnreadMessages} />}
-          {tab === "profil" && <Profil key={navKey} profile={profile} session={session} T={T} onViewProfile={viewProfile} />}
+          {tab === "profil" && <Profil key={navKey} profile={profile} session={session} T={T} onViewProfile={viewProfile} initialSection={exploreIntent?.section || "stats"} />}
+          {/* Un post ouvert depuis une notification, commentaires ouverts */}
+          {tab === "post" && exploreIntent?.activityId != null && (
+            <div>
+              <button onClick={() => goToTab("feed")} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13, padding: 0, marginBottom: 14, fontFamily: "inherit" }}>← Fil</button>
+              <Feed key={`post-${exploreIntent.activityId}-${navKey}`} session={session} T={T} focusId={exploreIntent.activityId} onViewProfile={viewProfile} onOpenClub={club => goToTab("explore", { section: "clubs", club })} />
+            </div>
+          )}
         </>
       )}
     </Suspense>
@@ -389,7 +417,7 @@ export default function App() {
           <>
             <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: 16, marginBottom: 16, position: "relative", zIndex: 50 }}>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <Notifications session={session} T={T} />
+                <Notifications session={session} T={T} onOpen={openNotification} />
                 <MessagesButton unread={unreadMessages} active={dockOpen} onClick={() => setDockOpen(o => !o)} T={T} />
               </div>
             </div>
@@ -420,7 +448,7 @@ export default function App() {
             <button onClick={toggleTheme} style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "6px 10px", fontSize: 14, cursor: "pointer" }}>
               {themeKey === "dark" ? "☀️" : "🌙"}
             </button>
-            <Notifications session={session} T={T} />
+            <Notifications session={session} T={T} onOpen={openNotification} />
             <MessagesButton unread={unreadMessages} active={tab === "messages"} onClick={() => goToTab("messages")} T={T} />
             <button onClick={handleLogout} style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>Déco.</button>
           </div>

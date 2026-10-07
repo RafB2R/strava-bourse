@@ -34,10 +34,11 @@ async function fetchOwnStats(userId) {
 async function fetchFriendships(userId) {
   const { data } = await supabase.from("friendships").select(`id, status, requester_id, receiver_id, requester:profiles!friendships_requester_id_fkey(id, full_name, username, city, strategy), receiver:profiles!friendships_receiver_id_fkey(id, full_name, username, city, strategy)`).or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
   if (!data) return null;
+  // Sans le profil de l'autre membre (compte supprimé…), la ligne est ignorée
   return {
-    friends: data.filter(f => f.status === "accepted").map(f => ({ ...f, friend: f.requester_id === userId ? f.receiver : f.requester })),
-    pending: data.filter(f => f.status === "pending" && f.requester_id === userId).map(f => ({ ...f, friend: f.receiver })),
-    received: data.filter(f => f.status === "pending" && f.receiver_id === userId).map(f => ({ ...f, friend: f.requester })),
+    friends: data.filter(f => f.status === "accepted").map(f => ({ ...f, friend: f.requester_id === userId ? f.receiver : f.requester })).filter(f => f.friend),
+    pending: data.filter(f => f.status === "pending" && f.requester_id === userId).map(f => ({ ...f, friend: f.receiver })).filter(f => f.friend),
+    received: data.filter(f => f.status === "pending" && f.receiver_id === userId).map(f => ({ ...f, friend: f.requester })).filter(f => f.friend),
   };
 }
 
@@ -94,7 +95,7 @@ function StatsSection({ profile, session, friends, perf, T, onViewProfile }) {
 // btnRed style sera généré dynamiquement avec T
 // sectionLabel style sera généré dynamiquement avec T
 
-export default function Profil({ profile: initialProfile, session, T: TProp, onViewProfile }) {
+export default function Profil({ profile: initialProfile, session, T: TProp, onViewProfile, initialSection = "stats" }) {
   const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
   const inp = { width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.input.border}`, background: T.input.background, color: T.input.color, fontFamily: "inherit", marginBottom: 10, display: "block" };
@@ -104,7 +105,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
   const btnRed = { background: "none", border: `0.5px solid ${T.red}`, borderRadius: 8, padding: "5px 10px", fontSize: 12, color: T.red, cursor: "pointer", fontFamily: "inherit" };
   const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" };
   const [profile, setProfile] = useState(initialProfile || {});
-  const [section, setSection] = useState("stats");
+  const [section, setSection] = useState(initialSection);
   const [editing, setEditing] = useState(false);
   const [showKYC, setShowKYC] = useState(false);
   const [form, setForm] = useState({});
