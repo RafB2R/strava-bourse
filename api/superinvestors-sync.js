@@ -10,6 +10,8 @@
 //
 // Appel : Vercel Cron envoie « Authorization: Bearer <CRON_SECRET> ». Pour la
 // première mise à jour à la main : /api/superinvestors-sync?secret=<CRON_SECRET>
+// Pour tout recalculer (portefeuille et carte du dernier trimestre, après une
+// correction des noms par exemple) : ajouter &force=1
 //
 // Variables d'environnement Vercel :
 //   CRON_SECRET                secret de la tâche (choisi librement)
@@ -67,26 +69,29 @@ export async function syncInvestor(investor, { force = false } = {}) {
   }));
   if (rows.length) await db('portfolio_entries', { method: 'POST', body: JSON.stringify(rows), headers: { Prefer: 'return=minimal' } });
 
-  // Forcée sur un trimestre déjà lu : portefeuille rafraîchi, rien de republié
-  if (!isNew) return { cik: investor.cik, status: 'portefeuille rafraîchi', period: last.period, positions: rows.length };
-
   // 2. Activité du trimestre (une seule carte dans le fil, avec tous les mouvements)
+  const data = {
+    source: 'sec13f',
+    period: last.period,
+    filed: last.filed,
+    previous_period: before ? previous.period : null,
+    positions: rows.length, // même nombre que l'onglet Holdings
+    moves_total: moves.length,
+    moves: moves.slice(0, MAX_MOVES).map(toMove),
+  };
+
+  // Forcée sur un trimestre déjà lu : la carte existante est corrigée sur place
+  // (likes et commentaires gardés), rien n'est republié ni notifié
+  if (!isNew) {
+    await db(`activities?user_id=eq.${userId}&type=eq.declaration_13f&data->>period=eq.${last.period}`, {
+      method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ data }),
+    });
+    return { cik: investor.cik, status: 'portefeuille et carte régénérés', period: last.period, positions: rows.length, moves: moves.length };
+  }
+
   const [activity] = await db('activities', {
     method: 'POST',
-    body: JSON.stringify({
-      user_id: userId,
-      type: 'declaration_13f',
-      created_at: `${last.filed}T12:00:00Z`,
-      data: {
-        source: 'sec13f',
-        period: last.period,
-        filed: last.filed,
-        previous_period: before ? previous.period : null,
-        positions: now.positions.length,
-        moves_total: moves.length,
-        moves: moves.slice(0, MAX_MOVES).map(toMove),
-      },
-    }),
+    body: JSON.stringify({ user_id: userId, type: 'declaration_13f', created_at: `${last.filed}T12:00:00Z`, data }),
   });
 
   // 3. Notification des abonnés
