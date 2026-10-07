@@ -20,7 +20,6 @@ export const MOMENTS = {
   premier_etf: { tag: "Moment 🌟", text: () => "a acheté son premier ETF", sub: d => d.label },
   premiere_action: { tag: "Moment 🌟", text: () => "a acheté sa première action", sub: d => d.label },
   "10_positions": { tag: "Moment 🌟", text: () => "détient maintenant 10 positions", stat: () => "10 positions" },
-  portfolio_complete: { tag: "Moment 🌟", text: () => "a complété son portefeuille à 100 %", stat: () => "100 % alloué" },
   // Anciens types, encore affichables s'ils existent en base
   premier_dividende: { tag: "Moment 🌟", text: () => "a reçu son premier dividende" },
   nouveau_plus_haut: { tag: "Moment 🌟", text: () => "atteint un nouveau plus haut" },
