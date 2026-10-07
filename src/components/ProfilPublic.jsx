@@ -173,6 +173,9 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   const [compareStats, setCompareStats] = useState(null);
   const [superInv, setSuperInv] = useState(null);     // Super Investor (null pour un membre)
   const [followBusy, setFollowBusy] = useState(false);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [disconnectError, setDisconnectError] = useState("");
   const [showAllEntries, setShowAllEntries] = useState(false); // Super Investor : 10 positions, puis « Voir tout »
   const [followError, setFollowError] = useState("");
 
@@ -196,6 +199,17 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
     });
     return () => { ignore = true; };
   }, [userId, myId]);
+
+  // Retire l'amitié, dans un sens ou dans l'autre (l'autre membre n'est pas prévenu)
+  async function disconnect() {
+    setDisconnecting(true); setDisconnectError("");
+    const { data, error } = await supabase.from("friendships").delete()
+      .or(`and(requester_id.eq.${myId},receiver_id.eq.${userId}),and(requester_id.eq.${userId},receiver_id.eq.${myId})`)
+      .select("id");
+    setDisconnecting(false);
+    if (error || !data?.length) { setDisconnectError("Impossible pour le moment."); return; }
+    setIsFriend(false); setConfirmDisconnect(false);
+  }
 
   async function sendRequest() {
     const { data: me } = await supabase.from("profiles").select("full_name").eq("id", session.user.id).single();
@@ -282,6 +296,19 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
                 <span style={{ fontSize: 12, color: T.accent }}>✓ Ami</span>
                 {onMessage && <button onClick={() => onMessage(userId)} style={{ ...btnSm, borderColor: T.accent, color: T.accent }}>✉️ Message</button>}
+                {confirmDisconnect ? (
+                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                    <span style={{ fontSize: 11, color: T.textMuted }}>Se déconnecter ?</span>
+                    <span style={{ display: "flex", gap: 4 }}>
+                      <button onClick={disconnect} disabled={disconnecting} style={{ ...btnSm, padding: "3px 8px", borderColor: T.red, color: T.red }}>{disconnecting ? "…" : "Oui"}</button>
+                      <button onClick={() => setConfirmDisconnect(false)} style={{ ...btnSm, padding: "3px 8px" }}>Non</button>
+                    </span>
+                  </span>
+                ) : (
+                  <button onClick={() => setConfirmDisconnect(true)} title="Retirer ce membre de tes amis"
+                    style={{ background: "none", border: "none", padding: 0, fontSize: 11, color: T.textFaint, cursor: "pointer", fontFamily: "inherit" }}>Se déconnecter</button>
+                )}
+                {disconnectError && <span role="alert" style={{ fontSize: 11, color: T.red }}>{disconnectError}</span>}
               </div>
             )
             : isPending ? <span style={{ fontSize: 12, color: T.textFaint }}>En attente</span>

@@ -16,6 +16,10 @@ import { tagAtCaret, finalizeTags, hasHashtag } from "../tags";
 import IndexDetail from "./IndexDetail";
 import { detailFor } from "../indices";
 import { fetchFollowedIds, fetchFollowedNews, quarterLabel } from "../superInvestors";
+import { fetchCompanyNews } from "../assetFollows";
+
+// Actualités dans le fil (Super Investors et sociétés suivis) : 4 au plus, un titre une seule fois
+const FEED_NEWS_MAX = 4;
 
 function Avatar({ name, size = 36 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
@@ -176,16 +180,20 @@ function DeclarationMoves({ data, T, onOpenLabel }) {
   );
 }
 
-// Article de presse sur un Super Investor suivi : titre, journal, date ; s'ouvre sur le site du journal
-function NewsFeedCard({ item, T, card, onProfile }) {
-  const { article, investor } = item;
+// Article de presse sur un Super Investor ou une société suivis : titre, journal, date ;
+// s'ouvre sur le site du journal. L'icône et le nom ouvrent le profil ou la fiche.
+function NewsFeedCard({ item, T, card, onProfile, onAsset }) {
+  const { article, investor, company } = item;
+  const who = investor
+    ? { icon: investor.icon, name: investor.name, title: `Voir le profil de ${investor.name}`, open: () => onProfile(investor.id) }
+    : { icon: "🏢", name: company.name, title: `Voir la fiche de ${company.name}`, open: () => onAsset(company) };
   return (
     <div style={card}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-        <button onClick={() => onProfile(investor.id)} title={`Voir le profil de ${investor.name}`}
-          style={{ width: 36, height: 36, borderRadius: 10, background: T.bgSubtle, border: "none", fontSize: 18, cursor: "pointer", flexShrink: 0 }}>{investor.icon}</button>
+        <button onClick={who.open} title={who.title}
+          style={{ width: 36, height: 36, borderRadius: 10, background: T.bgSubtle, border: "none", fontSize: 18, cursor: "pointer", flexShrink: 0 }}>{who.icon}</button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <button onClick={() => onProfile(investor.id)} style={{ background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: 14, fontWeight: 600, color: T.text, cursor: "pointer" }}>{investor.name}</button>
+          <button onClick={who.open} style={{ background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: 14, fontWeight: 600, color: T.text, cursor: "pointer", textAlign: "left" }}>{who.name}</button>
           <div style={{ fontSize: 11, color: T.textFaint }}>{timeAgo(item.created_at)}</div>
         </div>
         <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: T.bgSubtle, color: T.textMuted, flexShrink: 0 }}>📰 Actualité</span>
@@ -265,8 +273,17 @@ async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYP
   const [polls, clubPosts, news] = await Promise.all([
     fetchPolls(pollIds, userId),
     (onlyUserId || focusId) ? [] : fetchMyClubPosts(userId, hashtag),
-    // Un peu d'actualité des Super Investors suivis (fil principal)
-    followed.length ? fetchFollowedNews(userId).catch(() => []) : [],
+    // Un peu d'actualité des Super Investors et des sociétés suivis (fil principal)
+    onlyUserId || focusId || hashtag ? [] : Promise.all([
+      followed.length ? fetchFollowedNews(userId).catch(() => []) : [],
+      fetchCompanyNews(userId).catch(() => []),
+    ]).then(([a, b]) => {
+      const seen = new Set();
+      return [...a, ...b]
+        .sort((x, y) => new Date(y.created_at) - new Date(x.created_at))
+        .filter(n => !seen.has(n.article.title) && seen.add(n.article.title))
+        .slice(0, FEED_NEWS_MAX);
+    }),
   ]);
   return { ids, activities, likes, comments, polls, clubPosts: [...clubPosts, ...news] };
 }
@@ -703,7 +720,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
 
       {visible.map(activity => {
         if (activity.kind === "news") {
-          return <NewsFeedCard key={`news-${activity.id}`} item={activity} T={T} card={card} onProfile={id => onViewProfile && onViewProfile(id)} />;
+          return <NewsFeedCard key={`news-${activity.id}`} item={activity} T={T} card={card} onProfile={id => onViewProfile && onViewProfile(id)} onAsset={openAssetDetail} />;
         }
         if (activity.kind === "club") {
           return (

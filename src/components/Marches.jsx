@@ -5,6 +5,8 @@ import IndexDetail, { Sparkline } from "./IndexDetail";
 import EarningsCalendar from "./EarningsCalendar";
 import { useDetailView } from "../useDetailView";
 import Flag from "./Flag";
+import { supabase } from "../supabase";
+import { fetchFollowedAssets } from "../assetFollows";
 
 // card défini dynamiquement avec T
 // sectionLabel défini dynamiquement avec T
@@ -199,6 +201,16 @@ export default function Marches({ T: TProp }) {
     setReloadKey(k => k + 1);
   }
 
+  // Sociétés que je suis (rechargées en revenant d'une fiche, où on a pu en suivre une)
+  const [followed, setFollowed] = useState([]);
+  useEffect(() => {
+    if (openIndex) return;
+    let ignore = false;
+    supabase.auth.getSession().then(({ data: { session } }) => session && fetchFollowedAssets(session.user.id))
+      .then(list => { if (!ignore && list) setFollowed(list); }).catch(() => {});
+    return () => { ignore = true; };
+  }, [openIndex]);
+
   if (openIndex) return <IndexDetail index={openIndex} T={T} onBack={closeDetail} />;
 
   return (
@@ -211,6 +223,20 @@ export default function Marches({ T: TProp }) {
           ⟳ Actualiser
         </button>
       </div>
+
+      {followed.length > 0 && (
+        <div style={card}>
+          <div style={sectionLabel}>⭐ Sociétés suivies</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {followed.map(a => (
+              <button key={a.symbol} onClick={() => openDetail(detailFor(a))} aria-label={`Voir la fiche ${a.name}`}
+                style={{ padding: "6px 12px", borderRadius: 999, border: `0.5px solid ${T.border}`, background: T.bgSubtle, fontSize: 12, fontWeight: 600, color: T.text, cursor: "pointer", fontFamily: "inherit" }}>
+                🏢 {a.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Indices */}
       <div style={card}>
