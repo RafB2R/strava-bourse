@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase, PUBLIC_PROFILE_COLUMNS } from "../supabase";
 import { T as TLive, avatarColors } from "../theme";
-import { getBadgeInfo, badgeFromData } from "../badges";
-import { isMoment, momentSentence } from "../moments";
-import { tradeTexts } from "../trades";
-import { RichText } from "./PostText";
+import { getBadgeInfo } from "../badges";
+import Feed from "./Feed";
 
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
 // Colonnes visibles par les autres membres : jamais prix_achat ni nombre_parts
@@ -101,20 +99,12 @@ function Avatar({ name, size = 60 }) {
   return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size*0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
 }
 
-function timeAgo(date) {
-  const diff = (Date.now() - new Date(date)) / 1000;
-  if (diff < 60) return "à l'instant";
-  if (diff < 3600) return `il y a ${Math.floor(diff / 60)} min`;
-  if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`;
-  return `il y a ${Math.floor(diff / 86400)} j`;
-}
-
-// Profil, positions (colonnes publiques), activités, badges et lien d'amitié avec moi
+// Profil, positions (colonnes publiques), badges et lien d'amitié avec moi
+// (les mouvements sont affichés par le composant du fil, onglet Activité)
 async function fetchPublicProfile(userId, myId) {
-  const [{ data: p }, { data: e }, { data: a }, { data: b }, { data: f }] = await Promise.all([
+  const [{ data: p }, { data: e }, { data: b }, { data: f }] = await Promise.all([
     supabase.from("profiles").select(PUBLIC_PROFILE_COLUMNS).eq("id", userId).single(),
     supabase.from("portfolio_entries").select(PUBLIC_ENTRY_COLUMNS).eq("user_id", userId).order("percentage", { ascending: false }),
-    supabase.from("activities").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
     supabase.from("user_badges").select("badge_id, unlocked_at").eq("user_id", userId),
     supabase.from("friendships").select("*").or(`requester_id.eq.${myId},receiver_id.eq.${myId}`).or(`requester_id.eq.${userId},receiver_id.eq.${userId}`),
   ]);
@@ -125,7 +115,6 @@ async function fetchPublicProfile(userId, myId) {
   return {
     profile: p,
     entries: e || [],
-    activities: a || [],
     badges: b || [],
     relation: rel ? (rel.status === "accepted" ? "accepted" : "pending") : null,
   };
@@ -150,14 +139,13 @@ async function fetchCompareStats(myId, userId) {
   };
 }
 
-export default function ProfilPublic({ userId, session, onBack, T: TProp, onCompareData, onMessage }) {
+export default function ProfilPublic({ userId, session, onBack, T: TProp, onCompareData, onMessage, onViewProfile }) {
   const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
   const btnSm = { background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
 
   const [profile, setProfile] = useState(null);
   const [entries, setEntries] = useState([]);
-  const [activities, setActivities] = useState([]);
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("holdings");
@@ -175,7 +163,6 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       if (ignore) return;
       setProfile(r.profile);
       setEntries(r.entries);
-      setActivities(r.activities);
       setBadges(r.badges);
       setIsFriend(r.relation === "accepted");
       setIsPending(r.relation === "pending");
@@ -207,23 +194,6 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   useEffect(() => {
     return () => { if (onCompareData) onCompareData(null); };
   }, [onCompareData]);
-
-  function getActivityText(a) {
-    const d = a.data || {};
-    const trade = tradeTexts(a.type, d);
-    if (trade) return `${trade.sentence.charAt(0).toUpperCase()}${trade.sentence.slice(1)} · ${trade.stat}`;
-    if (isMoment(a.type)) return momentSentence(a.type, d);
-    if (a.type === "post") return (d.poll && d.content ? `📊 ${d.content}` : d.content) || (d.files?.length ? "📎 A partagé un fichier" : null) || (d.asset?.name ? `$ ${d.asset.name}` : null) || (d.allocation ? "🥧 A partagé sa répartition" : null) || (d.images?.length ? (d.images.length > 1 ? `📷 A publié ${d.images.length} photos` : "📷 A publié une photo") : "A publié un message");
-    switch (a.type) {
-      case "new_position": return `A ajouté ${d.label || "une position"}${d.broker ? ` sur ${d.broker}` : ""}`;
-      case "renforcement": return `A renforcé ${d.label || "une position"}`;
-      case "badge": { const info = badgeFromData(d); return `A débloqué le badge ${info.medal} ${info.name}`; }
-      case "dividende": return `A reçu un dividende${d.label ? ` · ${d.label}` : ""}`;
-      case "coupon": return `A reçu un coupon${d.label ? ` · ${d.label}` : ""}`;
-      case "new_broker": return `A ajouté ${d.broker || "un broker"}`;
-      default: return "Activité";
-    }
-  }
 
   if (loading) return <div style={{ textAlign: "center", padding: "3rem", color: T.textFaint, fontSize: 13 }}>Chargement…</div>;
   if (!profile) return <div style={{ textAlign: "center", padding: "3rem", color: T.textFaint, fontSize: 13 }}>Profil introuvable</div>;
@@ -317,27 +287,8 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
         </div>
       )}
 
-      {tab === "activite" && (
-        <div>
-          {activities.length === 0 && <div style={{ ...card, textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>Aucune activité</div>}
-          {activities.map(a => (
-            <div key={a.id} style={{ ...card, display: "flex", gap: 12, alignItems: "flex-start" }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
-                {a.type === "badge" ? "🏅" : a.type.startsWith("anniversaire") ? "🎂" : a.type.includes("dca") ? "🔥" : isMoment(a.type) ? "🌟" : a.type === "new_position" ? "📈" : a.type === "post" ? "💬" : a.type === "dividende" || a.type === "coupon" ? "💰" : a.type === "renforcement" ? "⬆️" : a.type === "allegement" || a.type === "vente" ? "⬇️" : "⚡"}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, color: T.text, lineHeight: 1.4 }}>{getActivityText(a)}</div>
-                {a.note && (
-                  <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5, marginTop: 6, padding: "6px 10px", borderLeft: `2px solid ${T.accent}`, background: T.bgSubtle, borderRadius: "0 8px 8px 0", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                    <RichText text={a.note} tickers={a.note_tags?.tickers} mentions={a.note_tags?.mentions} T={T} />
-                  </div>
-                )}
-                <div style={{ fontSize: 11, color: T.textFaint, marginTop: 3 }}>{timeAgo(a.created_at)}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Mouvements uniquement, avec les mêmes cartes que le fil (bloc factuel, description, likes, commentaires) */}
+      {tab === "activite" && <Feed session={session} T={T} onlyUserId={userId} onViewProfile={onViewProfile} />}
 
       {tab === "badges" && (
         <div>

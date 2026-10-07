@@ -3,7 +3,7 @@ import { supabase } from "../supabase";
 import { T, T as TLive, avatarColors } from "../theme";
 import { badgeFromData } from "../badges";
 import { MOMENTS, MOMENT_TYPES, isMoment, momentSentence } from "../moments";
-import { tradeTexts, NOTE_TYPES } from "../trades";
+import { tradeTexts, TRADE_TYPES } from "../trades";
 import MovementNote from "./MovementNote";
 import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage, uploadImages, removeImages, MAX_FILES, FILE_ACCEPT_ATTR, checkFile, uploadFiles, removeFiles } from "../media";
 import { makePoll, isValidPoll, fetchPolls, vote, closeFinishedPolls } from "../polls";
@@ -29,8 +29,9 @@ function timeAgo(date) {
   return `il y a ${Math.floor(diff / 86400)} j`;
 }
 
-const ACTIVITY_TYPES = ["new_position","renforcement","vente","allegement","dividende","coupon","versement","retrait","rebalancement","suppression_position","new_broker"];
 const BADGE_TYPES = ["badge"];
+// Ce que montre le fil : posts, mouvements, moments et badges (pas les dividendes ni l'ajout d'un courtier)
+const FEED_TYPES = ["post", ...TRADE_TYPES, ...MOMENT_TYPES, ...BADGE_TYPES];
 
 function getActivityMeta(activity) {
   const d = activity.data || {};
@@ -72,7 +73,8 @@ const FILTERS = [
 const COMMENT_COLUMNS = "id, activity_id, user_id, content, tags, created_at, author:profiles!activity_comments_user_id_fkey(full_name)";
 
 // Amis acceptés (moi inclus), activités à afficher selon le périmètre, avec leurs likes et commentaires
-async function fetchFeed(userId, scope) {
+// « onlyUserId » : seulement les mouvements de ce membre (onglet Activité d'un profil public)
+async function fetchFeed(userId, scope, onlyUserId = null) {
   closeFinishedPolls();
   const { data: friendships } = await supabase.from("friendships").select("requester_id, receiver_id").eq("status", "accepted").or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
   const ids = [userId];
@@ -81,7 +83,11 @@ async function fetchFeed(userId, scope) {
     if (f.receiver_id !== userId) ids.push(f.receiver_id);
   });
   let query = supabase.from("activities").select("*, author:profiles!activities_user_id_fkey(full_name, username)").order("created_at", { ascending: false }).limit(100);
-  if (scope === "amis") query = query.in("user_id", ids);
+  if (onlyUserId) query = query.eq("user_id", onlyUserId).in("type", TRADE_TYPES);
+  else {
+    query = query.in("type", FEED_TYPES);
+    if (scope === "amis") query = query.in("user_id", ids);
+  }
   const { data } = await query;
   const activities = data || [];
 
@@ -105,7 +111,10 @@ async function fetchFeed(userId, scope) {
   return { ids, activities, likes, comments, polls };
 }
 
-export default function Feed({ session, T: TProp, onViewProfile }) {
+// « onlyUserId » : version intégrée au profil public — mêmes cartes que le fil, limitées aux
+// mouvements de ce membre, sans encadré de publication, choix Amis / Verio ni filtres.
+export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = null }) {
+  const embedded = !!onlyUserId;
   const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
   const toolBtn = { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, minWidth: 34, minHeight: 36, background: "none", border: "none", borderRadius: 8, padding: "5px 6px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit" };
@@ -160,7 +169,7 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
 
   useEffect(() => {
     let ignore = false;
-    fetchFeed(userId, scope).then(({ ids, activities, likes, comments, polls }) => {
+    fetchFeed(userId, scope, onlyUserId).then(({ ids, activities, likes, comments, polls }) => {
       if (ignore) return;
       setPolls(polls);
       setFriendIds(ids);
@@ -170,7 +179,7 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
       setLoading(false);
     });
     return () => { ignore = true; };
-  }, [userId, scope, reloadKey]);
+  }, [userId, scope, reloadKey, onlyUserId]);
 
   // Images choisies (bouton, coller ou glisser-déposer) : compressées tout de suite pour l'aperçu
   async function addImages(fileList) {
@@ -382,7 +391,7 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
 
   const visible = activities.filter(a => {
     if (filter === "all") return true;
-    if (filter === "activite") return ACTIVITY_TYPES.includes(a.type);
+    if (filter === "activite") return TRADE_TYPES.includes(a.type);
     if (filter === "moments") return MOMENT_TYPES.includes(a.type);
     if (filter === "badges") return BADGE_TYPES.includes(a.type);
     return true;
@@ -391,13 +400,13 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
 
 
   if (openAsset) {
-    return <IndexDetail index={detailFor(openAsset)} T={T} backLabel="← Fil" initialPeriod={openAsset.chart || "1y"} onBack={closeAssetDetail} />;
+    return <IndexDetail index={detailFor(openAsset)} T={T} backLabel={embedded ? "← Profil" : "← Fil"} initialPeriod={openAsset.chart || "1y"} onBack={closeAssetDetail} />;
   }
 
   return (
     <div>
       {/* Encadré publier */}
-      <div
+      {!embedded && <div
         style={{ ...card, marginBottom: 16, ...(dragOver ? { borderColor: T.accent, background: T.accentBg } : {}) }}
         onDragOver={e => { if ([...e.dataTransfer.types].includes("Files")) { e.preventDefault(); setDragOver(true); } }}
         onDragLeave={() => setDragOver(false)}
@@ -480,25 +489,25 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
             </div>
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Scope */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+      {!embedded && <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
         {[["amis", "👥 Amis"], ["verio", "🌍 Verio"]].map(([id, label]) => (
           <button key={id} onClick={() => { if (id !== scope) { setLoading(true); setScope(id); } }} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${scope === id ? T.accent : T.border}`, background: scope === id ? T.accentBg : "none", color: scope === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
             {label}
           </button>
         ))}
-      </div>
+      </div>}
 
       {/* Filtres */}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+      {!embedded && <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
         {FILTERS.map(f => (
           <button key={f.id} onClick={() => setFilter(f.id)} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filter === f.id ? T.accent : T.border}`, background: filter === f.id ? T.accentBg : "none", color: filter === f.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
             {f.label}
           </button>
         ))}
-      </div>
+      </div>}
 
       {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>Chargement…</div>}
 
@@ -506,10 +515,10 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
         <div style={{ ...card, textAlign: "center", padding: "2.5rem 1rem" }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>👥</div>
           <div style={{ fontSize: 14, fontWeight: 600, color: T.textMuted, marginBottom: 8 }}>
-            {scope === "amis" && friendIds.length <= 1 ? "Ajoute des amis pour voir leurs investissements" : "Aucune activité dans cette catégorie"}
+            {embedded ? "Aucun mouvement pour le moment" : scope === "amis" && friendIds.length <= 1 ? "Ajoute des amis pour voir leurs investissements" : "Aucune activité dans cette catégorie"}
           </div>
           <div style={{ fontSize: 13, color: T.textFaint, lineHeight: 1.6 }}>
-            {scope === "amis" && friendIds.length <= 1 ? "Va dans Explore pour trouver des investisseurs" : "Les activités apparaîtront ici automatiquement"}
+            {!embedded && scope === "amis" && friendIds.length <= 1 ? "Va dans Explore pour trouver des investisseurs" : "Les mouvements apparaîtront ici automatiquement"}
           </div>
         </div>
       )}
@@ -561,7 +570,7 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
                 {meta.stat && <span style={{ display: "inline-block", marginTop: 8, padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 500, background: meta.tagBg, color: meta.tagColor }}>{meta.stat}</span>}
               </div>
             )}
-            {NOTE_TYPES.includes(activity.type) && (
+            {TRADE_TYPES.includes(activity.type) && (
               <MovementNote activity={activity} isMe={isMe} myId={userId} T={T}
                 onSaved={updated => setActivities(list => list.map(a => (a.id === updated.id ? updated : a)))}
                 onAsset={openAssetDetail} onProfile={id => onViewProfile && onViewProfile(id)} />

@@ -311,7 +311,7 @@ export default function App() {
     <Suspense fallback={<div style={{ color: T.textFaint, fontSize: 13, textAlign: "center", padding: "2rem" }}>Chargement…</div>}>
       {showKYC && <KYC session={session} profile={profile} T={T} onComplete={() => { setShowKYC(false); loadProfile(); }} onSkip={() => setShowKYC(false)} />}
       {publicUserId ? (
-        <ProfilPublic key={publicUserId} userId={publicUserId} session={session} T={T} onMessage={openMessage} onBack={() => { setPublicUserId(null); setCompareData(null); }} onCompareData={setCompareData} />
+        <ProfilPublic key={publicUserId} userId={publicUserId} session={session} T={T} onMessage={openMessage} onViewProfile={viewProfile} onBack={() => { setPublicUserId(null); setCompareData(null); }} onCompareData={setCompareData} />
       ) : (
         <>
           {tab === "feed" && <Feed key={navKey} session={session} T={T} onViewProfile={viewProfile} />}
