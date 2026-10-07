@@ -5,6 +5,7 @@ import IndexDetail from "./IndexDetail";
 import { searchAssets } from "../attachments";
 import { detailFor } from "../indices";
 import Feed from "./Feed";
+import { useDetailView } from "../useDetailView";
 import { supabase } from "../supabase";
 import { syncBadges } from "../badges";
 import { T as TLive, avatarColors } from "../theme";
@@ -93,7 +94,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
   const [users, setUsers] = useState([]);
   const [clubs, setClubs] = useState([]);
   const [assets, setAssets] = useState([]);
-  const [openAsset, setOpenAsset] = useState(null);   // fiche d'une valeur trouvée par la recherche
+  const [openAsset, showAsset, closeAsset] = useDetailView();   // fiche d'une valeur trouvée par la recherche
   const [hashtag, setHashtag] = useState(initialHashtag); // page d'un hashtag (clic sur #… dans un post)
   const [allClubs, setAllClubs] = useState([]);
   const [memberCounts, setMemberCounts] = useState({});
@@ -201,7 +202,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
       </div>
     );
   }
-  if (openAsset) return <IndexDetail index={detailFor(openAsset)} T={T} backLabel="← Recherche" onBack={() => setOpenAsset(null)} />;
+  if (openAsset) return <IndexDetail index={detailFor(openAsset)} T={T} backLabel="← Recherche" onBack={closeAsset} />;
   if (selectedClub) return <Clubs session={session} T={T} initialClub={selectedClub} onBack={() => setSelectedClub(null)} onViewProfile={onViewProfile} />;
 
   return (
@@ -246,8 +247,8 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
           ))}
 
           {!loading && searchTab === "assets" && assets.map(a => (
-            <div key={a.symbol} role="button" tabIndex={0} onClick={() => { setOpenAsset(a); window.scrollTo(0, 0); }}
-              onKeyDown={e => e.key === "Enter" && setOpenAsset(a)}
+            <div key={a.symbol} role="button" tabIndex={0} onClick={() => showAsset(a)}
+              onKeyDown={e => e.key === "Enter" && showAsset(a)}
               style={{ ...card(T), display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
               <div style={{ width: 40, height: 40, borderRadius: 10, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{a.symbol.replace(/^\^/, "").split(".")[0].slice(0, 5)}</div>
               <div style={{ flex: 1, minWidth: 0 }}>

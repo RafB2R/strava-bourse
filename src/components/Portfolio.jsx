@@ -10,6 +10,7 @@ import ShareCard from "./ShareCard";
 import IndexDetail from "./IndexDetail";
 import { resolveAsset } from "../attachments";
 import { detailFor } from "../indices";
+import { useDetailView } from "../useDetailView";
 
 const VEHICULES = ["ETF", "Action directe", "Fonds actif", "Obligation directe", "SCPI", "Crypto", "Autre"];
 const EXPOSITIONS = ["Actions", "Obligations", "Immobilier", "Multi-actifs", "Monétaire", "Crypto", "Matières premières"];
@@ -186,7 +187,7 @@ export default function Portfolio({ session, T: TProp }) {
   const [form, setForm] = useState({ label: "", isin: "", vehicule: "ETF", exposition: "Actions", percentage: "", prix_achat: "", prix_actuel: "", nombre_parts: "", broker: "" });
   const [error, setError] = useState("");
   const [openDetail, setOpenDetail] = useState({});
-  const [assetView, setAssetView] = useState(null);       // fiche de la valeur d'une position
+  const [assetView, showAssetView, closeAssetView] = useDetailView(); // fiche de la valeur d'une position
   const [resolving, setResolving] = useState(null);       // { id, error } pendant la recherche du cours
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -359,11 +360,10 @@ export default function Portfolio({ session, T: TProp }) {
     const asset = await resolveAsset(entry);
     if (!asset) { setResolving({ id: entry.id, error: "Cours introuvable pour cette position (vérifie son ISIN)." }); return; }
     setResolving(null);
-    setAssetView({ ...asset, name: entry.label || asset.name });
-    window.scrollTo(0, 0);
+    showAssetView({ ...asset, name: entry.label || asset.name });
   }
 
-  if (assetView) return <IndexDetail index={detailFor(assetView)} T={T} backLabel="← Portefeuille" onBack={() => setAssetView(null)} />;
+  if (assetView) return <IndexDetail index={detailFor(assetView)} T={T} backLabel="← Portefeuille" onBack={closeAssetView} />;
 
   return (
     <div>

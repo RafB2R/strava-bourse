@@ -3,6 +3,7 @@ import { T as TLive } from "../theme";
 import { INDICES, fetchChart, fmtChange, detailFor } from "../indices";
 import IndexDetail, { Sparkline } from "./IndexDetail";
 import EarningsCalendar from "./EarningsCalendar";
+import { useDetailView } from "../useDetailView";
 import Flag from "./Flag";
 
 // card défini dynamiquement avec T
@@ -159,8 +160,8 @@ export default function Marches({ T: TProp }) {
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
   const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" };
   const [lastUpdate, setLastUpdate] = useState(new Date());
-  const [openIndex, setOpenIndex] = useState(null);
-  const openDetail = item => { setOpenIndex(item); window.scrollTo(0, 0); };
+  // Fiche ouverte (indice, taux, devise…) ; au retour, on revient au même endroit de la page
+  const [openIndex, openDetail, closeDetail] = useDetailView();
   const [rates, setRates] = useState(null);
   const [secteurs, setSecteurs] = useState([]);
   const [earnings, setEarnings] = useState([]);
@@ -189,7 +190,7 @@ export default function Marches({ T: TProp }) {
     setReloadKey(k => k + 1);
   }
 
-  if (openIndex) return <IndexDetail index={openIndex} T={T} onBack={() => setOpenIndex(null)} />;
+  if (openIndex) return <IndexDetail index={openIndex} T={T} onBack={closeDetail} />;
 
   return (
     <div>
@@ -206,7 +207,7 @@ export default function Marches({ T: TProp }) {
       <div style={card}>
         <div style={sectionLabel}>📊 Indices <span style={{ textTransform: "none", letterSpacing: 0 }}>· touche un indice pour le découvrir</span></div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 8 }}>
-          {INDICES.map(idx => <IndexTile key={idx.symbol} index={idx} T={T} onOpen={i => { setOpenIndex(i); window.scrollTo(0, 0); }} />)}
+          {INDICES.map(idx => <IndexTile key={idx.symbol} index={idx} T={T} onOpen={openDetail} />)}
         </div>
       </div>
 
@@ -268,7 +269,7 @@ export default function Marches({ T: TProp }) {
       <div style={card}>
         <div style={sectionLabel}>📅 Calendrier des résultats</div>
         <EarningsCalendar earnings={earnings} loading={loadingEarnings} T={T}
-          onOpen={e => { setOpenIndex(detailFor({ symbol: e.symbol, name: e.name, type: "Action" })); window.scrollTo(0, 0); }} />
+          onOpen={e => openDetail(detailFor({ symbol: e.symbol, name: e.name, type: "Action" }))} />
       </div>
     </div>
   );

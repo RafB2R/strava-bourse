@@ -8,6 +8,7 @@ import { RichText, TickerChips, TagField } from "./PostText";
 import { finalizeTags } from "../tags";
 import IndexDetail from "./IndexDetail";
 import { detailFor } from "../indices";
+import { useDetailView } from "../useDetailView";
 
 // Prévient les membres mentionnés dans un post ou une réponse de club
 async function notifyMentions(tags, myId, data) {
@@ -273,7 +274,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
   const [posts, setPosts] = useState([]);
   const [input, setInput] = useState("");
   const [inputTags, setInputTags] = useState(null);
-  const [openAsset, setOpenAsset] = useState(null);   // fiche d'une valeur citée
+  const [openAsset, showAsset, closeAsset] = useDetailView();   // fiche d'une valeur citée
   const [sending, setSending] = useState(false);
   const [postImages, setPostImages] = useState([]);   // images préparées (compressées) avec aperçu
   const [postFiles, setPostFiles] = useState([]);
@@ -392,7 +393,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   if (openAsset) {
-    return <IndexDetail index={detailFor(openAsset)} T={T} backLabel={`← ${club.name}`} initialPeriod="1y" onBack={() => setOpenAsset(null)} />;
+    return <IndexDetail index={detailFor(openAsset)} T={T} backLabel={`← ${club.name}`} initialPeriod="1y" onBack={closeAsset} />;
   }
 
   return (
@@ -469,7 +470,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
           {!loading && posts.length === 0 && <div style={{ ...card(T), textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>Aucun post encore — lance la discussion ! 🚀</div>}
           {posts.map(post => (
             <Post key={post.id} post={post} session={session} isMember={isMember} onReact={handleReact} onDelete={deletePost}
-              onAsset={a => { setOpenAsset(a); window.scrollTo(0, 0); }} onProfile={id => onViewProfile?.(id)} />
+              onAsset={showAsset} onProfile={id => onViewProfile?.(id)} />
           ))}
 
           {totalPages > 1 && (

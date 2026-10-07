@@ -6,6 +6,7 @@ import Feed from "./Feed";
 import IndexDetail from "./IndexDetail";
 import { resolveAsset } from "../attachments";
 import { detailFor } from "../indices";
+import { useDetailView } from "../useDetailView";
 
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
 // Colonnes visibles par les autres membres : jamais prix_achat ni nombre_parts
@@ -152,7 +153,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("holdings");
-  const [assetView, setAssetView] = useState(null);   // fiche de la valeur d'une position
+  const [assetView, showAssetView, closeAssetView] = useDetailView(); // fiche de la valeur d'une position
   const [resolving, setResolving] = useState(null);   // { id, error }
   const [isFriend, setIsFriend] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -206,11 +207,10 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
     const asset = await resolveAsset({ label: entry.label });
     if (!asset) { setResolving({ id: entry.id, error: "Cours introuvable pour cette position." }); return; }
     setResolving(null);
-    setAssetView({ ...asset, name: entry.label || asset.name });
-    window.scrollTo(0, 0);
+    showAssetView({ ...asset, name: entry.label || asset.name });
   }
 
-  if (assetView) return <IndexDetail index={detailFor(assetView)} T={T} backLabel={`← ${profile?.full_name || "Profil"}`} onBack={() => setAssetView(null)} />;
+  if (assetView) return <IndexDetail index={detailFor(assetView)} T={T} backLabel={`← ${profile?.full_name || "Profil"}`} onBack={closeAssetView} />;
   if (loading) return <div style={{ textAlign: "center", padding: "3rem", color: T.textFaint, fontSize: 13 }}>Chargement…</div>;
   if (!profile) return <div style={{ textAlign: "center", padding: "3rem", color: T.textFaint, fontSize: 13 }}>Profil introuvable</div>;
 
