@@ -27,4 +27,10 @@ export function tradeTexts(type, d = {}) {
 // C'est tout ce que montrent le filtre « Activité » du fil et l'onglet Activité d'un profil
 // public ; l'auteur peut y ajouter une description (voir set_activity_note).
 // Dividendes et coupons n'en font pas partie tant qu'on n'a pas assez d'informations dessus.
+// Origine d'un mouvement : saisi à la main, ou importé des opérations réelles
+// via Powens. Les anciens mouvements, sans source, ont tous été saisis à la main.
+export const tradeSource = data => (data?.source === "powens"
+  ? { icon: "🔗", label: "Synchronisé (Powens)", title: "Importé automatiquement depuis les opérations du compte" }
+  : { icon: "✋", label: "Ajouté manuellement", title: "Saisi à la main par l'investisseur" });
+
 export const TRADE_TYPES = ["new_position", "renforcement", "allegement", "vente", "suppression_position", "versement", "retrait", "rebalancement"];

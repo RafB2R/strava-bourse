@@ -3,7 +3,7 @@ import { supabase } from "../supabase";
 import { T, T as TLive, avatarColors } from "../theme";
 import { badgeFromData } from "../badges";
 import { MOMENTS, MOMENT_TYPES, isMoment, momentSentence } from "../moments";
-import { tradeTexts, TRADE_TYPES } from "../trades";
+import { tradeTexts, tradeSource, TRADE_TYPES } from "../trades";
 import MovementNote from "./MovementNote";
 import ClubFeedCard from "./ClubFeedCard";
 import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage, uploadImages, removeImages, MAX_FILES, FILE_ACCEPT_ATTR, checkFile, uploadFiles, removeFiles } from "../media";
@@ -645,7 +645,15 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
                   label={TRADE_TYPES.includes(activity.type) ? activity.data?.label : null}
                   lookup={labelLookup?.id === activity.id ? labelLookup : null}
                   onOpenLabel={label => openLabel(activity.id, label)} />
-                {meta.stat && <span style={{ display: "inline-block", marginTop: 8, padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 500, background: meta.tagBg, color: meta.tagColor }}>{meta.stat}</span>}
+                {(meta.stat || TRADE_TYPES.includes(activity.type)) && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 8 }}>
+                    {meta.stat && <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 500, background: meta.tagBg, color: meta.tagColor }}>{meta.stat}</span>}
+                    {TRADE_TYPES.includes(activity.type) && (() => {
+                      const src = tradeSource(activity.data);
+                      return <span title={src.title} style={{ fontSize: 11, color: T.textFaint }}>{src.icon} {src.label}</span>;
+                    })()}
+                  </div>
+                )}
               </div>
             )}
             {TRADE_TYPES.includes(activity.type) && (
