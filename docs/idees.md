@@ -69,3 +69,17 @@ Suites possibles :
 - **Partager vers Verio** depuis la galerie du téléphone (Web Share Target).
 - **Applications natives (Expo)** pour être présent dans l'App Store et le
   Play Store, si la PWA ne suffit plus.
+
+## Mouvements (trades)
+
+Les mouvements sont factuels et créés automatiquement (aujourd'hui quand on
+modifie son portefeuille, demain via Powens). Leur auteur peut ensuite y
+ajouter un commentaire, comme la description d'une course Strava
+(set_activity_note). Pistes :
+
+- **Powens** : créer les mouvements depuis les opérations réelles des
+  comptes, toujours en % (jamais de montant), puis proposer à l'auteur
+  « Ajoute un commentaire à ton renforcement de TotalEnergies ? ».
+- **Regrouper** plusieurs mouvements du même jour en une seule activité
+  (« 3 mouvements aujourd'hui »), comme Strava regroupe une séance.
+

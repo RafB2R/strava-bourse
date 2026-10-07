@@ -22,3 +22,6 @@ export function tradeTexts(type, d = {}) {
     detail: `${fmt(d.avant)} % → ${fmt(d.apres)} % du portefeuille`,
   };
 }
+
+// Mouvements automatiques sur lesquels l'auteur peut ajouter un commentaire (voir set_activity_note)
+export const NOTE_TYPES = ["new_position", "renforcement", "allegement", "vente", "suppression_position", "dividende", "coupon", "versement", "retrait", "rebalancement", "new_broker"];

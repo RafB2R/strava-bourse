@@ -4,6 +4,7 @@ import { T as TLive, avatarColors } from "../theme";
 import { getBadgeInfo, badgeFromData } from "../badges";
 import { isMoment, momentSentence } from "../moments";
 import { tradeTexts } from "../trades";
+import { RichText } from "./PostText";
 
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
 // Colonnes visibles par les autres membres : jamais prix_achat ni nombre_parts
@@ -326,6 +327,11 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, color: T.text, lineHeight: 1.4 }}>{getActivityText(a)}</div>
+                {a.note && (
+                  <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5, marginTop: 6, padding: "6px 10px", borderLeft: `2px solid ${T.accent}`, background: T.bgSubtle, borderRadius: "0 8px 8px 0", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                    <RichText text={a.note} tickers={a.note_tags?.tickers} mentions={a.note_tags?.mentions} T={T} />
+                  </div>
+                )}
                 <div style={{ fontSize: 11, color: T.textFaint, marginTop: 3 }}>{timeAgo(a.created_at)}</div>
               </div>
             </div>
