@@ -38,15 +38,28 @@ const decode = s => s.replace(/&amp;/g, '&').replace(/&apos;/g, "'").replace(/&q
 
 // « APPLE INC » → « Apple Inc » (les déclarations sont en majuscules)
 const SMALL = new Set(['of', 'and', 'the', 'de', 'du']);
+// Abréviations des déclarations SEC (« BANK AMER CORP », « ALLY FINL INC »…)
+const ABBREV = {
+  amer: 'america', finl: 'financial', pete: 'petroleum', hldgs: 'holdings', hldg: 'holding', intl: 'international',
+  grp: 'group', svcs: 'services', svc: 'service', sys: 'systems', mgmt: 'management', entmt: 'entertainment',
+  pptys: 'properties', rlty: 'realty', invt: 'investment', mtrs: 'motors', commun: 'communications', ins: 'insurance',
+  pharm: 'pharmaceuticals', natl: 'national', bancorporation: 'bancorporation', tr: 'trust', engy: 'energy', res: 'resources',
+};
+// Mentions juridiques ou de catégorie d'actions en fin de nom (« DEL » = Delaware, « NEW », « CL A »…)
+const TRAILING = /\s+(del|new|com|cl [a-z]|class [a-z]|ser [a-z]|mtn be|sponsored adr|adr|ord|shs)$/i;
 export function prettyName(name) {
-  return decode(name).toLowerCase().replace(/\s+/g, ' ').split(' ').map((w, i) => {
+  let raw = decode(name).toLowerCase().replace(/\s+/g, ' ').trim();
+  while (TRAILING.test(raw)) raw = raw.replace(TRAILING, '');
+  raw = raw.replace(/^bank amer\b/, 'bank of america').replace(/^moodys\b/, "moody's");
+  return raw.split(' ').map(w => ABBREV[w] || w).map((w, i) => {
     if (i > 0 && SMALL.has(w)) return w;
     if (/^(inc|corp|co|ltd|plc|sa|nv|ag|se|llc|lp)\.?$/.test(w)) return w[0].toUpperCase() + w.slice(1);
     return w.replace(/(^|[-/&(])(\p{L})/gu, (_, p, c) => p + c.toUpperCase());
   }).join(' ');
 }
 
-// Positions regroupées par CUSIP (une même action peut figurer sur plusieurs lignes).
+// Positions regroupées par société : une même action peut figurer sur plusieurs lignes,
+// et une société peut avoir plusieurs catégories d'actions (Alphabet A et C).
 // Les options (put / call) sont comptées à part : leur « valeur » est celle du sous-jacent.
 export function parseInfoTable(xml) {
   const byCusip = new Map();
@@ -58,10 +71,12 @@ export function parseInfoTable(xml) {
     const shares = Number(tag(b, 'sshPrnamt'));
     if (!cusip || !Number.isFinite(value)) continue;
     if (tag(b, 'putCall')) { options++; continue; }
-    const cur = byCusip.get(cusip) || { name: prettyName(tag(b, 'nameOfIssuer') || cusip), cusip, value: 0, shares: 0 };
+    const name = prettyName(tag(b, 'nameOfIssuer') || cusip);
+    const key = name.toLowerCase();
+    const cur = byCusip.get(key) || { name, cusip, value: 0, shares: 0 };
     cur.value += value;
     cur.shares += Number.isFinite(shares) ? shares : 0;
-    byCusip.set(cusip, cur);
+    byCusip.set(key, cur);
   }
   const list = [...byCusip.values()];
   const total = list.reduce((s, p) => s + p.value, 0);
@@ -76,12 +91,13 @@ export const round = n => Math.round(n * 10) / 10;
 // Mouvements du trimestre : sens donné par le nombre d'actions (pas par le %, qui
 // bouge aussi avec les cours), puis % du portefeuille avant → après
 export function compare(current, previous) {
-  const prev = new Map(previous.map(p => [p.cusip, p]));
+  // Comparées par nom de société (les catégories d'actions sont regroupées)
+  const prev = new Map(previous.map(p => [p.name.toLowerCase(), p]));
   const moves = [];
   for (const p of current) {
-    const before = prev.get(p.cusip);
+    const before = prev.get(p.name.toLowerCase());
     if (!before) { moves.push({ type: 'new', name: p.name, cusip: p.cusip, before: 0, after: round(p.pct) }); continue; }
-    prev.delete(p.cusip);
+    prev.delete(p.name.toLowerCase());
     const delta = before.shares ? (p.shares - before.shares) / before.shares : 0;
     if (Math.abs(delta) < 0.01) continue; // moins de 1 % d'actions en plus ou en moins : inchangé
     moves.push({ type: delta > 0 ? 'up' : 'down', name: p.name, cusip: p.cusip, before: round(before.pct), after: round(p.pct), sharesChange: Math.round(delta * 100) });
