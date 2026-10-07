@@ -15,7 +15,7 @@ import { RichText, TickerChips, TagSuggestions, TagField } from "./PostText";
 import { tagAtCaret, finalizeTags, hasHashtag } from "../tags";
 import IndexDetail from "./IndexDetail";
 import { detailFor } from "../indices";
-import { fetchFollowedIds, quarterLabel } from "../superInvestors";
+import { fetchFollowedIds, fetchFollowedNews, quarterLabel } from "../superInvestors";
 
 function Avatar({ name, size = 36 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
@@ -144,6 +144,29 @@ function DeclarationMoves({ data, T, onOpenLabel }) {
   );
 }
 
+// Article de presse sur un Super Investor suivi : titre, journal, date ; s'ouvre sur le site du journal
+function NewsFeedCard({ item, T, card, onProfile }) {
+  const { article, investor } = item;
+  return (
+    <div style={card}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+        <button onClick={() => onProfile(investor.id)} title={`Voir le profil de ${investor.name}`}
+          style={{ width: 36, height: 36, borderRadius: 10, background: T.bgSubtle, border: "none", fontSize: 18, cursor: "pointer", flexShrink: 0 }}>{investor.icon}</button>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <button onClick={() => onProfile(investor.id)} style={{ background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: 14, fontWeight: 600, color: T.text, cursor: "pointer" }}>{investor.name}</button>
+          <div style={{ fontSize: 11, color: T.textFaint }}>{timeAgo(item.created_at)}</div>
+        </div>
+        <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: T.bgSubtle, color: T.textMuted, flexShrink: 0 }}>📰 Actualité</span>
+      </div>
+      <a href={article.url} target="_blank" rel="noopener noreferrer"
+        style={{ display: "block", padding: "10px 12px", borderRadius: 10, border: `0.5px solid ${T.border}`, background: T.bgSubtle, textDecoration: "none" }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: T.text, lineHeight: 1.4 }}>{article.title}</div>
+        {article.source && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 4 }}>{article.source}</div>}
+      </a>
+    </div>
+  );
+}
+
 // Posts récents des clubs dont je suis membre (affichés dans le fil, avec « Tout » et « Posts »)
 async function fetchMyClubPosts(userId, hashtag = null) {
   const { data: memberships } = await supabase.from("club_members").select("club_id").eq("user_id", userId);
@@ -207,8 +230,13 @@ async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYP
     for (const c of commentRows || []) (comments[c.activity_id] ||= []).push(c);
   }
   const pollIds = activities.filter(a => a.type === "post" && a.data?.poll).map(a => a.id);
-  const [polls, clubPosts] = await Promise.all([fetchPolls(pollIds, userId), (onlyUserId || focusId) ? [] : fetchMyClubPosts(userId, hashtag)]);
-  return { ids, activities, likes, comments, polls, clubPosts };
+  const [polls, clubPosts, news] = await Promise.all([
+    fetchPolls(pollIds, userId),
+    (onlyUserId || focusId) ? [] : fetchMyClubPosts(userId, hashtag),
+    // Un peu d'actualité des Super Investors suivis (fil principal, périmètre Amis)
+    followed.length ? fetchFollowedNews(userId).catch(() => []) : [],
+  ]);
+  return { ids, activities, likes, comments, polls, clubPosts: [...clubPosts, ...news] };
 }
 
 // « onlyUserId » : version intégrée au profil public — mêmes cartes que le fil, limitées à ce
@@ -640,6 +668,9 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
       )}
 
       {visible.map(activity => {
+        if (activity.kind === "news") {
+          return <NewsFeedCard key={`news-${activity.id}`} item={activity} T={T} card={card} onProfile={id => onViewProfile && onViewProfile(id)} />;
+        }
         if (activity.kind === "club") {
           return (
             <ClubFeedCard key={`club-${activity.id}`} post={activity} T={T} card={card} btnAct={btnAct}
