@@ -182,7 +182,7 @@ function NewsFeedCard({ item, T, card, onProfile, onAsset }) {
   const { article, investor, company } = item;
   const who = investor
     ? { icon: investor.icon, name: investor.name, title: `Voir le profil de ${investor.name}`, open: () => onProfile(investor.id) }
-    : { icon: "🏢", name: company.name, title: `Voir la fiche de ${company.name}`, open: () => onAsset(company) };
+    : { icon: company.type === "Indice" ? "📈" : "🏢", name: company.name, title: `Voir la fiche de ${company.name}`, open: () => onAsset(company) };
   return (
     <div style={card}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
