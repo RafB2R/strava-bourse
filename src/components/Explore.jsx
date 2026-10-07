@@ -67,6 +67,9 @@ async function fetchExploreContext(userId) {
   return { friendIds, pendingIds, myClubIds, clubs: c || [], counts, lastPosts };
 }
 
+// Fiche d'une valeur ouverte depuis la recherche : gardée dans l'adresse (symbole, nom, type)
+const RECHERCHE_URL = { urlKey: "recherche", toUrl: a => ({ symbol: a.symbol, name: a.name, type: a.type }) };
+
 async function searchExplore(query, searchTab, userId) {
   if (searchTab === "assets") return searchAssets(query.trim());
   // Retire les caractères qui ont un sens dans la syntaxe de filtre PostgREST
@@ -94,7 +97,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
   const [users, setUsers] = useState([]);
   const [clubs, setClubs] = useState([]);
   const [assets, setAssets] = useState([]);
-  const [openAsset, showAsset, closeAsset] = useDetailView();   // fiche d'une valeur trouvée par la recherche
+  const [openAsset, showAsset, closeAsset] = useDetailView(RECHERCHE_URL); // fiche d'une valeur trouvée par la recherche
   const [hashtag, setHashtag] = useState(initialHashtag); // page d'un hashtag (clic sur #… dans un post)
   const [allClubs, setAllClubs] = useState([]);
   const [memberCounts, setMemberCounts] = useState({});

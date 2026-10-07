@@ -42,6 +42,14 @@ const TAUX_EUROPE = {
   de: { symbol: "RATE:de", name: "Bund 10 ans", country: "de", isRate: true, periods: ["1y", "5y", "10y", "max"], summary: "Taux auquel l'État allemand emprunte sur 10 ans, la référence de la zone euro. Courbe : moyenne mensuelle officielle publiée par la BCE." },
 };
 
+// Fiches connues de l'écran Marchés, retrouvées par leur symbole après une actualisation
+const KNOWN = [...TAUX, ...Object.values(TAUX_EUROPE), ...FOREX, ...MATIERES, ...CRYPTO];
+const MARCHES_URL = {
+  urlKey: "marches",
+  toUrl: v => ({ symbol: v.symbol, name: v.name, type: v.type }),
+  fromUrl: d => KNOWN.find(k => k.symbol === d.symbol) || detailFor(d),
+};
+
 // Earnings chargés dynamiquement via /api/earnings
 
 // Secteurs chargés dynamiquement via /api/sectors
@@ -160,8 +168,9 @@ export default function Marches({ T: TProp }) {
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
   const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" };
   const [lastUpdate, setLastUpdate] = useState(new Date());
-  // Fiche ouverte (indice, taux, devise…) ; au retour, on revient au même endroit de la page
-  const [openIndex, openDetail, closeDetail] = useDetailView();
+  // Fiche ouverte (indice, taux, devise…) ; au retour, on revient au même endroit de la page,
+  // et une actualisation la rouvre (symbole gardé dans l'adresse)
+  const [openIndex, openDetail, closeDetail] = useDetailView(MARCHES_URL);
   const [rates, setRates] = useState(null);
   const [secteurs, setSecteurs] = useState([]);
   const [earnings, setEarnings] = useState([]);

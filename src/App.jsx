@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { supabase } from "./supabase";
 import { themes, getThemeKey } from "./theme";
+import { clearFicheFromUrl } from "./useDetailView";
 import { syncBadges } from "./badges";
 import { syncMoments } from "./moments";
 import { fetchUnreadTotal } from "./messages";
@@ -204,6 +205,7 @@ export default function App() {
   // Un clic sur un #hashtag (n'importe où) ouvre Explore sur ce hashtag
   useEffect(() => {
     const onHashtag = e => {
+      clearFicheFromUrl();
       setTab("explore");
       setExploreIntent({ hashtag: e.detail });
       setNavKey(k => k + 1);
@@ -284,6 +286,7 @@ export default function App() {
   // « target » : écran à ouvrir dans l'onglet — Explore : { section, club, clubView, hashtag } ;
   // Profil : { section } ; « post » : { activityId }
   function goToTab(id, target = null) {
+    clearFicheFromUrl();
     setTab(id);
     setExploreIntent(target);
     setNavKey(k => k + 1);
