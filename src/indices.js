@@ -12,7 +12,11 @@ export const PERIODS = [
   { id: "1y", label: "1A", long: "1 an" },
   { id: "5y", label: "5A", long: "5 ans" },
   { id: "10y", label: "10A", long: "10 ans" },
+  { id: "max", label: "Max", long: "depuis l'origine" },
 ];
+
+// « sur 5 ans », mais « depuis l'origine »
+export const periodPhrase = p => (p.id === "max" ? p.long : `sur ${p.long}`);
 
 // Période affichée à l'ouverture d'un indice : le long terme d'abord
 export const DEFAULT_PERIOD = "5y";
@@ -129,9 +133,13 @@ export const INDICES = [
 ];
 
 // Historique d'un symbole sur une période (route /api/chart), null en cas d'échec
+// Les taux OAT et Bund (« RATE:fr », « RATE:de ») viennent de l'historique mensuel de la BCE.
 export async function fetchChart(symbol, period) {
   try {
-    const res = await fetch(`/api/chart?symbol=${encodeURIComponent(symbol)}&period=${period}`);
+    const url = symbol.startsWith("RATE:")
+      ? `/api/rates?history=${symbol.slice(5)}&period=${period}`
+      : `/api/chart?symbol=${encodeURIComponent(symbol)}&period=${period}`;
+    const res = await fetch(url);
     return res.ok ? await res.json() : null;
   } catch {
     return null;

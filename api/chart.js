@@ -15,6 +15,7 @@ export const PERIODS = {
   '1y': { range: '1y', interval: '1d', ttl: 3600 },
   '5y': { range: '5y', interval: '1wk', ttl: 21600 },
   '10y': { range: '10y', interval: '1mo', ttl: 21600 },
+  'max': { range: 'max', interval: '1mo', ttl: 86400 },
 };
 
 const YEAR_MS = 365.25 * 24 * 3600 * 1000;
