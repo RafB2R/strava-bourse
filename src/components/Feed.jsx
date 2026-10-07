@@ -49,7 +49,7 @@ function getActivityMeta(activity) {
     return { tag: m.tag, tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: momentSentence(activity.type, d, name), sub: m.sub?.(d) || "", stat: m.stat?.(d) || "" };
   }
   const map = {
-    declaration_13f: { tag: "Déclaration 13F", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} a publié ses mouvements du ${quarterLabel(d.period)}`, sub: `${d.moves_total ?? d.moves?.length ?? 0} changement${(d.moves_total ?? d.moves?.length ?? 0) > 1 ? "s" : ""} · ${d.positions ?? "?"} positions`, stat: "" },
+    declaration_13f: { tag: "Déclaration 13F", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} a publié ses mouvements du ${quarterLabel(d.period)}`, sub: d.positions ? `${d.positions} positions en portefeuille` : "", stat: "" },
     new_position: { tag: "Nouvelle position", tagBg: "rgba(123,184,240,0.1)", tagColor: T.blue, title: `${name} a ajouté une nouvelle position`, sub: d.label, stat: `${d.exposition || d.vehicule || ""}${d.broker ? ` · ${d.broker}` : ""}${d.percentage ? ` · ${d.percentage}%` : ""}` },
     renforcement: { tag: "Renforcement", tagBg: T.accentBg, tagColor: T.accent, title: `${name} a renforcé une position`, sub: d.label, stat: "" },
     vente: { tag: "Vente", tagBg: "rgba(240,153,123,0.1)", tagColor: T.orange, title: `${name} a vendu une position`, sub: d.label, stat: "" },
@@ -101,45 +101,77 @@ function MovementTitle({ meta, label, lookup, onOpenLabel, T }) {
   );
 }
 
-// Mouvements du trimestre d'un Super Investor (carte « Déclaration 13F ») :
-// les 5 premiers, puis « Voir les N mouvements » ; chaque valeur ouvre sa fiche
+// Mouvements du trimestre d'un Super Investor (carte « Déclaration 13F ») : repliée, un
+// résumé (« 3 nouvelles · 8 renforcements… ») et les 3 plus gros mouvements sur une ligne
+// chacun ; dépliée, tous les mouvements avec leur détail. Chaque valeur ouvre sa fiche.
 const DECL_MOVES = {
-  new: { label: "Nouvelle position", up: true },
-  up: { label: "Renforcement", up: true },
-  down: { label: "Allègement", up: false },
-  sold: { label: "Vente totale", up: false },
+  new: { label: "Nouvelle position", short: "Nouvelle", plural: ["nouvelle", "nouvelles"], up: true },
+  up: { label: "Renforcement", short: "Renfort", plural: ["renforcement", "renforcements"], up: true },
+  down: { label: "Allègement", short: "Allègement", plural: ["allègement", "allègements"], up: false },
+  sold: { label: "Vente totale", short: "Vente", plural: ["vente", "ventes"], up: false },
 };
 const fmtPctFr = n => `${String(Math.round(Number(n) * 10) / 10).replace(".", ",")} %`;
+const fmtNum = n => String(Math.round(Number(n) * 10) / 10).replace(".", ",");
 
 function DeclarationMoves({ data, T, onOpenLabel }) {
-  const [all, setAll] = useState(false);
+  const [open, setOpen] = useState(false);
   const moves = data?.moves || [];
   if (!moves.length) return null;
-  const shown = all ? moves : moves.slice(0, 5);
+  // Les 3 mouvements qui pèsent le plus (écart de % du portefeuille)
+  const top = [...moves].sort((a, b) => Math.abs(b.apres - b.avant) - Math.abs(a.apres - a.avant)).slice(0, 3);
+  const counts = Object.entries(DECL_MOVES)
+    .map(([type, meta]) => [meta, moves.filter(m => m.type === type).length])
+    .filter(([, n]) => n > 0);
+  const nameBtn = label => (
+    <button onClick={() => onOpenLabel(label)} title={`Voir le cours de ${label}`}
+      style={{ display: "block", maxWidth: "100%", background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: T.text, textAlign: "left", cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      {label}
+    </button>
+  );
+  const toggle = (
+    <button onClick={() => setOpen(v => !v)} style={{ background: "none", border: "none", padding: "6px 0 0", fontSize: 12, fontWeight: 600, color: T.accent, cursor: "pointer", fontFamily: "inherit" }}>
+      {open ? "Réduire" : `Voir les ${moves.length} mouvements`}
+    </button>
+  );
+
+  if (!open) {
+    return (
+      <div style={{ marginTop: 8 }}>
+        <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>
+          {counts.map(([meta, n]) => `${n} ${meta.plural[n > 1 ? 1 : 0]}`).join(" · ")}
+        </div>
+        {top.map((m, i) => {
+          const meta = DECL_MOVES[m.type] || DECL_MOVES.up;
+          return (
+            <div key={`${m.label}-${i}`} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+              <span style={{ flex: 1, minWidth: 0 }}>{nameBtn(m.label)}</span>
+              <span style={{ fontSize: 11, color: T.textFaint, flexShrink: 0 }}>{meta.short}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: meta.up ? T.accent : T.orange, flexShrink: 0, minWidth: 74, textAlign: "right" }}>{fmtNum(m.avant)} → {fmtPctFr(m.apres)}</span>
+            </div>
+          );
+        })}
+        {moves.length > top.length && toggle}
+      </div>
+    );
+  }
+
   return (
     <div style={{ marginTop: 10 }}>
-      {shown.map((m, i) => {
+      {moves.map((m, i) => {
         const meta = DECL_MOVES[m.type] || DECL_MOVES.up;
         const color = meta.up ? T.accent : T.orange;
         return (
           <div key={`${m.label}-${i}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}` }}>
             <span style={{ flex: 1, minWidth: 0 }}>
-              <button onClick={() => onOpenLabel(m.label)} title={`Voir le cours de ${m.label}`}
-                style={{ display: "block", maxWidth: "100%", background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: T.text, textAlign: "left", cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {m.label}
-              </button>
+              {nameBtn(m.label)}
               <span style={{ fontSize: 11, color: T.textFaint }}>{meta.label}{m.variation != null && (m.type === "up" || m.type === "down") ? ` · ${m.variation > 0 ? "+" : ""}${m.variation} % d'actions` : ""}</span>
             </span>
             <span style={{ fontSize: 12, fontWeight: 700, color, flexShrink: 0 }}>{fmtPctFr(m.avant)} → {fmtPctFr(m.apres)}</span>
           </div>
         );
       })}
-      {moves.length > 5 && (
-        <button onClick={() => setAll(v => !v)} style={{ background: "none", border: "none", padding: "6px 0 0", fontSize: 12, fontWeight: 600, color: T.accent, cursor: "pointer", fontFamily: "inherit" }}>
-          {all ? "Voir moins" : `Voir les ${moves.length} mouvements`}
-        </button>
-      )}
-      {data.moves_total > moves.length && all && <div style={{ fontSize: 11, color: T.textFaint, marginTop: 4 }}>+ {data.moves_total - moves.length} petits mouvements non affichés</div>}
+      {toggle}
+      {data.moves_total > moves.length && <div style={{ fontSize: 11, color: T.textFaint, marginTop: 4 }}>+ {data.moves_total - moves.length} petits mouvements non affichés</div>}
     </div>
   );
 }
