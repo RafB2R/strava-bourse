@@ -172,6 +172,9 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   const [isPending, setIsPending] = useState(false);
   const [compareStats, setCompareStats] = useState(null);
   const [superInv, setSuperInv] = useState(null);     // Super Investor (null pour un membre)
+  const [followBusy, setFollowBusy] = useState(false);
+  const [showAllEntries, setShowAllEntries] = useState(false); // Super Investor : 10 positions, puis « Voir tout »
+  const [followError, setFollowError] = useState("");
 
   const myId = session.user.id;
 
@@ -202,10 +205,18 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   }
 
   // Suivre / ne plus suivre un Super Investor (abonnement immédiat, sans demande)
+  // Un seul clic à la fois ; en cas d'échec, l'état d'avant revient et un message s'affiche
   async function toggleFollow() {
-    const next = !superInv.following;
-    setSuperInv(s => ({ ...s, following: next, followers: s.followers + (next ? 1 : -1) }));
-    if (!(await setFollowing(userId, myId, next))) setSuperInv(s => ({ ...s, following: !next, followers: s.followers + (next ? -1 : 1) }));
+    if (followBusy) return;
+    const before = superInv;
+    const next = !before.following;
+    setFollowBusy(true); setFollowError("");
+    setSuperInv({ ...before, following: next, followers: Math.max(0, before.followers + (next ? 1 : -1)) });
+    if (!(await setFollowing(userId, myId, next))) {
+      setSuperInv(before);
+      setFollowError("Impossible pour le moment. Réessaie plus tard.");
+    }
+    setFollowBusy(false);
   }
 
   const avecPerf = entries.filter(e => e.performance !== null);
@@ -259,10 +270,13 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
             </div>
           </div>
           {superInv ? (
-            <button onClick={toggleFollow} aria-pressed={superInv.following}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+            <button onClick={toggleFollow} disabled={followBusy} aria-pressed={superInv.following}
               style={{ ...btnSm, ...(superInv.following ? { color: T.accent, borderColor: T.accentBorder, background: T.accentBg } : { borderColor: T.accent, background: T.accent, color: T.onAccent, fontWeight: 700 }) }}>
               {superInv.following ? "Suivi ✓" : "+ Suivre"}
             </button>
+            {followError && <span role="alert" style={{ fontSize: 11, color: T.red, maxWidth: 140, textAlign: "right" }}>{followError}</span>}
+            </div>
           ) : userId !== session.user.id && (
             isFriend ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
@@ -339,7 +353,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
           <div style={card}>
             <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Positions ({entries.length})</div>
             {entries.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>{superInv ? "Portefeuille bientôt disponible (mise à jour quotidienne)." : "Aucune position publique"}</div>}
-            {entries.map((e, i) => (
+            {(superInv && !showAllEntries ? entries.slice(0, 10) : entries).map((e, i) => (
               <div key={e.id}>
               <button onClick={() => openAsset(e)} aria-label={`Voir le cours de ${e.label}`}
                 style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}`, background: "none", borderLeft: "none", borderRight: "none", borderBottom: "none", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", opacity: resolving?.id === e.id && !resolving.error ? 0.6 : 1 }}>
@@ -356,6 +370,12 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
               {resolving?.id === e.id && resolving.error && <div role="alert" style={{ fontSize: 12, color: T.red, paddingBottom: 8 }}>{resolving.error}</div>}
               </div>
             ))}
+            {superInv && entries.length > 10 && (
+              <button onClick={() => setShowAllEntries(v => !v)}
+                style={{ width: "100%", padding: "10px 0 2px", background: "none", border: "none", borderTop: `0.5px solid ${T.border}`, fontSize: 13, fontWeight: 600, color: T.accent, cursor: "pointer", fontFamily: "inherit" }}>
+                {showAllEntries ? "Voir moins" : `Voir les ${entries.length} positions`}
+              </button>
+            )}
           </div>
           {superInv?.last_period && (
             <div style={{ fontSize: 11, color: T.textFaint, lineHeight: 1.5, margin: "-4px 4px 12px" }}>
