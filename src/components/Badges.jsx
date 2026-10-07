@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { T as TLive } from "../theme";
-import { BADGE_CATEGORIES, HIDDEN_BADGES, IDENTITIES, EMPTY_METRICS } from "../badges";
+import { BADGE_CATEGORIES, HIDDEN_BADGES, EMPTY_METRICS } from "../badges";
 
 // Premier palier pas encore gagné et progression vers lui (les badges gagnés sont définitifs)
 function getNextAndProgress(cat, value, isEarned) {
@@ -24,14 +24,13 @@ export default function Badges({ badgeState, T: TProp }) {
   function toggle(id) { setFlipped(p => ({ ...p, [id]: !p[id] })); }
 
   const unlockedTotal = BADGE_CATEGORIES.reduce((sum, cat) => sum + cat.levels.filter(isEarnedIn(cat)).length, 0);
-  const myIdentities = IDENTITIES.filter(id => id.condition(metrics));
 
   if (!badgeState) return <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>Chargement des badges…</div>;
 
   return (
     <div>
       <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-        {[["trophees", `🏅 Trophées (${unlockedTotal})`], ["identite", `✨ Identité`], ["cachés", "🔮 Cachés"]].map(([id, label]) => (
+        {[["trophees", `🏅 Trophées (${unlockedTotal})`], ["cachés", "🔮 Cachés"]].map(([id, label]) => (
           <button key={id} onClick={() => setActiveTab(id)} style={{ padding: "6px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${activeTab === id ? T.accent : T.border}`, background: activeTab === id ? T.accentBg : "none", color: activeTab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
             {label}
           </button>
@@ -90,42 +89,6 @@ export default function Badges({ badgeState, T: TProp }) {
               </div>
             );
           })}
-        </div>
-      )}
-
-      {activeTab === "identite" && (
-        <div>
-          <div style={{ fontSize: 13, color: T.textFaint, marginBottom: 16, lineHeight: 1.6 }}>
-            Ton identité d'investisseur se construit avec le temps. Elle ne se choisit pas — elle se révèle.
-          </div>
-          {myIdentities.length === 0 && (
-            <div style={{ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "2rem", textAlign: "center" }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>🌱</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: T.textMuted, marginBottom: 8 }}>Ton identité se construit</div>
-              <div style={{ fontSize: 13, color: T.textFaint }}>Continue d'investir pour révéler qui tu es</div>
-            </div>
-          )}
-          {myIdentities.map(id => (
-            <div key={id.id} style={{ background: T.bgCard, border: `0.5px solid ${T.accentBorder}`, borderRadius: 14, padding: "1.25rem", marginBottom: 10, display: "flex", gap: 14, alignItems: "center" }}>
-              <div style={{ width: 52, height: 52, borderRadius: "50%", background: T.accentBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>{id.icon}</div>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: T.accent, marginBottom: 4 }}>{id.name}</div>
-                <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5 }}>{id.desc}</div>
-              </div>
-            </div>
-          ))}
-          <div style={{ marginTop: 16 }}>
-            <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Identités à débloquer</div>
-            {IDENTITIES.filter(id => !id.condition(metrics)).map(id => (
-              <div key={id.id} style={{ background: T.bgCard, border: `0.5px dashed ${T.borderStrong}`, borderRadius: 14, padding: "1rem 1.25rem", marginBottom: 8, display: "flex", gap: 12, alignItems: "center" }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{id.icon}</div>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: T.textMuted }}>{id.name}</div>
-                  <div style={{ fontSize: 12, color: T.textFaint }}>{id.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
