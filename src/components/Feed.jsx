@@ -534,8 +534,9 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
     if (!error) setComments(p => ({ ...p, [activityId]: (p[activityId] || []).filter(c => c.id !== commentId) }));
   }
 
+  // « Tout » : posts et mouvements ; moments et badges restent dans le filtre « Moments »
   const visibleActivities = activities.filter(a => {
-    if (filter === "all") return true;
+    if (filter === "all") return !MOMENT_TYPES.includes(a.type) && !BADGE_TYPES.includes(a.type);
     if (filter === "posts") return a.type === "post";
     if (filter === "activite") return TRADE_TYPES.includes(a.type);
     if (filter === "moments") return MOMENT_TYPES.includes(a.type) || BADGE_TYPES.includes(a.type);
