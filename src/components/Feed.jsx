@@ -240,7 +240,7 @@ async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYP
 }
 
 // « onlyUserId » : version intégrée au profil public — mêmes cartes que le fil, limitées à ce
-// membre, sans encadré de publication, choix Verio / Mon réseau ni filtres.
+// membre, sans encadré de publication, choix Découvrir / Mon fil ni filtres.
 // « only » : "trades" (onglet Activité, mouvements) ou "posts" (onglet Posts).
 // « hashtag » : page Explore d'un hashtag — ses posts (Verio et mes clubs), sans encadré ni filtres.
 // « focusId » : une seule activité, commentaires ouverts (clic sur une notification).
@@ -255,7 +255,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
   const [clubPosts, setClubPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
-  // Tout Verio par défaut tant que l'application compte peu de membres
+  // « Découvrir » (tout Verio) par défaut tant que l'application compte peu de membres
   const [scope, setScope] = useState("verio");
   const [friendIds, setFriendIds] = useState([]);
   const [likes, setLikes] = useState({});
@@ -638,7 +638,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
 
       {/* Scope */}
       {!embedded && <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-        {[["verio", "🌍 Verio"], ["amis", "👥 Mon réseau"]].map(([id, label]) => (
+        {[["verio", "🔥 Découvrir"], ["amis", "📌 Mon fil"]].map(([id, label]) => (
           <button key={id} onClick={() => { if (id !== scope) { setLoading(true); setScope(id); } }} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${scope === id ? T.accent : T.border}`, background: scope === id ? T.accentBg : "none", color: scope === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
             {label}
           </button>
