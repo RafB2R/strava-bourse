@@ -75,9 +75,8 @@ function QuoteCard({ item, T, onOpen }) {
   return (
     <button onClick={() => onOpen(item)} aria-label={`Voir la fiche ${name}`}
       style={{ background: T.bgSubtle, border: "none", borderRadius: 12, padding: "12px 14px", textAlign: "left", cursor: "pointer", fontFamily: "inherit", width: "100%", minWidth: 0 }}>
-      <div style={{ display: "flex", fontSize: 12, color: T.textMuted, marginBottom: 4 }}>
-        <span style={{ flex: 1 }}>{country && <Flag country={country} size={12} />}{name}</span>
-        <span style={{ color: T.textFaint }}>›</span>
+      <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>
+        {country && <Flag country={country} size={12} />}{name}
       </div>
       {loading ? (
         <div style={{ fontSize: 14, color: T.textFaint }}>…</div>
@@ -120,7 +119,7 @@ function RateTile({ country, name, rates, T, onOpen }) {
   return (
     <button onClick={() => onOpen(TAUX_EUROPE[country])} aria-label={`Voir la fiche ${name}`}
       style={{ background: T.bgSubtle, border: "none", borderRadius: 12, padding: "12px 14px", textAlign: "left", cursor: "pointer", fontFamily: "inherit", width: "100%", minWidth: 0 }}>
-      <div style={{ display: "flex", fontSize: 12, color: T.textMuted, marginBottom: 4 }}><span style={{ flex: 1 }}><Flag country={country} size={12} />{name}</span><span style={{ color: T.textFaint }}>›</span></div>
+      <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}><Flag country={country} size={12} />{name}</div>
       <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>{r ? `${r.value.toFixed(2).replace(".", ",")} %` : rates ? "—" : "…"}</div>
       {r?.change != null && <div style={{ fontSize: 12, color: r.change >= 0 ? T.accent : T.red, marginTop: 2 }}>{r.change >= 0 ? "+" : "−"}{Math.abs(r.change).toFixed(2).replace(".", ",")} pt sur un {r.frequency === "daily" ? "jour" : "mois"}</div>}
       {r && <div style={{ fontSize: 10, color: T.textFaint, marginTop: 2 }}>{fmtRateDate(r)}</div>}
@@ -218,12 +217,14 @@ export default function Marches({ T: TProp }) {
         {!loadingSecteurs && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {secteurs.map(s => (
-              <div key={s.name} style={{ background: T.bgSubtle, borderRadius: 10, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <button key={s.name} aria-label={`Voir la fiche du secteur ${s.name}`}
+                onClick={() => openDetail({ symbol: s.symbol, name: s.name, type: `Secteur S&P 500 · ETF ${s.symbol}`, summary: `Suivi à travers l'ETF ${s.symbol}, qui réplique les entreprises du secteur « ${s.name} » de l'indice S&P 500.` })}
+                style={{ background: T.bgSubtle, border: "none", borderRadius: 10, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%", minWidth: 0 }}>
                 <span style={{ fontSize: 12, color: T.textMuted }}>{s.name}</span>
                 <span style={{ fontSize: 12, fontWeight: 600, color: s.change === null ? T.textFaint : s.change >= 0 ? T.accent : T.red }}>
-                  {s.change === null ? "—" : `${s.change >= 0 ? "+" : ""}${s.change.toFixed(2)}%`}
+                  {s.change === null ? "—" : fmtChange(s.change)}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         )}
