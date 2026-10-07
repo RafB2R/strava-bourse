@@ -235,17 +235,27 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
             ["Positions", entries.length, T.text],
             ["Performance", perfGlobale !== null ? `${perfGlobale >= 0 ? "+" : ""}${perfGlobale.toFixed(1)}%` : "—", perfGlobale !== null ? (perfGlobale >= 0 ? T.accent : T.red) : T.textFaint],
             ["Badges", badges.length, T.text],
-          ].map(([label, val, color]) => (
-            <div key={label} style={{ background: T.bgSubtle, borderRadius: 10, padding: 10, textAlign: "center" }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color }}>{val}</div>
-              <div style={{ fontSize: 11, color: T.textFaint }}>{label}</div>
-            </div>
-          ))}
+          ].map(([label, val, color]) => {
+            // La case Badges ouvre la vitrine des badges (il n'y a plus d'onglet Badges)
+            const isBadges = label === "Badges";
+            const active = isBadges && tab === "badges";
+            const tile = { background: active ? T.accentBg : T.bgSubtle, borderRadius: 10, padding: 10, textAlign: "center", border: `0.5px solid ${active ? T.accent : "transparent"}` };
+            const content = (
+              <>
+                <div style={{ fontSize: 16, fontWeight: 700, color: active ? T.accent : color }}>{val}</div>
+                <div style={{ fontSize: 11, color: active ? T.accent : T.textFaint }}>{label}{isBadges ? " ›" : ""}</div>
+              </>
+            );
+            return isBadges ? (
+              <button key={label} onClick={() => setTab(t => (t === "badges" ? "holdings" : "badges"))} aria-pressed={active} title="Voir ses badges"
+                style={{ ...tile, cursor: "pointer", fontFamily: "inherit", width: "100%" }}>{content}</button>
+            ) : <div key={label} style={tile}>{content}</div>;
+          })}
         </div>
       </div>
 
       <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: `0.5px solid ${T.border}` }}>
-        {[["holdings", "Holdings"], ["activite", "Activité"], ["badges", "Badges"]].map(([id, label]) => (
+        {[["holdings", "Holdings"], ["activite", "Activité"], ["posts", "Posts"]].map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} style={{ flex: 1, padding: "10px 4px", fontSize: 13, fontWeight: tab === id ? 600 : 400, background: "none", border: "none", borderBottom: `2px solid ${tab === id ? T.accent : "transparent"}`, color: tab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
             {label}
           </button>
@@ -288,10 +298,15 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       )}
 
       {/* Mouvements uniquement, avec les mêmes cartes que le fil (bloc factuel, description, likes, commentaires) */}
-      {tab === "activite" && <Feed session={session} T={T} onlyUserId={userId} onViewProfile={onViewProfile} />}
+      {tab === "activite" && <Feed key="trades" session={session} T={T} onlyUserId={userId} only="trades" onViewProfile={onViewProfile} />}
 
+      {/* Ses posts, avec les mêmes cartes que le fil */}
+      {tab === "posts" && <Feed key="posts" session={session} T={T} onlyUserId={userId} only="posts" onViewProfile={onViewProfile} />}
+
+      {/* Vitrine des badges, ouverte depuis la case « Badges » du haut */}
       {tab === "badges" && (
         <div>
+          <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", margin: "4px 0 10px" }}>🏅 Badges débloqués</div>
           {badges.length === 0 && <div style={{ ...card, textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>Aucun badge débloqué</div>}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
             {badges.map(b => {

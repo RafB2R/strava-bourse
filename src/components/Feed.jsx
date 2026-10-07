@@ -75,8 +75,9 @@ const FILTERS = [
 const COMMENT_COLUMNS = "id, activity_id, user_id, content, tags, created_at, author:profiles!activity_comments_user_id_fkey(full_name)";
 
 // Amis acceptés (moi inclus), activités à afficher selon le périmètre, avec leurs likes et commentaires
-// « onlyUserId » : seulement les mouvements de ce membre (onglet Activité d'un profil public)
-async function fetchFeed(userId, scope, onlyUserId = null) {
+// « onlyUserId » : seulement les activités de ce membre, des types « onlyTypes »
+// (onglets Activité et Posts d'un profil public)
+async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYPES) {
   closeFinishedPolls();
   const { data: friendships } = await supabase.from("friendships").select("requester_id, receiver_id").eq("status", "accepted").or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
   const ids = [userId];
@@ -85,7 +86,7 @@ async function fetchFeed(userId, scope, onlyUserId = null) {
     if (f.receiver_id !== userId) ids.push(f.receiver_id);
   });
   let query = supabase.from("activities").select("*, author:profiles!activities_user_id_fkey(full_name, username)").order("created_at", { ascending: false }).limit(100);
-  if (onlyUserId) query = query.eq("user_id", onlyUserId).in("type", TRADE_TYPES);
+  if (onlyUserId) query = query.eq("user_id", onlyUserId).in("type", onlyTypes);
   else {
     query = query.in("type", FEED_TYPES);
     if (scope === "amis") query = query.in("user_id", ids);
@@ -113,9 +114,10 @@ async function fetchFeed(userId, scope, onlyUserId = null) {
   return { ids, activities, likes, comments, polls };
 }
 
-// « onlyUserId » : version intégrée au profil public — mêmes cartes que le fil, limitées aux
-// mouvements de ce membre, sans encadré de publication, choix Amis / Verio ni filtres.
-export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = null }) {
+// « onlyUserId » : version intégrée au profil public — mêmes cartes que le fil, limitées à ce
+// membre, sans encadré de publication, choix Amis / Verio ni filtres.
+// « only » : "trades" (onglet Activité, mouvements) ou "posts" (onglet Posts).
+export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = null, only = "trades" }) {
   const embedded = !!onlyUserId;
   const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
@@ -172,7 +174,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
 
   useEffect(() => {
     let ignore = false;
-    fetchFeed(userId, scope, onlyUserId).then(({ ids, activities, likes, comments, polls }) => {
+    fetchFeed(userId, scope, onlyUserId, only === "posts" ? ["post"] : TRADE_TYPES).then(({ ids, activities, likes, comments, polls }) => {
       if (ignore) return;
       setPolls(polls);
       setFriendIds(ids);
@@ -182,7 +184,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
       setLoading(false);
     });
     return () => { ignore = true; };
-  }, [userId, scope, reloadKey, onlyUserId]);
+  }, [userId, scope, reloadKey, onlyUserId, only]);
 
   // Images choisies (bouton, coller ou glisser-déposer) : compressées tout de suite pour l'aperçu
   async function addImages(fileList) {
@@ -518,10 +520,10 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
         <div style={{ ...card, textAlign: "center", padding: "2.5rem 1rem" }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>👥</div>
           <div style={{ fontSize: 14, fontWeight: 600, color: T.textMuted, marginBottom: 8 }}>
-            {embedded ? "Aucun mouvement pour le moment" : scope === "amis" && friendIds.length <= 1 ? "Ajoute des amis pour voir leurs investissements" : "Aucune activité dans cette catégorie"}
+            {embedded ? (only === "posts" ? "Aucun post pour le moment" : "Aucun mouvement pour le moment") : scope === "amis" && friendIds.length <= 1 ? "Ajoute des amis pour voir leurs investissements" : "Aucune activité dans cette catégorie"}
           </div>
           <div style={{ fontSize: 13, color: T.textFaint, lineHeight: 1.6 }}>
-            {!embedded && scope === "amis" && friendIds.length <= 1 ? "Va dans Explore pour trouver des investisseurs" : "Les mouvements apparaîtront ici automatiquement"}
+            {embedded && only === "posts" ? "Ses publications apparaîtront ici" : !embedded && scope === "amis" && friendIds.length <= 1 ? "Va dans Explore pour trouver des investisseurs" : "Les mouvements apparaîtront ici automatiquement"}
           </div>
         </div>
       )}
