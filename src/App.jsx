@@ -360,7 +360,7 @@ export default function App() {
         <>
           {tab === "feed" && <Feed key={navKey} session={session} T={T} onViewProfile={viewProfile} onOpenClub={club => goToTab("explore", { section: "clubs", club })} />}
           {tab === "explore" && <Explore key={navKey} session={session} T={T} onViewProfile={viewProfile} initialSection={exploreIntent?.section} initialClub={exploreIntent?.club} initialClubView={exploreIntent?.clubView} initialHashtag={exploreIntent?.hashtag} />}
-          {tab === "portfolio" && <Portfolio key={navKey} session={session} T={T} />}
+          {tab === "portfolio" && <Portfolio key={navKey} session={session} T={T} onViewPublic={() => { setPublicUserId(session.user.id); setCompareData(null); window.scrollTo(0, 0); }} />}
           {tab === "messages" && <Messages key={navKey} session={session} T={T} openWith={messageTarget} onOpened={clearMessageTarget} onViewProfile={viewProfile} onUnreadChange={setUnreadMessages} />}
           {tab === "profil" && <Profil key={navKey} profile={profile} session={session} T={T} onViewProfile={viewProfile} initialSection={exploreIntent?.section || "stats"} />}
           {/* Un post ouvert depuis une notification, commentaires ouverts */}
