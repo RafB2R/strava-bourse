@@ -62,6 +62,12 @@ Pistes pour compléter la barre d'outils :
   membre. Activer pg_cron (Database → Extensions) puis relancer la migration
   20261011000001 pour une clôture toutes les 15 minutes.
 
+## Navigation
+
+- **Actualisation** : l'onglet et la fiche d'un cours sont gardés ; pas encore
+  la position dans le fil, la section d'Explore (Clubs…), un club ouvert, un
+  profil public, ni une fiche ouverte depuis un post.
+
 ## Application mobile
 
 Verio s'installe comme une application (PWA) : icône sur l'écran d'accueil,
@@ -108,6 +114,10 @@ comptes arriveront automatiquement :
   l'envoi d'une course.
 - **Regrouper** plusieurs mouvements du même jour en une seule carte
   (« 3 mouvements aujourd'hui »), avec une seule description.
+- **Mention « 🔗 Synchronisé (Powens) »** sur les mouvements importés
+  (`data.source = "powens"`, déjà affichée par le fil) ; les mouvements saisis
+  à la main affichent « ✋ Ajouté manuellement ». Seul le serveur doit pouvoir
+  écrire la source « powens » (sinon n'importe qui peut se dire synchronisé).
 - **Identifier chaque valeur par son ISIN / ticker** (fourni par Powens) et
   le garder dans les positions et les mouvements : tout devient cliquable de
   façon fiable (positions, mouvements, profils publics, valeurs citées),

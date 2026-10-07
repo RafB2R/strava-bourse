@@ -3,7 +3,7 @@ import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
 import { syncBadges } from "../badges";
 import { syncMoments } from "../moments";
-import { tradeActivity } from "../trades";
+import { tradeActivity, TRADE_TYPES } from "../trades";
 import { SHOW_PLUS } from "../features";
 import { fetchMyIncome, incomeStats, incomeTypeFor, fmtYield, fetchDividendInfo, dividendForecast } from "../income";
 import ShareCard from "./ShareCard";
@@ -28,7 +28,10 @@ function calcPerf(a, b) { if (!a || !b || a === 0) return null; return ((b - a) 
 const formatEur2 = n => Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 function formatEur(n) { return n.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + " €"; }
 
+// Les mouvements créés ici sont saisis à la main (source « manual ») ; ceux
+// importés depuis la banque porteront la source « powens »
 async function createActivity(userId, type, data) {
+  if (TRADE_TYPES.includes(type)) data = { ...data, source: "manual" };
   await supabase.from("activities").insert({ user_id: userId, type, data });
 }
 
