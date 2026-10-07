@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { T as TLive } from "../theme";
-import { INDICES, fetchChart, fmtChange } from "../indices";
+import { INDICES, fetchChart, fmtChange, detailFor } from "../indices";
 import IndexDetail, { Sparkline } from "./IndexDetail";
+import EarningsCalendar from "./EarningsCalendar";
 import Flag from "./Flag";
 
 // card défini dynamiquement avec T
@@ -230,32 +231,11 @@ export default function Marches({ T: TProp }) {
         </div>
       </div>
 
-      {/* Résultats d'entreprises */}
+      {/* Résultats d'entreprises : calendrier du mois et liste, chaque entreprise ouvre sa fiche */}
       <div style={card}>
-        <div style={sectionLabel}>📅 Résultats à venir</div>
-        {loadingEarnings && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>Chargement…</div>}
-        {!loadingEarnings && earnings.length === 0 && (
-          <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>Aucun résultat à venir</div>
-        )}
-        {!loadingEarnings && earnings.map((e, i) => {
-          const d = new Date(e.date);
-          const day = d.getDate();
-          const month = d.toLocaleString("fr-FR", { month: "short" });
-          return (
-            <div key={e.company + i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}` }}>
-              <div style={{ width: 44, height: 44, borderRadius: 10, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 13, color: T.accent, fontWeight: 700 }}>{day}</div>
-                  <div style={{ fontSize: 9, color: T.textMuted }}>{month}</div>
-                </div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{e.name || e.company}</div>
-                <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{e.symbol}{e.eps !== null && !isNaN(e.eps) ? ` · BPA estimé : $${Number(e.eps).toFixed(2)}` : ""}</div>
-              </div>
-            </div>
-          );
-        })}
+        <div style={sectionLabel}>📅 Calendrier des résultats</div>
+        <EarningsCalendar earnings={earnings} loading={loadingEarnings} T={T}
+          onOpen={e => { setOpenIndex(detailFor({ symbol: e.symbol, name: e.name, type: "Action" })); window.scrollTo(0, 0); }} />
       </div>
     </div>
   );
