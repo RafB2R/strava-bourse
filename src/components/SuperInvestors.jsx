@@ -3,6 +3,7 @@ import IndexDetail from "./IndexDetail";
 import { useDetailView } from "../useDetailView";
 import { resolveAsset } from "../attachments";
 import { detailFor } from "../indices";
+import { fetchSuperInvestors } from "../superInvestors";
 
 // Super Investors : positions déclarées à la SEC (formulaire 13F), lues par /api/superinvestors.
 // Mise à jour automatique : l'API relit la dernière déclaration (cache 12 h).
@@ -44,8 +45,17 @@ const SUPER_URL = {
   fromUrl: d => SUPER_INVESTORS.find(i => i.cik === d.cik) || null,
 };
 
-export default function SuperInvestors({ T }) {
+// Chaque Super Investor a un vrai profil Verio (on le suit comme un membre) ; tant que
+// les comptes ne sont pas créés en base, la carte ouvre la fiche directe ci-dessous.
+export default function SuperInvestors({ T, onViewProfile }) {
   const [investor, openInvestor, closeInvestor] = useDetailView(SUPER_URL);
+  const [profiles, setProfiles] = useState({}); // cik → user_id
+  useEffect(() => {
+    let ignore = false;
+    fetchSuperInvestors().then(rows => { if (!ignore) setProfiles(Object.fromEntries(rows.map(r => [r.cik, r.user_id]))); }, () => {});
+    return () => { ignore = true; };
+  }, []);
+  const open = inv => (profiles[inv.cik] && onViewProfile ? onViewProfile(profiles[inv.cik]) : openInvestor(inv));
   if (investor) return <InvestorDetail investor={investor} T={T} onBack={closeInvestor} />;
 
   return (
@@ -55,7 +65,7 @@ export default function SuperInvestors({ T }) {
         Mises à jour automatiquement chaque trimestre ; actions cotées aux États-Unis uniquement, publiées jusqu'à 45 jours après la fin du trimestre.
       </div>
       {SUPER_INVESTORS.map(inv => (
-        <button key={inv.cik} onClick={() => openInvestor(inv)} aria-label={`Voir le portefeuille de ${inv.name}`}
+        <button key={inv.cik} onClick={() => open(inv)} aria-label={`Voir le portefeuille de ${inv.name}`}
           style={{ display: "flex", gap: 14, alignItems: "center", width: "100%", textAlign: "left", background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "14px 16px", marginBottom: 10, cursor: "pointer", fontFamily: "inherit", boxShadow: T.cardShadow }}>
           <span style={{ width: 48, height: 48, borderRadius: 14, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>{inv.icon}</span>
           <span style={{ flex: 1, minWidth: 0 }}>

@@ -62,6 +62,15 @@ Pistes pour compléter la barre d'outils :
   membre. Activer pg_cron (Database → Extensions) puis relancer la migration
   20261011000001 pour une clôture toutes les 15 minutes.
 
+## Super Investors
+
+- Profils alimentés par les déclarations 13F (tâche quotidienne
+  /api/superinvestors-sync) : Holdings, Activité (une carte par trimestre),
+  Actualités (Google Actualités). On les suit sans demande d'ami.
+- À voir : en ajouter d'autres (Pabrai, Gates Foundation…), un avatar
+  photo, la carte du fil avec l'icône du gérant au lieu des initiales,
+  « % détenu par les Super Investors » sur la fiche d'une valeur.
+
 ## Navigation
 
 - **Actualisation** : l'onglet et la fiche d'un cours sont gardés ; pas encore

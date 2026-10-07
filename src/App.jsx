@@ -303,7 +303,7 @@ export default function App() {
       if (club) goToTab("explore", { section: "clubs", club });
     };
     if (n.type === "mention" && d.club_id) return openClub(d.club_id);
-    if (["activity_like", "activity_comment", "mention", "poll_ended"].includes(n.type) && d.activity_id != null) return goToTab("post", { activityId: d.activity_id });
+    if (["activity_like", "activity_comment", "mention", "poll_ended", "super_filing"].includes(n.type) && d.activity_id != null) return goToTab("post", { activityId: d.activity_id });
     if (n.type === "post_reaction" && d.post_id != null) {
       const { data: post } = await supabase.from("club_posts").select("club_id").eq("id", d.post_id).single();
       if (post) return openClub(post.club_id);

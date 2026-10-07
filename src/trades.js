@@ -29,8 +29,12 @@ export function tradeTexts(type, d = {}) {
 // Dividendes et coupons n'en font pas partie tant qu'on n'a pas assez d'informations dessus.
 // Origine d'un mouvement : saisi à la main, ou importé des opérations réelles
 // via Powens. Les anciens mouvements, sans source, ont tous été saisis à la main.
-export const tradeSource = data => (data?.source === "powens"
+// Les Super Investors, eux, sont alimentés par leurs déclarations 13F à la SEC.
+export const tradeSource = data => (data?.source === "sec13f"
+  ? { icon: "🏛️", label: "Déclaration 13F (SEC)", title: "D'après la déclaration publique du gérant à la SEC" }
+  : data?.source === "powens"
   ? { icon: "🔗", label: "Synchronisé (Powens)", title: "Importé automatiquement depuis les opérations du compte" }
   : { icon: "✋", label: "Ajouté manuellement", title: "Saisi à la main par l'investisseur" });
 
-export const TRADE_TYPES = ["new_position", "renforcement", "allegement", "vente", "suppression_position", "versement", "retrait", "rebalancement"];
+// declaration_13f : mouvements du trimestre d'un Super Investor, regroupés en une seule carte
+export const TRADE_TYPES = ["new_position", "renforcement", "allegement", "vente", "suppression_position", "versement", "retrait", "rebalancement", "declaration_13f"];

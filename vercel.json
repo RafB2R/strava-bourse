@@ -1,0 +1,5 @@
+{
+  "crons": [
+    { "path": "/api/superinvestors-sync", "schedule": "17 7 * * *" }
+  ]
+}

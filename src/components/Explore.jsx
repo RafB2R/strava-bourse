@@ -59,7 +59,9 @@ async function fetchExploreContext(userId) {
       .in("club_id", myClubIds).order("created_at", { ascending: false }).limit(200);
     for (const post of posts || []) if (!lastPosts[post.club_id]) lastPosts[post.club_id] = post;
   }
-  return { friendIds, pendingIds, myClubIds, clubs: c || [], counts, lastPosts };
+  // Super Investors : on les suit depuis leur profil (pas de demande d'ami)
+  const { data: supers } = await supabase.from("super_investors").select("user_id, icon");
+  return { friendIds, pendingIds, myClubIds, clubs: c || [], counts, lastPosts, superIcons: Object.fromEntries((supers || []).map(x => [x.user_id, x.icon])) };
 }
 
 // Fiche d'une valeur ouverte depuis la recherche : gardée dans l'adresse (symbole, nom, type)
@@ -101,6 +103,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
   const [myClubIds, setMyClubIds] = useState([]);
   const [lastPosts, setLastPosts] = useState({});
   const [contextLoaded, setContextLoaded] = useState(false);
+  const [superIcons, setSuperIcons] = useState({}); // user_id → icône des Super Investors
   // « mes » ou « decouvrir » ; null = choix automatique (mes clubs si j'en ai)
   const [clubView, setClubView] = useState(initialClubView);
   const [loading, setLoading] = useState(false);
@@ -128,6 +131,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
       setAllClubs(ctx.clubs);
       setMemberCounts(ctx.counts);
       setLastPosts(ctx.lastPosts);
+      setSuperIcons(ctx.superIcons);
       setContextLoaded(true);
     });
     return () => { ignore = true; };
@@ -234,13 +238,16 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
 
           {!loading && searchTab === "users" && users.map(u => (
             <div key={u.id} onClick={() => onViewProfile && onViewProfile(u.id)} style={{ ...card(T), display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-              <Avatar name={u.full_name} size={40} />
+              {superIcons[u.id]
+                ? <div style={{ width: 40, height: 40, borderRadius: 12, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{superIcons[u.id]}</div>
+                : <Avatar name={u.full_name} size={40} />}
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}{superIcons[u.id] && <span style={{ marginLeft: 8, padding: "1px 7px", borderRadius: 999, fontSize: 10, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold }}>🏆 Super Investor</span>}</div>
                 <div style={{ fontSize: 12, color: T.textMuted }}>@{u.username}{u.city ? ` · ${u.city}` : ""}{u.strategy ? ` · ${u.strategy}` : ""}</div>
                 {u.streak_mois > 0 && <div style={{ fontSize: 11, color: T.yellow, marginTop: 2 }}>🔥 {u.streak_mois} mois</div>}
               </div>
-              {friendIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.accent }}>✓ Ami</span>
+              {superIcons[u.id] ? null
+                : friendIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.accent }}>✓ Ami</span>
                 : pendingIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.textFaint }}>En attente</span>
                 : <button onClick={e => { e.stopPropagation(); sendRequest(u.id); }} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>+ Suivre</button>}
             </div>
@@ -400,7 +407,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
           )}
 
           {/* Super Investors */}
-          {section === "super" && <SuperInvestors T={T} />}
+          {section === "super" && <SuperInvestors T={T} onViewProfile={onViewProfile} />}
         </>
       )}
     </div>

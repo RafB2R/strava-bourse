@@ -24,6 +24,7 @@ function getNotifMeta(notif) {
     case "moment": return { icon: d.moment_id?.startsWith("anniversaire") ? "🎂" : "🌟", text: momentNotification(d.moment_id) };
     case "mention": return { icon: "💬", text: `${d.from_name} t'a mentionné : « ${d.excerpt} »` };
     case "poll_ended": return { icon: "📊", text: pollEndedText(d) };
+    case "super_filing": return { icon: "🏛️", text: `${d.name || "Un Super Investor"} a publié ses mouvements du trimestre : ${d.moves ?? 0} changement${d.moves > 1 ? "s" : ""}` };
     case "post_reaction": return { icon: d.reaction || "👍", text: `${d.from_name} a réagi à ton post` };
     default: return { icon: "🔔", text: "Nouvelle notification" };
   }
