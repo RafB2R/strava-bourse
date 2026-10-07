@@ -29,7 +29,8 @@ function getNotifMeta(notif) {
   }
 }
 
-export default function Notifications({ session, T: TProp }) {
+// « onOpen(notif) » : ouvre ce dont parle la notification (post, profil, club, badges…)
+export default function Notifications({ session, T: TProp, onOpen }) {
   const T = TProp || TLive;
   const [open, setOpen] = useState(false);
   const [notifs, setNotifs] = useState([]);
@@ -101,8 +102,10 @@ export default function Notifications({ session, T: TProp }) {
             {notifs.map(notif => {
               const meta = getNotifMeta(notif);
               return (
-                <div key={notif.id} onClick={() => !notif.read && markRead(notif.id)}
-                  style={{ display: "flex", gap: 12, padding: "12px 16px", borderBottom: `0.5px solid ${T.border}`, background: notif.read ? "none" : T.accentBg, cursor: notif.read ? "default" : "pointer" }}>
+                <div key={notif.id} role="button" tabIndex={0}
+                  onClick={() => { if (!notif.read) markRead(notif.id); setOpen(false); onOpen?.(notif); }}
+                  onKeyDown={e => { if (e.key === "Enter") { if (!notif.read) markRead(notif.id); setOpen(false); onOpen?.(notif); } }}
+                  style={{ display: "flex", gap: 12, padding: "12px 16px", borderBottom: `0.5px solid ${T.border}`, background: notif.read ? "none" : T.accentBg, cursor: "pointer" }}>
                   <div style={{ width: 36, height: 36, borderRadius: "50%", background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
                     {meta.icon}
                   </div>

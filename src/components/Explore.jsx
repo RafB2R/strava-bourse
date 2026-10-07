@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import Marches from "./Marches";
 import Clubs from "./Clubs";
+import IndexDetail from "./IndexDetail";
+import { searchAssets } from "../attachments";
+import { detailFor } from "../indices";
+import Feed from "./Feed";
 import { supabase } from "../supabase";
 import { syncBadges } from "../badges";
 import { T as TLive, avatarColors } from "../theme";
@@ -63,6 +67,7 @@ async function fetchExploreContext(userId) {
 }
 
 async function searchExplore(query, searchTab, userId) {
+  if (searchTab === "assets") return searchAssets(query.trim());
   // Retire les caractères qui ont un sens dans la syntaxe de filtre PostgREST
   const q = query.replace(/[,()%*\\]/g, " ").trim();
   if (!q) return [];
@@ -81,12 +86,15 @@ function timeAgo(date) {
   return `il y a ${Math.floor(diff / 86400)} j`;
 }
 
-export default function Explore({ session , T: TProp, onViewProfile, initialSection, initialClub = null, initialClubView = null }) {
+export default function Explore({ session , T: TProp, onViewProfile, initialSection, initialClub = null, initialClubView = null, initialHashtag = null }) {
   const T = TProp || TLive;
   const [query, setQuery] = useState("");
   const [searchTab, setSearchTab] = useState("users");
   const [users, setUsers] = useState([]);
   const [clubs, setClubs] = useState([]);
+  const [assets, setAssets] = useState([]);
+  const [openAsset, setOpenAsset] = useState(null);   // fiche d'une valeur trouvée par la recherche
+  const [hashtag, setHashtag] = useState(initialHashtag); // page d'un hashtag (clic sur #… dans un post)
   const [allClubs, setAllClubs] = useState([]);
   const [memberCounts, setMemberCounts] = useState({});
   const [friendIds, setFriendIds] = useState([]);
@@ -132,7 +140,9 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
       setLoading(true);
       const results = await searchExplore(query, searchTab, myId);
       if (ignore) return;
-      if (searchTab === "users") setUsers(results); else setClubs(results);
+      if (searchTab === "users") setUsers(results);
+      else if (searchTab === "assets") setAssets(results);
+      else setClubs(results);
       setLoading(false);
     }, 300);
     return () => { ignore = true; clearTimeout(t); };
@@ -173,22 +183,46 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
     .sort((a, b) => new Date(lastPosts[b.id]?.created_at || 0) - new Date(lastPosts[a.id]?.created_at || 0));
   const activeClubView = clubView || (contextLoaded && myClubIds.length === 0 ? "decouvrir" : "mes");
 
+  // « #div… » tapé dans la recherche : les posts de ce hashtag
+  const typedTag = /^#([\p{L}\p{N}_]{2,30})$/u.exec(query.trim())?.[1]?.toLowerCase() || null;
+  const tagTitle = tag => (
+    <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}>
+      <div style={{ fontSize: 22, fontWeight: 800, color: T.text }}>#{tag}</div>
+      <div style={{ fontSize: 12, color: T.textFaint }}>Posts de Verio et de tes clubs</div>
+    </div>
+  );
+
+  if (hashtag) {
+    return (
+      <div>
+        <button onClick={() => setHashtag(null)} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13, padding: 0, marginBottom: 14, fontFamily: "inherit" }}>← Explore</button>
+        {tagTitle(hashtag)}
+        <Feed key={hashtag} session={session} T={T} hashtag={hashtag} onViewProfile={onViewProfile} onOpenClub={club => setSelectedClub(club)} />
+      </div>
+    );
+  }
+  if (openAsset) return <IndexDetail index={detailFor(openAsset)} T={T} backLabel="← Recherche" onBack={() => setOpenAsset(null)} />;
   if (selectedClub) return <Clubs session={session} T={T} initialClub={selectedClub} onBack={() => setSelectedClub(null)} onViewProfile={onViewProfile} />;
 
   return (
     <div>
       {/* Barre de recherche */}
       <div style={{ position: "relative", marginBottom: 20 }}>
-        <input style={{ ...inp(T), paddingLeft: 40 }} placeholder="Rechercher un investisseur, un club…" autoFocus={initialSection === "amis"} value={query} onChange={e => setQuery(e.target.value)} />
+        <input style={{ ...inp(T), paddingLeft: 40 }} placeholder="Rechercher un investisseur, un club, une valeur, un #hashtag…" autoFocus={initialSection === "amis"} value={query} onChange={e => setQuery(e.target.value)} />
         <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, color: T.textFaint }}>🔍</span>
         {query && <button onClick={() => setQuery("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 14 }}>✕</button>}
       </div>
 
       {/* Résultats de recherche */}
-      {query.length >= 2 ? (
+      {typedTag ? (
+        <div>
+          {tagTitle(typedTag)}
+          <Feed key={typedTag} session={session} T={T} hashtag={typedTag} onViewProfile={onViewProfile} onOpenClub={club => setSelectedClub(club)} />
+        </div>
+      ) : query.length >= 2 ? (
         <div>
           <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-            {[["users", "👤 Investisseurs"], ["clubs", "🏛️ Clubs"]].map(([id, label]) => (
+            {[["users", "👤 Investisseurs"], ["clubs", "🏛️ Clubs"], ["assets", "📈 Valeurs"]].map(([id, label]) => (
               <button key={id} onClick={() => setSearchTab(id)} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${searchTab === id ? T.accent : T.border}`, background: searchTab === id ? T.accentBg : "none", color: searchTab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
                 {label}
               </button>
@@ -207,24 +241,37 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
               </div>
               {friendIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.accent }}>✓ Ami</span>
                 : pendingIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.textFaint }}>En attente</span>
-                : <button onClick={() => sendRequest(u.id)} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>+ Suivre</button>}
+                : <button onClick={e => { e.stopPropagation(); sendRequest(u.id); }} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>+ Suivre</button>}
+            </div>
+          ))}
+
+          {!loading && searchTab === "assets" && assets.map(a => (
+            <div key={a.symbol} role="button" tabIndex={0} onClick={() => { setOpenAsset(a); window.scrollTo(0, 0); }}
+              onKeyDown={e => e.key === "Enter" && setOpenAsset(a)}
+              style={{ ...card(T), display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{a.symbol.replace(/^\^/, "").split(".")[0].slice(0, 5)}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</div>
+                <div style={{ fontSize: 12, color: T.textMuted }}>{a.symbol} · {a.type}{a.exchange ? ` · ${a.exchange}` : ""}</div>
+              </div>
             </div>
           ))}
 
           {!loading && searchTab === "clubs" && clubs.map(club => (
-            <div key={club.id} style={{ ...card(T), display: "flex", alignItems: "center", gap: 12 }}>
+            <div key={club.id} onClick={() => setSelectedClub(club)} style={{ ...card(T), display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
               <div style={{ width: 40, height: 40, borderRadius: 10, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{club.name}</div>
                 <div style={{ fontSize: 12, color: T.textMuted }}>{club.subcategory}</div>
               </div>
               {myClubIds.includes(club.id) ? <span style={{ fontSize: 12, color: T.accent }}>✓ Membre</span>
-                : <button onClick={() => joinClub(club.id)} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>Rejoindre</button>}
+                : <button onClick={e => { e.stopPropagation(); joinClub(club.id); }} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>Rejoindre</button>}
             </div>
           ))}
 
           {!loading && searchTab === "users" && users.length === 0 && <div style={{ fontSize: 13, color: T.textFaint }}>Aucun investisseur trouvé</div>}
           {!loading && searchTab === "clubs" && clubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint }}>Aucun club trouvé</div>}
+          {!loading && searchTab === "assets" && assets.length === 0 && <div style={{ fontSize: 13, color: T.textFaint }}>Aucune valeur trouvée (nom, ticker ou ISIN)</div>}
         </div>
       ) : (
         <>
