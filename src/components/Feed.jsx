@@ -3,7 +3,8 @@ import { supabase } from "../supabase";
 import { T, T as TLive, avatarColors } from "../theme";
 import { badgeFromData } from "../badges";
 import { MOMENTS, MOMENT_TYPES, isMoment, momentSentence } from "../moments";
-import { tradeTexts } from "../trades";
+import { tradeTexts, NOTE_TYPES } from "../trades";
+import MovementNote from "./MovementNote";
 import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage, uploadImages, removeImages, MAX_FILES, FILE_ACCEPT_ATTR, checkFile, uploadFiles, removeFiles } from "../media";
 import { makePoll, isValidPoll, fetchPolls, vote, closeFinishedPolls } from "../polls";
 import { PostImages, ComposerPreviews, PostFiles, ComposerFiles, PollEditor, PollView } from "./PostMedia";
@@ -559,6 +560,11 @@ export default function Feed({ session, T: TProp, onViewProfile }) {
                 {meta.sub && <div style={{ fontSize: 13, color: T.textMuted, marginTop: 3 }}>{meta.sub}</div>}
                 {meta.stat && <span style={{ display: "inline-block", marginTop: 8, padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 500, background: meta.tagBg, color: meta.tagColor }}>{meta.stat}</span>}
               </div>
+            )}
+            {NOTE_TYPES.includes(activity.type) && (
+              <MovementNote activity={activity} isMe={isMe} myId={userId} T={T}
+                onSaved={updated => setActivities(list => list.map(a => (a.id === updated.id ? updated : a)))}
+                onAsset={openAssetDetail} onProfile={id => onViewProfile && onViewProfile(id)} />
             )}
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>

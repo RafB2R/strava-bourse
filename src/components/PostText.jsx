@@ -29,8 +29,14 @@ export function RichText({ text, tickers = [], mentions = [], T, onAsset, onProf
     const mention = sign === "@" && byUser.get(value.toLowerCase());
     if (!ticker && !mention) continue;
     parts.push(text.slice(last, start));
+    const handler = ticker ? onAsset : onProfile;
+    if (!handler) {
+      parts.push(<span key={start} title={ticker ? ticker.name : mention.full_name} style={{ fontWeight: 700, color: T.accent }}>{sign}{value}</span>);
+      last = end;
+      continue;
+    }
     parts.push(
-      <button key={start} onClick={() => (ticker ? onAsset?.(ticker) : onProfile?.(mention.id))}
+      <button key={start} onClick={() => (ticker ? onAsset(ticker) : onProfile(mention.id))}
         title={ticker ? ticker.name : mention.full_name}
         style={{ background: "none", border: "none", padding: 0, font: "inherit", fontWeight: 700, color: T.accent, cursor: "pointer" }}>
         {sign}{value}
