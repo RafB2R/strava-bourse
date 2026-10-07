@@ -72,14 +72,37 @@ Suites possibles :
 
 ## Mouvements (trades)
 
-Les mouvements sont factuels et créés automatiquement (aujourd'hui quand on
-modifie son portefeuille, demain via Powens). Leur auteur peut ensuite y
-ajouter un commentaire, comme la description d'une course Strava
-(set_activity_note). Pistes :
+Les mouvements sont des données factuelles, en % uniquement (jamais de
+montant) : nouvelle position, renforcement, allègement, vente, versement,
+retrait, rééquilibrage. Ce sont les seules « activités » : filtre Activité
+du fil et onglet Activité du profil public. L'auteur peut y ajouter une
+description (bouton « ✏️ Ajouter une description », set_activity_note).
 
-- **Powens** : créer les mouvements depuis les opérations réelles des
-  comptes, toujours en % (jamais de montant), puis proposer à l'auteur
-  « Ajoute un commentaire à ton renforcement de TotalEnergies ? ».
-- **Regrouper** plusieurs mouvements du même jour en une seule activité
-  (« 3 mouvements aujourd'hui »), comme Strava regroupe une séance.
+Aujourd'hui, un renforcement ou un allègement n'est créé que si l'on modifie
+le **%** d'une position dans Portef. ; une vente, si l'on supprime la position.
+
+## ⭐ Important — en attente de Powens
+
+Tout ce qui suit sera fait avec Powens, quand les opérations réelles des
+comptes arriveront automatiquement :
+
+- **Créer les mouvements depuis les opérations réelles** (achats, ventes,
+  versements, retraits), toujours traduits en % du portefeuille.
+- **Créer les mouvements dans la base** (trigger), et non plus depuis le
+  navigateur : ils apparaissent quelle que soit la source, et personne ne
+  peut fabriquer un faux mouvement (aujourd'hui l'application insère
+  elle-même ses activités).
+- **Détecter le renforcement par le nombre de parts** (plus de parts =
+  renforcement, moins = allègement, zéro = vente), et pas seulement par le %.
+- **Harmoniser la carte « Nouvelle position »** avec les autres mouvements :
+  « 0 % → 35 % du portefeuille · Actions · Saxo ».
+- **Dividendes et coupons** : les remettre dans les mouvements quand on aura
+  les vrais montants reçus (rendement en %, régularité).
+- **Proposer la description juste après le mouvement** : « Ajoute un mot sur
+  ton renforcement de TotalEnergies ? » (notification), comme Strava après
+  l'envoi d'une course.
+- **Regrouper** plusieurs mouvements du même jour en une seule carte
+  (« 3 mouvements aujourd'hui »), avec une seule description.
+- **% détenu sur les valeurs citées** ($TTE.PA → « 16,7 % du portefeuille
+  de l'auteur », façon Blossom) : relier les positions aux tickers.
 

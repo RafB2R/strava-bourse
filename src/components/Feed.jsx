@@ -151,6 +151,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
   const [dismissedTag, setDismissedTag] = useState(null);
   const textRef = useRef(null);
   const [openAsset, setOpenAsset] = useState(null);           // fiche ouverte depuis un post
+  const [noteEditing, setNoteEditing] = useState(null);       // mouvement dont l'auteur écrit la description
   const feedScroll = useRef(0);
   const [polls, setPolls] = useState({ counts: {}, mine: {} });
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -572,6 +573,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
             )}
             {TRADE_TYPES.includes(activity.type) && (
               <MovementNote activity={activity} isMe={isMe} myId={userId} T={T}
+                editing={noteEditing === activity.id} onEditingChange={on => setNoteEditing(on ? activity.id : null)}
                 onSaved={updated => setActivities(list => list.map(a => (a.id === updated.id ? updated : a)))}
                 onAsset={openAssetDetail} onProfile={id => onViewProfile && onViewProfile(id)} />
             )}
@@ -583,6 +585,12 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
               <button onClick={() => toggleComment(activity.id)} style={btnAct}>
                 💬 {activityComments.length > 0 ? activityComments.length : "Commenter"}
               </button>
+              {isMe && TRADE_TYPES.includes(activity.type) && !activity.note && noteEditing !== activity.id && (
+                <button onClick={() => setNoteEditing(activity.id)} title="Explique ce mouvement : ta stratégie, ton ressenti…"
+                  style={{ ...btnAct, border: "none", color: T.textMuted }}>
+                  ✏️ Ajouter une description
+                </button>
+              )}
               {isMe && activity.type === "post" && (
                 confirmDelete === activity.id ? (
                   <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
