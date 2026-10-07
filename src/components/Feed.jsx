@@ -73,7 +73,7 @@ const FILTERS = [
   { id: "moments", label: "Moments" },
 ];
 
-const COMMENT_COLUMNS = "id, activity_id, user_id, content, tags, created_at, author:profiles!activity_comments_user_id_fkey(full_name)";
+const COMMENT_COLUMNS = "id, activity_id, user_id, content, tags, created_at, author:profiles!activity_comments_user_id_fkey(full_name, username)";
 
 // Amis acceptés (moi inclus), activités à afficher selon le périmètre, avec leurs likes et commentaires
 // Posts récents des clubs dont je suis membre (affichés dans le fil, avec « Tout » et « Posts »)
@@ -571,6 +571,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(activity.user_id)}>
                   {activity.author?.full_name}
+                  {activity.author?.username && <span style={{ fontSize: 12, fontWeight: 400, color: T.textFaint, marginLeft: 6 }}>@{activity.author.username}</span>}
                   {isMe && <span style={{ fontSize: 11, color: T.textFaint, marginLeft: 6 }}>· moi</span>}
                 </div>
                 <div style={{ fontSize: 12, color: T.textFaint }}>{timeAgo(activity.created_at)}</div>
@@ -643,7 +644,10 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
                     <Avatar name={c.author?.full_name} size={26} />
                     <div style={{ background: T.bgSubtle, borderRadius: 8, padding: "7px 10px", flex: 1 }}>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(c.user_id)}>{c.author?.full_name || "Investisseur"}</div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(c.user_id)}>
+                          {c.author?.full_name || "Investisseur"}
+                          {c.author?.username && <span style={{ fontWeight: 400, color: T.textFaint, marginLeft: 5 }}>@{c.author.username}</span>}
+                        </div>
                         <div style={{ fontSize: 11, color: T.textFaint, flex: 1 }}>{timeAgo(c.created_at)}</div>
                         {(c.user_id === userId || isMe) && (
                           <button onClick={() => deleteComment(activity.id, c.id)} title="Supprimer" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, padding: 0 }}>✕</button>

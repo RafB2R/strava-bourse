@@ -100,6 +100,7 @@ function Post({ post, session, isMember, onReact, onDelete, onAsset, onProfile }
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{post.author?.full_name}</span>
+            {post.author?.username && <span style={{ fontSize: 12, color: T.textFaint }}>@{post.author.username}</span>}
             <span style={{ fontSize: 11, color: T.textFaint }}>{timeAgo(post.created_at)}</span>
             {post.user_id === session.user.id && (
               <button onClick={() => onDelete(post.id)} style={{ marginLeft: "auto", background: "transparent", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 11, fontFamily: "inherit" }}>✕</button>
@@ -135,6 +136,7 @@ function Post({ post, session, isMember, onReact, onDelete, onAsset, onProfile }
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{reply.author?.full_name}</span>
+                  {reply.author?.username && <span style={{ fontSize: 11, color: T.textFaint }}>@{reply.author.username}</span>}
                   <span style={{ fontSize: 11, color: T.textFaint }}>{timeAgo(reply.created_at)}</span>
                   {reply.user_id === session.user.id && <button onClick={() => deleteReply(reply.id)} style={{ marginLeft: "auto", background: "transparent", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 11, fontFamily: "inherit" }}>✕</button>}
                 </div>
