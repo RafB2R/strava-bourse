@@ -23,5 +23,8 @@ export function tradeTexts(type, d = {}) {
   };
 }
 
-// Mouvements automatiques sur lesquels l'auteur peut ajouter un commentaire (voir set_activity_note)
-export const NOTE_TYPES = ["new_position", "renforcement", "allegement", "vente", "suppression_position", "dividende", "coupon", "versement", "retrait", "rebalancement", "new_broker"];
+// Mouvements (trades) : données factuelles créées automatiquement, en % uniquement.
+// C'est tout ce que montrent le filtre « Activité » du fil et l'onglet Activité d'un profil
+// public ; l'auteur peut y ajouter une description (voir set_activity_note).
+// Dividendes et coupons n'en font pas partie tant qu'on n'a pas assez d'informations dessus.
+export const TRADE_TYPES = ["new_position", "renforcement", "allegement", "vente", "suppression_position", "versement", "retrait", "rebalancement"];
