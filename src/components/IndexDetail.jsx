@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { T as TLive } from "../theme";
 import Flag from "./Flag";
 import { PERIODS, DEFAULT_PERIOD, TOP5_UPDATED, fetchChart, fmtChange, periodPhrase } from "../indices";
+import { supabase } from "../supabase";
+import { isFollowingAsset, setFollowingAsset, newsName } from "../assetFollows";
+import NewsList from "./NewsList";
 
 // 0 décimale au-delà de 1 000, 4 sous 10 (devises), 2 sinon
 const fmtPrice = p => (p === null || p === undefined ? "—" : p.toLocaleString("fr-FR", { maximumFractionDigits: p > 1000 ? 0 : p < 10 ? 4 : 2 }));
@@ -101,6 +104,37 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
     return () => { ignore = true; };
   }, [index, period]);
 
+  // Société (action) : on peut la suivre, et la fiche montre ses chiffres clés et ses actualités
+  const isCompany = index.type === "Action";
+  const [me, setMe] = useState(null);
+  const [follow, setFollow] = useState({ symbol: null, on: false, busy: false, error: "" });
+  const [keyFacts, setKeyFacts] = useState(null); // { symbol, year, ytd }
+
+  useEffect(() => {
+    if (!isCompany) return;
+    let ignore = false;
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const id = session?.user?.id;
+      if (!id || ignore) return;
+      const on = await isFollowingAsset(id, index.symbol).catch(() => false);
+      if (!ignore) { setMe(id); setFollow({ symbol: index.symbol, on, busy: false, error: "" }); }
+    });
+    Promise.all([fetchChart(index.symbol, "1y"), fetchChart(index.symbol, "ytd")])
+      .then(([year, ytd]) => { if (!ignore) setKeyFacts({ symbol: index.symbol, year, ytd }); });
+    return () => { ignore = true; };
+  }, [isCompany, index.symbol]);
+
+  async function toggleFollow() {
+    if (!me || follow.busy) return;
+    const next = !follow.on;
+    setFollow(f => ({ ...f, on: next, busy: true, error: "" }));
+    const ok = await setFollowingAsset(me, { symbol: index.symbol, name: index.name, type: index.type }, next);
+    setFollow(f => ({ ...f, on: ok ? next : !next, busy: false, error: ok ? "" : "Impossible pour le moment." }));
+  }
+
+  const facts = keyFacts?.symbol === index.symbol ? keyFacts : null;
+  const followReady = follow.symbol === index.symbol;
+
   const data = chart?.period === period ? chart.data : null;
   const loading = chart?.period !== period;
   // Taux : écart en points entre le début et la fin de la période
@@ -118,7 +152,16 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
           <div style={{ fontSize: 22, fontWeight: 800, color: T.text }}>{index.country && <Flag country={index.country} size={18} />}{index.name}</div>
           <div style={{ fontSize: 13, color: T.textFaint }}>{index.symbol.startsWith("RATE:") ? "BCE · moyenne mensuelle" : index.symbol}{index.type ? ` · ${index.type}` : ""}</div>
+          {isCompany && followReady && (
+            <button onClick={toggleFollow} disabled={follow.busy} aria-pressed={follow.on}
+              title={follow.on ? "Ne plus suivre cette société" : "Suivre cette société : ses actualités arriveront dans ton fil"}
+              style={{ marginLeft: "auto", padding: "5px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                ...(follow.on ? { background: T.accentBg, border: `0.5px solid ${T.accentBorder}`, color: T.accent } : { background: T.accent, border: `0.5px solid ${T.accent}`, color: T.onAccent }) }}>
+              {follow.on ? "Suivi ✓" : "+ Suivre"}
+            </button>
+          )}
         </div>
+        {follow.error && <div role="alert" style={{ fontSize: 12, color: T.red, marginTop: 6 }}>{follow.error}</div>}
         {index.summary && <div style={{ fontSize: 14, color: T.textMuted, lineHeight: 1.6, margin: "10px 0 14px" }}>{index.summary}</div>}
         {index.facts && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginBottom: 12 }}>
           {index.facts.map(([label, value]) => (
@@ -152,6 +195,35 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
         {!loading && !data && <div style={{ height: 250, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: T.textFaint }}>Données indisponibles pour le moment.</div>}
         {!loading && data && data.points.length > 1 && <LineChart key={period} points={data.points} period={period} color={color} T={T} fmt={fmtValue} />}
       </div>
+
+      {/* Société : chiffres clés (sur un an) et actualités */}
+      {isCompany && facts && (facts.year || facts.ytd) && (
+        <div style={card}>
+          <div style={sectionLabel}>📌 Chiffres clés</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
+            {[
+              ["Depuis le 1er janvier", facts.ytd ? fmtChange(facts.ytd.change) : "—", facts.ytd?.change == null ? T.text : facts.ytd.change >= 0 ? T.accent : T.red],
+              ["Sur 1 an", facts.year ? fmtChange(facts.year.change) : "—", facts.year?.change == null ? T.text : facts.year.change >= 0 ? T.accent : T.red],
+              ["Plus haut 1 an", facts.year ? fmtValue(facts.year.high) : "—", T.text],
+              ["Plus bas 1 an", facts.year ? fmtValue(facts.year.low) : "—", T.text],
+              ["Dividende 12 mois", facts.year?.dividends ? `${fmtPrice(facts.year.dividends)}${facts.year.currency ? ` ${facts.year.currency}` : ""}` : "Aucun", T.text],
+              ["Rendement", facts.year?.dividendYield ? `${facts.year.dividendYield.toFixed(1).replace(".", ",")} %` : "—", T.text],
+            ].map(([label, value, color]) => (
+              <div key={label} style={{ background: T.bgSubtle, borderRadius: 10, padding: "10px 12px" }}>
+                <div style={{ fontSize: 11, color: T.textFaint, marginBottom: 2 }}>{label}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color }}>{value}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: T.textFaint, marginTop: 8 }}>Cours de clôture, dividendes versés sur les 12 derniers mois.</div>
+        </div>
+      )}
+      {isCompany && (
+        <div>
+          <div style={{ ...sectionLabel, margin: "4px 4px 8px" }}>📰 Actualités</div>
+          <NewsList query={`"${newsName(index.name)}"`} T={T} />
+        </div>
+      )}
 
       {/* Top 5 (indices seulement) */}
       {top5.length > 0 && <div style={card}>

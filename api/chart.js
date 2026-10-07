@@ -2,7 +2,8 @@ export const config = { runtime: 'edge' };
 
 // Historique de cours (Yahoo Finance) pour un indice ou une action.
 // GET /api/chart?symbol=^FCHI&period=5y
-// → { symbol, currency, price, points: [[timestamp_ms, cours], ...], change, annualized }
+// → { symbol, currency, price, points: [[timestamp_ms, cours], ...], change, annualized, high, low }
+// Sur 1 an, aussi les dividendes versés : dividends (par action, 12 mois) et dividendYield (%)
 
 // Pas de temps et durée de cache selon la période
 export const PERIODS = {
@@ -36,7 +37,14 @@ export function summarizeChart(json, period) {
   const change = base ? ((last - base) / base) * 100 : null;
   const years = (points[points.length - 1][0] - points[0][0]) / YEAR_MS;
   const annualized = years >= 0.95 && base > 0 && last > 0 ? (Math.pow(last / base, 1 / years) - 1) * 100 : null;
-  return { currency: meta.currency || null, price: last, points, change, annualized };
+  const closesOnly = points.map(p => p[1]);
+  const out = { currency: meta.currency || null, price: last, points, change, annualized, high: Math.max(...closesOnly), low: Math.min(...closesOnly) };
+  const divs = Object.values(result.events?.dividends || {}).map(d => Number(d.amount)).filter(a => a > 0);
+  if (period === '1y') {
+    out.dividends = divs.length ? divs.reduce((a, b) => a + b, 0) : 0;
+    out.dividendYield = out.dividends && last ? (out.dividends / last) * 100 : 0;
+  }
+  return out;
 }
 
 export default async function handler(req) {
@@ -48,7 +56,7 @@ export default async function handler(req) {
   }
   const { range, interval, ttl } = PERIODS[period];
   try {
-    const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}`;
+    const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}${period === '1y' ? '&events=div' : ''}`;
     const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
     const summary = summarizeChart(await res.json(), period);
     if (!summary) return new Response(JSON.stringify({ error: 'Pas de données' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
