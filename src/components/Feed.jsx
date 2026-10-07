@@ -63,11 +63,13 @@ function getActivityMeta(activity) {
   return map[activity.type] || { tag: "Activité", tagBg: "rgba(128,128,128,0.1)", tagColor: "#888", title: `${name} a eu une activité`, sub: "", stat: "" };
 }
 
+// Posts : ce que les membres écrivent · Activité : les mouvements (factuels)
+// Moments : moments automatiques et badges
 const FILTERS = [
   { id: "all", label: "Tout" },
+  { id: "posts", label: "Posts" },
   { id: "activite", label: "Activité" },
   { id: "moments", label: "Moments" },
-  { id: "badges", label: "Badges 🏅" },
 ];
 
 const COMMENT_COLUMNS = "id, activity_id, user_id, content, tags, created_at, author:profiles!activity_comments_user_id_fkey(full_name)";
@@ -392,9 +394,9 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
 
   const visible = activities.filter(a => {
     if (filter === "all") return true;
+    if (filter === "posts") return a.type === "post";
     if (filter === "activite") return TRADE_TYPES.includes(a.type);
-    if (filter === "moments") return MOMENT_TYPES.includes(a.type);
-    if (filter === "badges") return BADGE_TYPES.includes(a.type);
+    if (filter === "moments") return MOMENT_TYPES.includes(a.type) || BADGE_TYPES.includes(a.type);
     return true;
   });
 
