@@ -108,6 +108,11 @@ comptes arriveront automatiquement :
   l'envoi d'une course.
 - **Regrouper** plusieurs mouvements du même jour en une seule carte
   (« 3 mouvements aujourd'hui »), avec une seule description.
+- **Identifier chaque valeur par son ISIN / ticker** (fourni par Powens) et
+  le garder dans les positions et les mouvements : tout devient cliquable de
+  façon fiable (positions, mouvements, profils publics, valeurs citées),
+  sans deviner la valeur à partir de son nom comme aujourd'hui
+  (resolveAsset dans src/attachments.js).
 - **% détenu sur les valeurs citées** ($TTE.PA → « 16,7 % du portefeuille
   de l'auteur », façon Blossom) : relier les positions aux tickers.
 

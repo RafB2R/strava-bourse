@@ -215,10 +215,16 @@ export default function App() {
     return () => window.removeEventListener("verio:hashtag", onHashtag);
   }, []);
 
-  // Retire ?tab=… de l'adresse une fois l'onglet ouvert (un rechargement revient au fil)
+  // L'onglet ouvert est gardé dans l'adresse (?tab=explore) : actualiser la page y reste.
+  // Le fil n'a pas de paramètre ; « source=pwa » (lancement depuis l'icône) est retiré.
   useEffect(() => {
-    if (urlTab || window.location.search.includes("source=pwa")) window.history.replaceState(null, "", window.location.pathname + window.location.hash);
-  }, [urlTab]);
+    const params = new URLSearchParams(window.location.search);
+    params.delete("source");
+    if (URL_TABS.includes(tab) && tab !== "feed") params.set("tab", tab); else params.delete("tab");
+    const qs = params.toString();
+    const next = window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash;
+    if (next !== window.location.pathname + window.location.search + window.location.hash) window.history.replaceState(null, "", next);
+  }, [tab]);
 
   useEffect(() => {
     const handler = () => { setIsDesktop(window.innerWidth > 900); setZoom(desktopZoom()); };
