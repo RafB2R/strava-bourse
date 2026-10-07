@@ -19,6 +19,7 @@ export async function setFollowing(investorId, myId, follow) {
   const { error } = follow
     ? await q.insert({ user_id: myId, investor_id: investorId })
     : await q.delete().eq("user_id", myId).eq("investor_id", investorId);
+  if (error) console.error("Abonnement Super Investor :", error.message);
   return !error;
 }
 

@@ -15,7 +15,7 @@ const tag = (block, name) => {
   return m ? decode(m[1]) : null;
 };
 
-export function parseRss(xml, limit = 15) {
+export function parseRss(xml, limit = 8) {
   const items = xml.match(/<item>[\s\S]*?<\/item>/gi) || [];
   const out = [];
   for (const it of items) {
