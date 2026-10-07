@@ -393,9 +393,10 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       {tab === "holdings" && (
         <div>
           {entries.length > 0 && (
-            // Répartition et courbe de performance côte à côte (l'une sous l'autre sur mobile)
+            // Courbe de performance puis répartition, côte à côte (l'une sous l'autre sur mobile)
             <div className="holdings-top" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12, marginBottom: 12 }}>
               <style>{`@media (max-width: 760px) { .holdings-top { grid-template-columns: minmax(0, 1fr) !important; } }`}</style>
+              <PerfHistory T={T} card={{ ...card, marginBottom: 0 }} />
               <div style={{ ...card, marginBottom: 0 }}>
                 <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Allocation</div>
                 <PieChart
@@ -404,7 +405,6 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
                   count={entries.length}
                 />
               </div>
-              <PerfHistory T={T} card={{ ...card, marginBottom: 0 }} />
             </div>
           )}
           <div style={card}>
