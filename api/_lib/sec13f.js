@@ -76,7 +76,8 @@ export function parseInfoTable(xml) {
     if (tag(b, 'putCall')) { options++; continue; }
     const name = prettyName(tag(b, 'nameOfIssuer') || cusip);
     const key = name.toLowerCase();
-    const cur = byCusip.get(key) || { name, cusip, value: 0, shares: 0 };
+    const cur = byCusip.get(key) || { name, cusip, cusips: [], value: 0, shares: 0 };
+    if (!cur.cusips.includes(cusip)) cur.cusips.push(cusip);
     cur.value += value;
     cur.shares += Number.isFinite(shares) ? shares : 0;
     byCusip.set(key, cur);
@@ -84,7 +85,7 @@ export function parseInfoTable(xml) {
   const list = [...byCusip.values()];
   const total = list.reduce((s, p) => s + p.value, 0);
   const positions = list
-    .map(p => ({ name: p.name, cusip: p.cusip, shares: p.shares, pct: total ? (p.value / total) * 100 : 0 }))
+    .map(p => ({ name: p.name, cusip: p.cusip, cusips: p.cusips, shares: p.shares, pct: total ? (p.value / total) * 100 : 0 }))
     .sort((a, b) => b.pct - a.pct);
   return { positions, options };
 }
@@ -94,13 +95,16 @@ export const round = n => Math.round(n * 10) / 10;
 // Mouvements du trimestre : sens donné par le nombre d'actions (pas par le %, qui
 // bouge aussi avec les cours), puis % du portefeuille avant → après
 export function compare(current, previous) {
-  // Comparées par nom de société (les catégories d'actions sont regroupées)
-  const prev = new Map(previous.map(p => [p.name.toLowerCase(), p]));
+  // Même société d'un trimestre à l'autre : un CUSIP en commun (la SEC peut changer
+  // le nom, « BANK AMER CORP » → « BANK OF AMERICA CORP »), sinon le même nom
+  const prev = new Set(previous);
+  const find = p => [...prev].find(q => (q.cusips || [q.cusip]).some(c => (p.cusips || [p.cusip]).includes(c)))
+    || [...prev].find(q => q.name.toLowerCase() === p.name.toLowerCase());
   const moves = [];
   for (const p of current) {
-    const before = prev.get(p.name.toLowerCase());
+    const before = find(p);
     if (!before) { moves.push({ type: 'new', name: p.name, cusip: p.cusip, before: 0, after: round(p.pct) }); continue; }
-    prev.delete(p.name.toLowerCase());
+    prev.delete(before);
     const delta = before.shares ? (p.shares - before.shares) / before.shares : 0;
     if (Math.abs(delta) < 0.01) continue; // moins de 1 % d'actions en plus ou en moins : inchangé
     moves.push({ type: delta > 0 ? 'up' : 'down', name: p.name, cusip: p.cusip, before: round(before.pct), after: round(p.pct), sharesChange: Math.round(delta * 100) });

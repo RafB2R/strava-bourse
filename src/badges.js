@@ -66,35 +66,15 @@ export const BADGE_CATEGORIES = [
       { medal: "💎", name: "x10", desc: "+1000 % de performance totale", target: 1000 },
     ],
   },
-  {
-    id: "community", icon: "🤝", name: "Community", desc: "Investir mieux, ensemble.",
-    metric: "clubs", unit: "clubs",
-    levels: [
-      { medal: "🥉", name: "Premier pas", desc: "Rejoindre un club", target: 1 },
-      { medal: "🥈", name: "Membre actif", desc: "Membre de 3 clubs", target: 3 },
-      { medal: "🥇", name: "Pilier", desc: "Membre de 5 clubs", target: 5 },
-      { medal: "💎", name: "Mentor", desc: "Membre de 10 clubs", target: 10 },
-    ],
-  },
 ];
 
 // soon : pas encore attribuable, affiché comme « bientôt »
 export const HIDDEN_BADGES = [
   { id: "birthday", icon: "🎂", name: "Birthday Investor", desc: "Investir le jour de ton anniversaire" },
-  { id: "night_owl", icon: "🌙", name: "Night Owl", desc: "Premier investissement de nuit", soon: true },
   { id: "xmas", icon: "🎄", name: "Christmas Investor", desc: "Investi le 25 décembre", soon: true },
   { id: "never_panic", icon: "🧘", name: "Never Panic", desc: "Traverser un bear market sans toucher son allocation", soon: true },
   { id: "diamond_hands", icon: "💎", name: "Diamond Hands", desc: "Garder une position plus de 10 ans", soon: true },
   { id: "monday", icon: "📆", name: "Monday Investor", desc: "Investir chaque premier lundi du mois pendant un an", soon: true },
-];
-
-export const IDENTITIES = [
-  { id: "builder_id", icon: "🏛️", name: "Builder", desc: "Tu construis patiemment, brique par brique.", condition: m => m.positions >= 10 },
-  { id: "explorer_id", icon: "🧭", name: "Explorer", desc: "Tu explores les marchés du monde.", condition: m => m.types >= 5 },
-  { id: "scholar_id", icon: "📚", name: "Scholar", desc: "Tu apprends avant d'investir.", condition: m => m.clubs >= 2 },
-  { id: "mentor_id", icon: "🤝", name: "Mentor", desc: "Tu aides les autres à progresser.", condition: m => m.clubs >= 5 },
-  { id: "compounder_id", icon: "📈", name: "Long-Term Investor", desc: "Tu penses en années, pas en jours.", condition: m => m.years >= 5 },
-  { id: "global_id", icon: "🌍", name: "Global Investor", desc: "Ton portefeuille traverse les frontières.", condition: m => m.types >= 6 },
 ];
 
 export const EMPTY_METRICS = { positions: 0, types: 0, perf: null, clubs: 0, years: null, streak: 0 };
