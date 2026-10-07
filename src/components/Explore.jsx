@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Marches from "./Marches";
 import Clubs from "./Clubs";
 import IndexDetail from "./IndexDetail";
+import SuperInvestors from "./SuperInvestors";
 import { searchAssets } from "../attachments";
 import { detailFor } from "../indices";
 import Feed from "./Feed";
@@ -20,12 +21,6 @@ function Avatar({ name, size = 36 }) {
   return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size*0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
 }
 
-const SUPER_INVESTORS = [
-  { name: "Warren Buffett", handle: "berkshire", desc: "Value investing légendaire — 44 positions", perf: "+19.8% / an depuis 1965", icon: "🦁" },
-  { name: "Bill Ackman", handle: "pershing", desc: "Activiste concentré — 8 positions", perf: "+16.2% / an depuis 2004", icon: "🎯" },
-  { name: "Stanley Druckenmiller", handle: "duquesne", desc: "Macro global — trading quantitatif", perf: "+30% / an sur 30 ans", icon: "🌍" },
-  { name: "Michael Burry", handle: "scion", desc: "Contrarian — célèbre pour le Big Short", perf: "Gestion indépendante", icon: "🔍" },
-];
 
 const CATEGORIES = {
   "📈 Actions": ["Actions France","Actions Europe","Actions USA","Actions Monde","Actions Émergents","Small Caps","Value Investing","Growth Investing","Dividendes","Stock Picking"],
@@ -64,7 +59,9 @@ async function fetchExploreContext(userId) {
       .in("club_id", myClubIds).order("created_at", { ascending: false }).limit(200);
     for (const post of posts || []) if (!lastPosts[post.club_id]) lastPosts[post.club_id] = post;
   }
-  return { friendIds, pendingIds, myClubIds, clubs: c || [], counts, lastPosts };
+  // Super Investors : on les suit depuis leur profil (pas de demande d'ami)
+  const { data: supers } = await supabase.from("super_investors").select("user_id, icon");
+  return { friendIds, pendingIds, myClubIds, clubs: c || [], counts, lastPosts, superIcons: Object.fromEntries((supers || []).map(x => [x.user_id, x.icon])) };
 }
 
 // Fiche d'une valeur ouverte depuis la recherche : gardée dans l'adresse (symbole, nom, type)
@@ -106,12 +103,15 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
   const [myClubIds, setMyClubIds] = useState([]);
   const [lastPosts, setLastPosts] = useState({});
   const [contextLoaded, setContextLoaded] = useState(false);
+  const [superIcons, setSuperIcons] = useState({}); // user_id → icône des Super Investors
   // « mes » ou « decouvrir » ; null = choix automatique (mes clubs si j'en ai)
   const [clubView, setClubView] = useState(initialClubView);
   const [loading, setLoading] = useState(false);
   const [selectedClub, setSelectedClub] = useState(initialClub);
   // « amis » : pas une section, on ouvre Explore sur la recherche de membres
-  const [section, setSection] = useState(initialSection === "clubs" || initialSection === "super" ? initialSection : "marches");
+  // Un portefeuille de Super Investor gardé dans l'adresse rouvre cette section
+  const [section, setSection] = useState(() => (initialSection === "clubs" || initialSection === "super" ? initialSection
+    : (new URLSearchParams(window.location.search).get("fiche") || "").startsWith("super:") ? "super" : "marches"));
   const [filterCat, setFilterCat] = useState("Tous");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", description: "", category: "", subcategory: "" });
@@ -131,6 +131,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
       setAllClubs(ctx.clubs);
       setMemberCounts(ctx.counts);
       setLastPosts(ctx.lastPosts);
+      setSuperIcons(ctx.superIcons);
       setContextLoaded(true);
     });
     return () => { ignore = true; };
@@ -237,13 +238,16 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
 
           {!loading && searchTab === "users" && users.map(u => (
             <div key={u.id} onClick={() => onViewProfile && onViewProfile(u.id)} style={{ ...card(T), display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-              <Avatar name={u.full_name} size={40} />
+              {superIcons[u.id]
+                ? <div style={{ width: 40, height: 40, borderRadius: 12, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{superIcons[u.id]}</div>
+                : <Avatar name={u.full_name} size={40} />}
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}{superIcons[u.id] && <span style={{ marginLeft: 8, padding: "1px 7px", borderRadius: 999, fontSize: 10, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold }}>🏆 Super Investor</span>}</div>
                 <div style={{ fontSize: 12, color: T.textMuted }}>@{u.username}{u.city ? ` · ${u.city}` : ""}{u.strategy ? ` · ${u.strategy}` : ""}</div>
                 {u.streak_mois > 0 && <div style={{ fontSize: 11, color: T.yellow, marginTop: 2 }}>🔥 {u.streak_mois} mois</div>}
               </div>
-              {friendIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.accent }}>✓ Ami</span>
+              {superIcons[u.id] ? null
+                : friendIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.accent }}>✓ Ami</span>
                 : pendingIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.textFaint }}>En attente</span>
                 : <button onClick={e => { e.stopPropagation(); sendRequest(u.id); }} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>+ Suivre</button>}
             </div>
@@ -403,26 +407,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
           )}
 
           {/* Super Investors */}
-          {section === "super" && (
-            <div>
-              <div style={{ fontSize: 13, color: T.textFaint, marginBottom: 16, lineHeight: 1.6 }}>
-                Suis les positions des plus grands investisseurs mondiaux via les déclarations 13F publiques.
-              </div>
-              {SUPER_INVESTORS.map(inv => (
-                <div key={inv.handle} style={{ ...card(T) }}>
-                  <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                    <div style={{ width: 52, height: 52, borderRadius: 14, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>{inv.icon}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 4 }}>{inv.name}</div>
-                      <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 6 }}>{inv.desc}</div>
-                      <div style={{ fontSize: 13, color: T.accent, fontWeight: 500 }}>{inv.perf}</div>
-                    </div>
-                    <span style={{ fontSize: 11, color: T.accent, fontWeight: 600, padding: "3px 10px", borderRadius: 999, border: `0.5px solid ${T.accentBorder}`, background: T.accentBg, flexShrink: 0 }}>Bientôt</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          {section === "super" && <SuperInvestors T={T} onViewProfile={onViewProfile} />}
         </>
       )}
     </div>

@@ -7,6 +7,8 @@ import IndexDetail from "./IndexDetail";
 import { resolveAsset } from "../attachments";
 import { detailFor } from "../indices";
 import { useDetailView } from "../useDetailView";
+import { fetchSuperInvestor, setFollowing, quarterLabel } from "../superInvestors";
+import NewsList from "./NewsList";
 
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
 // Colonnes visibles par les autres membres : jamais prix_achat ni nombre_parts
@@ -19,7 +21,16 @@ const POSITION_COLORS = [
   "#E84393", "#00B4D8", "#F77F00", "#4CC9F0", "#A8DADC",
 ];
 
-function PieChart({ data, T }) {
+// Parts du camembert : les 9 plus grosses positions, le reste regroupé en « Autres »
+// (pour un Super Investor : il a souvent des dizaines de positions)
+function pieData(entries, group) {
+  const slices = entries.slice(0, group && entries.length > 10 ? 9 : entries.length).map((e, i) => ({ label: e.label, value: Number(e.percentage), color: POSITION_COLORS[i % POSITION_COLORS.length] }));
+  const rest = entries.slice(slices.length).reduce((sum, e) => sum + Number(e.percentage), 0);
+  if (rest > 0) slices.push({ label: `Autres (${entries.length - slices.length})`, value: Math.round(rest * 10) / 10, color: "#888" });
+  return slices;
+}
+
+function PieChart({ data, T, count = data.length }) {
   // data = [{ label, value, color }]
   const [hovered, setHovered] = useState(null);
   const total = data.reduce((s, d) => s + d.value, 0);
@@ -76,14 +87,14 @@ function PieChart({ data, T }) {
         ))}
         {/* Centre */}
         <text x={cx} y={cy - 6} textAnchor="middle" fill={T.text} fontSize={hov ? 13 : 12} fontWeight={700}>
-          {hov ? `${Math.round(hov.pct * 100)}%` : `${data.length}`}
+          {hov ? `${Math.round(hov.pct * 100)}%` : `${count}`}
         </text>
         <text x={cx} y={cy + 10} textAnchor="middle" fill={T.textFaint} fontSize={9}>
           {hov ? hov.label.split(" ")[0] : "positions"}
         </text>
       </svg>
       {/* Légende */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
         {slices.map((s, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, opacity: hovered === null || hovered === i ? 1 : 0.4, transition: "opacity 0.15s", cursor: "pointer" }}
             onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}>
@@ -106,11 +117,12 @@ function Avatar({ name, size = 60 }) {
 // Profil, positions (colonnes publiques), badges et lien d'amitié avec moi
 // (les mouvements sont affichés par le composant du fil, onglet Activité)
 async function fetchPublicProfile(userId, myId) {
-  const [{ data: p }, { data: e }, { data: b }, { data: f }] = await Promise.all([
+  const [{ data: p }, { data: e }, { data: b }, { data: f }, superInv] = await Promise.all([
     supabase.from("profiles").select(PUBLIC_PROFILE_COLUMNS).eq("id", userId).single(),
     supabase.from("portfolio_entries").select(PUBLIC_ENTRY_COLUMNS).eq("user_id", userId).order("percentage", { ascending: false }),
     supabase.from("user_badges").select("badge_id, unlocked_at").eq("user_id", userId),
     supabase.from("friendships").select("*").or(`requester_id.eq.${myId},receiver_id.eq.${myId}`).or(`requester_id.eq.${userId},receiver_id.eq.${userId}`),
+    fetchSuperInvestor(userId, myId).catch(() => null),
   ]);
   const rel = (f || []).find(fr =>
     (fr.requester_id === myId && fr.receiver_id === userId) ||
@@ -121,6 +133,7 @@ async function fetchPublicProfile(userId, myId) {
     entries: e || [],
     badges: b || [],
     relation: rel ? (rel.status === "accepted" ? "accepted" : "pending") : null,
+    superInv,
   };
 }
 
@@ -158,6 +171,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   const [isFriend, setIsFriend] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [compareStats, setCompareStats] = useState(null);
+  const [superInv, setSuperInv] = useState(null);     // Super Investor (null pour un membre)
 
   const myId = session.user.id;
 
@@ -172,9 +186,11 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       setBadges(r.badges);
       setIsFriend(r.relation === "accepted");
       setIsPending(r.relation === "pending");
+      setSuperInv(r.superInv);
       setLoading(false);
+      // Pas de comparaison avec un Super Investor (ni performance, ni badges)
+      if (!r.superInv) fetchCompareStats(myId, userId).then(stats => { if (!ignore && stats) setCompareStats(stats); });
     });
-    fetchCompareStats(myId, userId).then(stats => { if (!ignore && stats) setCompareStats(stats); });
     return () => { ignore = true; };
   }, [userId, myId]);
 
@@ -183,6 +199,13 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
     await supabase.from("friendships").insert({ requester_id: session.user.id, receiver_id: userId, status: "pending" });
     await supabase.from("notifications").insert({ user_id: userId, type: "friend_request", data: { from_name: me?.full_name, from_id: session.user.id } });
     setIsPending(true);
+  }
+
+  // Suivre / ne plus suivre un Super Investor (abonnement immédiat, sans demande)
+  async function toggleFollow() {
+    const next = !superInv.following;
+    setSuperInv(s => ({ ...s, following: next, followers: s.followers + (next ? 1 : -1) }));
+    if (!(await setFollowing(userId, myId, next))) setSuperInv(s => ({ ...s, following: !next, followers: s.followers + (next ? -1 : 1) }));
   }
 
   const avecPerf = entries.filter(e => e.performance !== null);
@@ -220,19 +243,27 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
 
       <div style={card}>
         <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 14 }}>
-          <Avatar name={profile.full_name} size={56} />
+          {superInv
+            ? <div style={{ width: 56, height: 56, borderRadius: 16, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>{superInv.icon}</div>
+            : <Avatar name={profile.full_name} size={56} />}
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 2 }}>{profile.full_name}</div>
             <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 6 }}>
-              @{profile.username}{profile.city ? ` · ${profile.city}` : ""}
+              {profile.username ? `@${profile.username}` : ""}{superInv ? `${profile.username ? " · " : ""}${superInv.firm}` : profile.city ? ` · ${profile.city}` : ""}
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {superInv && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold }}>🏆 Super Investor</span>}
               {profile.strategy && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{profile.strategy}</span>}
               {profile.streak_mois > 0 && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: "rgba(240,203,123,0.1)", color: T.yellow }}>🔥 {profile.streak_mois} mois</span>}
               {profile.investing_since && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted }}>Depuis {profile.investing_since}</span>}
             </div>
           </div>
-          {userId !== session.user.id && (
+          {superInv ? (
+            <button onClick={toggleFollow} aria-pressed={superInv.following}
+              style={{ ...btnSm, ...(superInv.following ? { color: T.accent, borderColor: T.accentBorder, background: T.accentBg } : { borderColor: T.accent, background: T.accent, color: T.onAccent, fontWeight: 700 }) }}>
+              {superInv.following ? "Suivi ✓" : "+ Suivre"}
+            </button>
+          ) : userId !== session.user.id && (
             isFriend ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
                 <span style={{ fontSize: 12, color: T.accent }}>✓ Ami</span>
@@ -246,6 +277,20 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
 
         {profile.bio && <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.6, marginBottom: 14 }}>{profile.bio}</div>}
 
+        {superInv ? (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+            {[
+              ["Positions", entries.length],
+              ["Abonnés", superInv.followers],
+              ["Déclaration", superInv.last_period ? quarterLabel(superInv.last_period, true) : "—"],
+            ].map(([label, val]) => (
+              <div key={label} style={{ background: T.bgSubtle, borderRadius: 10, padding: 10, textAlign: "center" }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: T.text }}>{val}</div>
+                <div style={{ fontSize: 11, color: T.textFaint }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
           {[
             ["Positions", entries.length, T.text],
@@ -268,10 +313,11 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
             ) : <div key={label} style={tile}>{content}</div>;
           })}
         </div>
+        )}
       </div>
 
       <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: `0.5px solid ${T.border}` }}>
-        {[["holdings", "Holdings"], ["activite", "Activité"], ["posts", "Posts"]].map(([id, label]) => (
+        {[["holdings", "Holdings"], ["activite", "Activité"], superInv ? ["news", "Actualités"] : ["posts", "Posts"]].map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} style={{ flex: 1, padding: "10px 4px", fontSize: 13, fontWeight: tab === id ? 600 : 400, background: "none", border: "none", borderBottom: `2px solid ${tab === id ? T.accent : "transparent"}`, color: tab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
             {label}
           </button>
@@ -285,17 +331,14 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
               <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Allocation</div>
               <PieChart
                 T={T}
-                data={entries.map((e, i) => ({
-                  label: e.label,
-                  value: Number(e.percentage),
-                  color: POSITION_COLORS[i % POSITION_COLORS.length],
-                }))}
+                data={pieData(entries, !!superInv)}
+                count={entries.length}
               />
             </div>
           )}
           <div style={card}>
             <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Positions ({entries.length})</div>
-            {entries.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>Aucune position publique</div>}
+            {entries.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>{superInv ? "Portefeuille bientôt disponible (mise à jour quotidienne)." : "Aucune position publique"}</div>}
             {entries.map((e, i) => (
               <div key={e.id}>
               <button onClick={() => openAsset(e)} aria-label={`Voir le cours de ${e.label}`}
@@ -314,11 +357,19 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
               </div>
             ))}
           </div>
+          {superInv?.last_period && (
+            <div style={{ fontSize: 11, color: T.textFaint, lineHeight: 1.5, margin: "-4px 4px 12px" }}>
+              🏛️ D'après sa déclaration 13F à la SEC : positions au {new Date(`${superInv.last_period}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}, mises à jour automatiquement chaque trimestre. Actions cotées aux États-Unis uniquement.
+            </div>
+          )}
         </div>
       )}
 
       {/* Mouvements uniquement, avec les mêmes cartes que le fil (bloc factuel, description, likes, commentaires) */}
       {tab === "activite" && <Feed key="trades" session={session} T={T} onlyUserId={userId} only="trades" onViewProfile={onViewProfile} />}
+
+      {/* Super Investor : articles de presse récents sur lui ou sa société */}
+      {tab === "news" && superInv && <NewsList query={`"${profile.full_name}" OR "${superInv.firm}"`} T={T} />}
 
       {/* Ses posts, avec les mêmes cartes que le fil */}
       {tab === "posts" && <Feed key="posts" session={session} T={T} onlyUserId={userId} only="posts" onViewProfile={onViewProfile} />}

@@ -15,6 +15,7 @@ import { RichText, TickerChips, TagSuggestions, TagField } from "./PostText";
 import { tagAtCaret, finalizeTags, hasHashtag } from "../tags";
 import IndexDetail from "./IndexDetail";
 import { detailFor } from "../indices";
+import { fetchFollowedIds, quarterLabel } from "../superInvestors";
 
 function Avatar({ name, size = 36 }) {
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
@@ -48,6 +49,7 @@ function getActivityMeta(activity) {
     return { tag: m.tag, tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: momentSentence(activity.type, d, name), sub: m.sub?.(d) || "", stat: m.stat?.(d) || "" };
   }
   const map = {
+    declaration_13f: { tag: "Déclaration 13F", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} a publié ses mouvements du ${quarterLabel(d.period)}`, sub: `${d.moves_total ?? d.moves?.length ?? 0} changement${(d.moves_total ?? d.moves?.length ?? 0) > 1 ? "s" : ""} · ${d.positions ?? "?"} positions`, stat: "" },
     new_position: { tag: "Nouvelle position", tagBg: "rgba(123,184,240,0.1)", tagColor: T.blue, title: `${name} a ajouté une nouvelle position`, sub: d.label, stat: `${d.exposition || d.vehicule || ""}${d.broker ? ` · ${d.broker}` : ""}${d.percentage ? ` · ${d.percentage}%` : ""}` },
     renforcement: { tag: "Renforcement", tagBg: T.accentBg, tagColor: T.accent, title: `${name} a renforcé une position`, sub: d.label, stat: "" },
     vente: { tag: "Vente", tagBg: "rgba(240,153,123,0.1)", tagColor: T.orange, title: `${name} a vendu une position`, sub: d.label, stat: "" },
@@ -99,6 +101,49 @@ function MovementTitle({ meta, label, lookup, onOpenLabel, T }) {
   );
 }
 
+// Mouvements du trimestre d'un Super Investor (carte « Déclaration 13F ») :
+// les 5 premiers, puis « Voir les N mouvements » ; chaque valeur ouvre sa fiche
+const DECL_MOVES = {
+  new: { label: "Nouvelle position", up: true },
+  up: { label: "Renforcement", up: true },
+  down: { label: "Allègement", up: false },
+  sold: { label: "Vente totale", up: false },
+};
+const fmtPctFr = n => `${String(Math.round(Number(n) * 10) / 10).replace(".", ",")} %`;
+
+function DeclarationMoves({ data, T, onOpenLabel }) {
+  const [all, setAll] = useState(false);
+  const moves = data?.moves || [];
+  if (!moves.length) return null;
+  const shown = all ? moves : moves.slice(0, 5);
+  return (
+    <div style={{ marginTop: 10 }}>
+      {shown.map((m, i) => {
+        const meta = DECL_MOVES[m.type] || DECL_MOVES.up;
+        const color = meta.up ? T.accent : T.orange;
+        return (
+          <div key={`${m.label}-${i}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}` }}>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <button onClick={() => onOpenLabel(m.label)} title={`Voir le cours de ${m.label}`}
+                style={{ display: "block", maxWidth: "100%", background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: T.text, textAlign: "left", cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {m.label}
+              </button>
+              <span style={{ fontSize: 11, color: T.textFaint }}>{meta.label}{m.variation != null && (m.type === "up" || m.type === "down") ? ` · ${m.variation > 0 ? "+" : ""}${m.variation} % d'actions` : ""}</span>
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 700, color, flexShrink: 0 }}>{fmtPctFr(m.avant)} → {fmtPctFr(m.apres)}</span>
+          </div>
+        );
+      })}
+      {moves.length > 5 && (
+        <button onClick={() => setAll(v => !v)} style={{ background: "none", border: "none", padding: "6px 0 0", fontSize: 12, fontWeight: 600, color: T.accent, cursor: "pointer", fontFamily: "inherit" }}>
+          {all ? "Voir moins" : `Voir les ${moves.length} mouvements`}
+        </button>
+      )}
+      {data.moves_total > moves.length && all && <div style={{ fontSize: 11, color: T.textFaint, marginTop: 4 }}>+ {data.moves_total - moves.length} petits mouvements non affichés</div>}
+    </div>
+  );
+}
+
 // Posts récents des clubs dont je suis membre (affichés dans le fil, avec « Tout » et « Posts »)
 async function fetchMyClubPosts(userId, hashtag = null) {
   const { data: memberships } = await supabase.from("club_members").select("club_id").eq("user_id", userId);
@@ -132,13 +177,15 @@ async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYP
     if (f.requester_id !== userId) ids.push(f.requester_id);
     if (f.receiver_id !== userId) ids.push(f.receiver_id);
   });
+  // Super Investors que je suis : leurs déclarations arrivent dans mon fil comme celles d'un ami
+  const followed = scope === "amis" && !onlyUserId && !focusId && !hashtag ? await fetchFollowedIds(userId).catch(() => []) : [];
   let query = supabase.from("activities").select("*, author:profiles!activities_user_id_fkey(full_name, username)").order("created_at", { ascending: false }).limit(100);
   if (focusId) query = query.eq("id", focusId);
   else if (hashtag) query = query.eq("type", "post").ilike("data->>content", `%#${hashtag}%`);
   else if (onlyUserId) query = query.eq("user_id", onlyUserId).in("type", onlyTypes);
   else {
     query = query.in("type", FEED_TYPES);
-    if (scope === "amis") query = query.in("user_id", ids);
+    if (scope === "amis") query = query.in("user_id", [...ids, ...followed]);
   }
   const { data } = await query;
   // « #dividende » ne doit pas ramener « #dividendes »
@@ -645,6 +692,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
                   label={TRADE_TYPES.includes(activity.type) ? activity.data?.label : null}
                   lookup={labelLookup?.id === activity.id ? labelLookup : null}
                   onOpenLabel={label => openLabel(activity.id, label)} />
+                {activity.type === "declaration_13f" && <DeclarationMoves data={activity.data} T={T} onOpenLabel={label => openLabel(activity.id, label)} />}
                 {(meta.stat || TRADE_TYPES.includes(activity.type)) && (
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 8 }}>
                     {meta.stat && <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 500, background: meta.tagBg, color: meta.tagColor }}>{meta.stat}</span>}
