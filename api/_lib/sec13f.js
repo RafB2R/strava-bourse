@@ -45,13 +45,16 @@ const ABBREV = {
   pptys: 'properties', rlty: 'realty', invt: 'investment', mtrs: 'motors', commun: 'communications', ins: 'insurance',
   pharm: 'pharmaceuticals', natl: 'national', bancorporation: 'bancorporation', tr: 'trust', engy: 'energy', res: 'resources',
 };
+// Sigles gardés en majuscules
+const ACRONYMS = new Set(['cme', 'ibm', 'hp', 'ups', 'ge', 'bp', 'hca', 'ttm', 'nvr', 'aon', 'ptc', 'cbre', 'csx', 'tjx', 'msci', 'rh', 'amc', 'axp', 'usa', 'us', 'uk']);
 // Mentions juridiques ou de catégorie d'actions en fin de nom (« DEL » = Delaware, « NEW », « CL A »…)
 const TRAILING = /\s+(del|new|com|cl [a-z]|class [a-z]|ser [a-z]|mtn be|sponsored adr|adr|ord|shs)$/i;
 export function prettyName(name) {
   let raw = decode(name).toLowerCase().replace(/\s+/g, ' ').trim();
   while (TRAILING.test(raw)) raw = raw.replace(TRAILING, '');
-  raw = raw.replace(/^bank amer\b/, 'bank of america').replace(/^moodys\b/, "moody's");
+  raw = raw.replace(/^bank amer\b/, 'bank of america').replace(/^moodys\b/, "moody's").replace(/^(\w+) com inc$/, '$1.com inc');
   return raw.split(' ').map(w => ABBREV[w] || w).map((w, i) => {
+    if (ACRONYMS.has(w)) return w.toUpperCase();
     if (i > 0 && SMALL.has(w)) return w;
     if (/^(inc|corp|co|ltd|plc|sa|nv|ag|se|llc|lp)\.?$/.test(w)) return w[0].toUpperCase() + w.slice(1);
     return w.replace(/(^|[-/&(])(\p{L})/gu, (_, p, c) => p + c.toUpperCase());
