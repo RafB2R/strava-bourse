@@ -308,7 +308,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
           {[
             ["Positions", entries.length, T.text],
-            ["Performance", perfGlobale !== null ? `${perfGlobale >= 0 ? "+" : ""}${perfGlobale.toFixed(1)}%` : "—", perfGlobale !== null ? (perfGlobale >= 0 ? T.accent : T.red) : T.textFaint],
+            ["Perf. depuis l'achat", perfGlobale !== null ? `${perfGlobale >= 0 ? "+" : ""}${perfGlobale.toFixed(1)}%` : "—", perfGlobale !== null ? (perfGlobale >= 0 ? T.accent : T.red) : T.textFaint],
             ["Badges", badges.length, T.text],
           ].map(([label, val, color]) => {
             // La case Badges ouvre la vitrine des badges (il n'y a plus d'onglet Badges)
@@ -351,7 +351,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
             </div>
           )}
           <div style={card}>
-            <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Positions ({entries.length})</div>
+            <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Positions ({entries.length}){avecPerf.length > 0 && !superInv && <span style={{ textTransform: "none", letterSpacing: 0 }}> · perf. depuis l'achat</span>}</div>
             {entries.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>{superInv ? "Portefeuille bientôt disponible (mise à jour quotidienne)." : "Aucune position publique"}</div>}
             {(superInv && !showAllEntries ? entries.slice(0, 10) : entries).map((e, i) => (
               <div key={e.id}>
