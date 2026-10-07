@@ -45,17 +45,39 @@ const SUPER_URL = {
   fromUrl: d => SUPER_INVESTORS.find(i => i.cik === d.cik) || null,
 };
 
+// Profils des Super Investors en base (cik → user_id), chargés une fois
+let profilesPromise = null;
+function loadProfiles() {
+  profilesPromise ||= fetchSuperInvestors()
+    .then(rows => Object.fromEntries(rows.map(r => [r.cik, r.user_id])))
+    .catch(() => { profilesPromise = null; return {}; });
+  return profilesPromise;
+}
+
 // Chaque Super Investor a un vrai profil Verio (on le suit comme un membre) ; tant que
 // les comptes ne sont pas créés en base, la carte ouvre la fiche directe ci-dessous.
 export default function SuperInvestors({ T, onViewProfile }) {
   const [investor, openInvestor, closeInvestor] = useDetailView(SUPER_URL);
-  const [profiles, setProfiles] = useState({}); // cik → user_id
+
+  // On attend la liste des profils avant d'ouvrir (sinon un clic rapide ouvrait la fiche directe)
+  async function open(inv) {
+    const profiles = await loadProfiles();
+    if (profiles[inv.cik] && onViewProfile) onViewProfile(profiles[inv.cik]);
+    else openInvestor(inv);
+  }
+
+  // Fiche directe rouverte depuis l'adresse (actualisation) : le profil la remplace s'il existe
   useEffect(() => {
+    if (!investor || !onViewProfile) return;
     let ignore = false;
-    fetchSuperInvestors().then(rows => { if (!ignore) setProfiles(Object.fromEntries(rows.map(r => [r.cik, r.user_id]))); }, () => {});
+    loadProfiles().then(profiles => {
+      if (ignore || !profiles[investor.cik]) return;
+      closeInvestor();
+      onViewProfile(profiles[investor.cik]);
+    });
     return () => { ignore = true; };
-  }, []);
-  const open = inv => (profiles[inv.cik] && onViewProfile ? onViewProfile(profiles[inv.cik]) : openInvestor(inv));
+  }, [investor, onViewProfile, closeInvestor]);
+
   if (investor) return <InvestorDetail investor={investor} T={T} onBack={closeInvestor} />;
 
   return (
