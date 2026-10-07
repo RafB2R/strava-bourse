@@ -117,7 +117,13 @@ export default async function handler(req, res) {
   const bearer = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!sameSecret(bearer, CRON_SECRET) && !sameSecret(req.query?.secret, CRON_SECRET)) return res.status(401).json({ error: 'non autorisé' });
 
-  const investors = await db('super_investors?select=cik,user_id,last_period,profile:profiles(full_name)', { headers: { Prefer: '' } });
+  let investors;
+  try {
+    // Lien explicite vers profiles : super_investor_follows relie aussi les deux tables
+    investors = await db('super_investors?select=cik,user_id,last_period,profile:profiles!super_investors_user_id_fkey(full_name)', { headers: { Prefer: '' } });
+  } catch (e) {
+    return res.status(500).json({ error: String(e.message || e) });
+  }
   const results = [];
   // L'un après l'autre : la SEC limite le nombre de requêtes par seconde
   for (const inv of investors) {

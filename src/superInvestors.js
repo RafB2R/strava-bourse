@@ -24,7 +24,7 @@ export async function setFollowing(investorId, myId, follow) {
 
 // Tous les Super Investors (Explore), avec leur profil
 export async function fetchSuperInvestors() {
-  const { data } = await supabase.from("super_investors").select("cik, user_id, firm, style, icon, last_period, profile:profiles(full_name, username)");
+  const { data } = await supabase.from("super_investors").select("cik, user_id, firm, style, icon, last_period, profile:profiles!super_investors_user_id_fkey(full_name, username)");
   return data || [];
 }
 
