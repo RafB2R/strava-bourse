@@ -38,3 +38,21 @@ export const tradeSource = data => (data?.source === "sec13f"
 
 // declaration_13f : mouvements du trimestre d'un Super Investor, regroupés en une seule carte
 export const TRADE_TYPES = ["new_position", "renforcement", "allegement", "vente", "suppression_position", "versement", "retrait", "rebalancement", "declaration_13f"];
+
+// Répartition à 100 % : quand une position est ajoutée, retirée ou change de poids,
+// les autres sont recalculées en gardant leurs proportions (retirer une position,
+// c'est sortir de l'argent : le reste fait toujours 100 % du portefeuille).
+// others : [{ id, percentage }] → [{ id, percentage }] dont la somme vaut « target »
+// (arrondi au dixième, l'écart d'arrondi est porté par la plus grosse ligne).
+export const FULL = 99.5; // au-delà, le portefeuille est considéré comme réparti à 100 %
+export function rescale(others, target) {
+  const sum = others.reduce((s, e) => s + Number(e.percentage), 0);
+  if (!others.length || sum <= 0) return [];
+  const out = others.map(e => ({ id: e.id, percentage: Math.round(Number(e.percentage) * target / sum * 10) / 10 }));
+  const diff = Math.round((target - out.reduce((s, e) => s + e.percentage, 0)) * 10) / 10;
+  if (diff) {
+    const big = out.reduce((a, b) => (b.percentage > a.percentage ? b : a));
+    big.percentage = Math.round((big.percentage + diff) * 10) / 10;
+  }
+  return out;
+}

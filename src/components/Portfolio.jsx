@@ -3,7 +3,7 @@ import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
 import { syncBadges } from "../badges";
 import { syncMoments } from "../moments";
-import { tradeActivity, TRADE_TYPES } from "../trades";
+import { tradeActivity, TRADE_TYPES, rescale, FULL } from "../trades";
 import { SHOW_PLUS } from "../features";
 import { fetchMyIncome, incomeStats, incomeTypeFor, fmtYield, fetchDividendInfo, dividendForecast } from "../income";
 import ShareCard from "./ShareCard";
@@ -199,6 +199,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
   const [knownBrokers, setKnownBrokers] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(null);
@@ -293,12 +294,26 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
     setEditForm({ label: e.label || "", isin: e.isin || "", type: e.type || "ETF", exposition: e.exposition || "Actions", percentage: e.percentage || "", prix_achat: e.prix_achat || "", prix_actuel: e.prix_actuel || "", nombre_parts: e.nombre_parts || "", broker: e.broker || "" });
   }
 
+  // Poids des autres positions recalculés pour garder 100 % (sans publier de mouvement :
+  // seul le mouvement fait par l'investisseur apparaît dans le fil)
+  async function rescaleOthers(others, target) {
+    await Promise.all(rescale(others, target).map(r => supabase.from("portfolio_entries").update({ percentage: r.percentage }).eq("id", r.id)));
+  }
+
   async function updateEntry() {
+    const newPct = Number(editForm.percentage);
+    const others = entries.filter(x => x.id !== editingId);
+    if (!(newPct > 0) || newPct > 100) { setEditError("Entre un pourcentage entre 0 et 100."); return; }
+    if (newPct >= 100 && others.length) { setEditError("Les autres positions ont aussi un poids : mets moins de 100 %."); return; }
+    setEditError("");
     setEditSaving(true);
     const perf = calcPerf(Number(editForm.prix_achat), Number(editForm.prix_actuel));
     await supabase.from("portfolio_entries").update({ label: editForm.label.trim(), isin: editForm.isin.trim().toUpperCase() || null, type: editForm.type, exposition: editForm.exposition || null, percentage: Number(editForm.percentage), performance: perf, prix_achat: editForm.prix_achat ? Number(editForm.prix_achat) : null, prix_actuel: editForm.prix_actuel ? Number(editForm.prix_actuel) : null, nombre_parts: editForm.nombre_parts ? Number(editForm.nombre_parts) : null, broker: editForm.broker.trim() || null }).eq("id", editingId);
     // Poids modifié : publié dans le fil comme un fait (« a allégé X · −20 % de la position »)
     const before = entries.find(x => x.id === editingId);
+    // Portefeuille réparti à 100 % : les autres positions s'ajustent
+    const totalBefore = entries.reduce((s, x) => s + Number(x.percentage), 0);
+    if (before && totalBefore >= FULL && Number(before.percentage) !== newPct) await rescaleOthers(others, 100 - newPct);
     const trade = before && tradeActivity(editForm.label.trim() || before.label, before.percentage, editForm.percentage);
     if (trade) { await createActivity(session.user.id, trade.type, trade.data); syncBadges(); syncMoments(); }
     setEditingId(null); setEditForm({}); setEditSaving(false);
@@ -309,12 +324,17 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
     setError("");
     if (!form.label.trim()) return setError("Donne un nom à cette position.");
     if (!form.percentage || isNaN(form.percentage)) return setError("Entre un pourcentage valide.");
-    const total = entries.reduce((s, e) => s + Number(e.percentage), 0) + Number(form.percentage);
-    if (total > 100) return setError(`Total dépasserait 100% (${(total - Number(form.percentage)).toFixed(0)}% alloué).`);
+    const newPct = Number(form.percentage);
+    const current = entries.reduce((s, e) => s + Number(e.percentage), 0);
+    const full = current >= FULL; // déjà réparti à 100 % : les autres positions s'ajusteront
+    if (!(newPct > 0) || newPct > 100) return setError("Entre un pourcentage entre 0 et 100.");
+    if (full && newPct >= 100 && entries.length) return setError("Tes autres positions ont aussi un poids : mets moins de 100 %.");
+    if (!full && current + newPct > 100) return setError(`Total dépasserait 100% (${current.toFixed(0)}% alloué).`);
     const perf = calcPerf(Number(form.prix_achat), Number(form.prix_actuel));
     setSaving(true);
     const { error: err } = await supabase.from("portfolio_entries").insert({ user_id: session.user.id, label: form.label.trim(), isin: form.isin.trim().toUpperCase() || null, type: form.vehicule, exposition: form.exposition, percentage: Number(form.percentage), performance: perf, prix_achat: form.prix_achat ? Number(form.prix_achat) : null, prix_actuel: form.prix_actuel ? Number(form.prix_actuel) : null, nombre_parts: form.nombre_parts ? Number(form.nombre_parts) : null, broker: form.broker.trim() || null });
     if (err) { setError(err.message); setSaving(false); return; }
+    if (full) await rescaleOthers(entries, 100 - newPct);
     await createActivity(session.user.id, "new_position", { label: form.label.trim(), vehicule: form.vehicule, exposition: form.exposition, broker: form.broker.trim() || null, percentage: Number(form.percentage) });
     if (form.broker.trim() && !knownBrokers.includes(form.broker.trim())) await createActivity(session.user.id, "new_broker", { broker: form.broker.trim() });
     setForm({ label: "", isin: "", vehicule: "ETF", exposition: "Actions", percentage: "", prix_achat: "", prix_actuel: "", nombre_parts: "", broker: "" });
@@ -329,6 +349,9 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
     const { error: err } = await supabase.from("portfolio_entries").delete().eq("id", id);
     const trade = !err && removed && tradeActivity(removed.label, removed.percentage, 0);
     if (trade) await createActivity(session.user.id, trade.type, trade.data);
+    // Vendre, c'est sortir de l'argent : le reste fait toujours 100 % du portefeuille
+    const others = entries.filter(x => x.id !== id);
+    if (!err && entries.reduce((s, x) => s + Number(x.percentage), 0) >= FULL) await rescaleOthers(others, 100);
     loadEntries();
   }
 
@@ -494,6 +517,9 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
             )}
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Broker</label>
             <input style={inp} placeholder="ex: Boursorama, Saxo…" value={form.broker} onChange={e => setForm({ ...form, broker: e.target.value })} />
+            {entries.length > 0 && entries.reduce((s, x) => s + Number(x.percentage), 0) >= FULL && (
+              <div style={{ fontSize: 12, color: T.textFaint, marginBottom: 10 }}>Tes autres positions seront ajustées pour garder 100 %.</div>
+            )}
             {error && <div style={{ fontSize: 13, color: T.red, marginBottom: 10 }}>⚠️ {error}</div>}
             <button style={btn} onClick={addEntry} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</button>
           </div>
@@ -541,9 +567,13 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
             })()}
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Broker</label>
             <input style={inp} value={editForm.broker} onChange={e => setEditForm({ ...editForm, broker: e.target.value })} />
+            {entries.length > 1 && entries.reduce((s, x) => s + Number(x.percentage), 0) >= FULL && (
+              <div style={{ fontSize: 12, color: T.textFaint, marginBottom: 10 }}>Si tu changes le poids, tes autres positions s'ajustent pour garder 100 %.</div>
+            )}
+            {editError && <div style={{ fontSize: 13, color: T.red, marginBottom: 10 }}>⚠️ {editError}</div>}
             <div style={{ display: "flex", gap: 8 }}>
               <button style={btn} onClick={updateEntry} disabled={editSaving}>{editSaving ? "Sauvegarde…" : "Sauvegarder"}</button>
-              <button style={btnSm} onClick={() => setEditingId(null)}>Annuler</button>
+              <button style={btnSm} onClick={() => { setEditingId(null); setEditError(""); }}>Annuler</button>
             </div>
           </div>
         )}
