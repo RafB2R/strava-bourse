@@ -96,7 +96,6 @@ export default function EarningsCalendar({ earnings, loading, T, onOpen }) {
                     {e.symbol}{e.time ? ` · ${TIME_LABELS[e.time]}` : ""}{e.eps !== null && e.eps !== undefined ? ` · BPA estimé\u00a0${fmtEps(e.eps, e.currency)}` : ""}
                   </span>
                 </span>
-                <span style={{ color: T.textFaint, fontSize: 15 }}>›</span>
               </button>
             );
           })}
