@@ -314,7 +314,7 @@ export default function App() {
         <ProfilPublic key={publicUserId} userId={publicUserId} session={session} T={T} onMessage={openMessage} onViewProfile={viewProfile} onBack={() => { setPublicUserId(null); setCompareData(null); }} onCompareData={setCompareData} />
       ) : (
         <>
-          {tab === "feed" && <Feed key={navKey} session={session} T={T} onViewProfile={viewProfile} />}
+          {tab === "feed" && <Feed key={navKey} session={session} T={T} onViewProfile={viewProfile} onOpenClub={club => goToTab("explore", { section: "clubs", club })} />}
           {tab === "explore" && <Explore key={navKey} session={session} T={T} onViewProfile={viewProfile} initialSection={exploreIntent?.section} initialClub={exploreIntent?.club} initialClubView={exploreIntent?.clubView} />}
           {tab === "portfolio" && <Portfolio key={navKey} session={session} T={T} />}
           {tab === "messages" && <Messages key={navKey} session={session} T={T} openWith={messageTarget} onOpened={clearMessageTarget} onViewProfile={viewProfile} onUnreadChange={setUnreadMessages} />}

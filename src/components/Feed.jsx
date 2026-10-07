@@ -5,6 +5,7 @@ import { badgeFromData } from "../badges";
 import { MOMENTS, MOMENT_TYPES, isMoment, momentSentence } from "../moments";
 import { tradeTexts, TRADE_TYPES } from "../trades";
 import MovementNote from "./MovementNote";
+import ClubFeedCard from "./ClubFeedCard";
 import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage, uploadImages, removeImages, MAX_FILES, FILE_ACCEPT_ATTR, checkFile, uploadFiles, removeFiles } from "../media";
 import { makePoll, isValidPoll, fetchPolls, vote, closeFinishedPolls } from "../polls";
 import { PostImages, ComposerPreviews, PostFiles, ComposerFiles, PollEditor, PollView } from "./PostMedia";
@@ -75,6 +76,25 @@ const FILTERS = [
 const COMMENT_COLUMNS = "id, activity_id, user_id, content, tags, created_at, author:profiles!activity_comments_user_id_fkey(full_name)";
 
 // Amis acceptés (moi inclus), activités à afficher selon le périmètre, avec leurs likes et commentaires
+// Posts récents des clubs dont je suis membre (affichés dans le fil, avec « Tout » et « Posts »)
+async function fetchMyClubPosts(userId) {
+  const { data: memberships } = await supabase.from("club_members").select("club_id").eq("user_id", userId);
+  const clubIds = (memberships || []).map(m => m.club_id);
+  if (clubIds.length === 0) return [];
+  const { data } = await supabase.from("club_posts")
+    .select("*, author:profiles!club_posts_user_id_fkey(full_name, username), club:clubs(*)")
+    .in("club_id", clubIds).order("created_at", { ascending: false }).limit(50);
+  const posts = data || [];
+  // Nombre de réponses par post, en une seule requête
+  if (posts.length) {
+    const { data: replies } = await supabase.from("club_replies").select("post_id").in("post_id", posts.map(p => p.id));
+    const counts = {};
+    for (const r of replies || []) counts[r.post_id] = (counts[r.post_id] || 0) + 1;
+    for (const p of posts) p.reply_count = counts[p.id] || 0;
+  }
+  return posts.map(p => ({ ...p, kind: "club" }));
+}
+
 // « onlyUserId » : seulement les activités de ce membre, des types « onlyTypes »
 // (onglets Activité et Posts d'un profil public)
 async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYPES) {
@@ -110,14 +130,14 @@ async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYP
     for (const c of commentRows || []) (comments[c.activity_id] ||= []).push(c);
   }
   const pollIds = activities.filter(a => a.type === "post" && a.data?.poll).map(a => a.id);
-  const polls = await fetchPolls(pollIds, userId);
-  return { ids, activities, likes, comments, polls };
+  const [polls, clubPosts] = await Promise.all([fetchPolls(pollIds, userId), onlyUserId ? [] : fetchMyClubPosts(userId)]);
+  return { ids, activities, likes, comments, polls, clubPosts };
 }
 
 // « onlyUserId » : version intégrée au profil public — mêmes cartes que le fil, limitées à ce
 // membre, sans encadré de publication, choix Amis / Verio ni filtres.
 // « only » : "trades" (onglet Activité, mouvements) ou "posts" (onglet Posts).
-export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = null, only = "trades" }) {
+export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = null, only = "trades", onOpenClub }) {
   const embedded = !!onlyUserId;
   const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
@@ -125,6 +145,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
   const btnAct = { background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" };
 
   const [activities, setActivities] = useState([]);
+  const [clubPosts, setClubPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [scope, setScope] = useState("amis");
@@ -174,8 +195,9 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
 
   useEffect(() => {
     let ignore = false;
-    fetchFeed(userId, scope, onlyUserId, only === "posts" ? ["post"] : TRADE_TYPES).then(({ ids, activities, likes, comments, polls }) => {
+    fetchFeed(userId, scope, onlyUserId, only === "posts" ? ["post"] : TRADE_TYPES).then(({ ids, activities, likes, comments, polls, clubPosts }) => {
       if (ignore) return;
+      setClubPosts(clubPosts);
       setPolls(polls);
       setFriendIds(ids);
       setActivities(activities);
@@ -394,13 +416,17 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
     if (!error) setComments(p => ({ ...p, [activityId]: (p[activityId] || []).filter(c => c.id !== commentId) }));
   }
 
-  const visible = activities.filter(a => {
+  const visibleActivities = activities.filter(a => {
     if (filter === "all") return true;
     if (filter === "posts") return a.type === "post";
     if (filter === "activite") return TRADE_TYPES.includes(a.type);
     if (filter === "moments") return MOMENT_TYPES.includes(a.type) || BADGE_TYPES.includes(a.type);
     return true;
   });
+  // Posts de mes clubs, mêlés au fil par date (« Tout » et « Posts » seulement)
+  const visible = filter === "all" || filter === "posts"
+    ? [...visibleActivities, ...clubPosts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    : visibleActivities;
 
 
 
@@ -529,6 +555,12 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
       )}
 
       {visible.map(activity => {
+        if (activity.kind === "club") {
+          return (
+            <ClubFeedCard key={`club-${activity.id}`} post={activity} T={T} card={card} btnAct={btnAct}
+              onOpenClub={onOpenClub} onAsset={openAssetDetail} onProfile={id => onViewProfile && onViewProfile(id)} />
+          );
+        }
         const meta = activity.type === "post"
           ? { tag: "Post", tagBg: "rgba(175,169,236,0.1)", tagColor: T.purple, title: null, sub: null, stat: null }
           : getActivityMeta(activity);
