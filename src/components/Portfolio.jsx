@@ -179,7 +179,8 @@ function IncomeSection({ entry, stats, form, T, btnSm, onChange, onAdd, onDelete
 // Fiche de la valeur d'une position : gardée dans l'adresse (symbole, nom, type)
 const PORTEFEUILLE_URL = { urlKey: "portefeuille", toUrl: a => ({ symbol: a.symbol, name: a.name, type: a.type }) };
 
-export default function Portfolio({ session, T: TProp }) {
+// onViewPublic : ouvre mon profil tel que les autres le voient
+export default function Portfolio({ session, T: TProp, onViewPublic }) {
   const T = TProp || TLive;
   const inp = { width: "100%", padding: "10px 12px", fontSize: 13, borderRadius: 10, border: `0.5px solid ${T.input.border}`, background: T.input.background, color: T.input.color, fontFamily: "inherit", marginBottom: 10, display: "block" };
   const btn = { background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 };
@@ -399,6 +400,12 @@ export default function Portfolio({ session, T: TProp }) {
           {!hasValeur && <span style={{ fontSize: 13, color: T.textFaint }}>Ajoute le nombre de parts pour voir la valeur</span>}
           {lastRefresh && <span style={{ fontSize: 11, color: T.textFaint }}>· {lastRefresh.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>}
         </div>
+        {onViewPublic && (
+          <button onClick={onViewPublic} title="Ce que les autres voient de ton portefeuille : en %, jamais de montants"
+            style={{ display: "block", background: "none", border: "none", padding: 0, marginTop: -8, marginBottom: 14, fontSize: 12, fontWeight: 600, color: T.accent, cursor: "pointer", fontFamily: "inherit" }}>
+            👁️ Voir mon profil public
+          </button>
+        )}
         <HistoryPlaceholder T={T} />
       </div>
 
