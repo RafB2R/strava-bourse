@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabase";
-import { T, T as TLive, avatarColors } from "../theme";
+import { T, T as TLive } from "../theme";
 import { badgeFromData } from "../badges";
 import { MOMENTS, MOMENT_TYPES, isMoment, momentSentence } from "../moments";
 import { tradeTexts, tradeSource, TRADE_TYPES } from "../trades";
@@ -17,15 +17,11 @@ import IndexDetail from "./IndexDetail";
 import { detailFor } from "../indices";
 import { fetchFollowedIds, fetchFollowedNews, quarterLabel } from "../superInvestors";
 import { fetchCompanyNews } from "../assetFollows";
+import Avatar from "./Avatar";
 
 // Actualités dans le fil (Super Investors et sociétés suivis) : 4 au plus, un titre une seule fois
 const FEED_NEWS_MAX = 4;
 
-function Avatar({ name, size = 36 }) {
-  const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
-  const [bg, color] = avatarColors(name);
-  return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size*0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
-}
 
 function timeAgo(date) {
   const diff = (Date.now() - new Date(date)) / 1000;
@@ -612,7 +608,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
         onDrop={e => { e.preventDefault(); setDragOver(false); addImages(e.dataTransfer.files); }}
       >
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-          <Avatar name={profile?.full_name} size={36} />
+          <Avatar userId={userId} name={profile?.full_name} size={36} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <textarea
               value={postInput}
@@ -738,7 +734,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
         return (
           <div key={activity.id} style={card}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-              <Avatar name={activity.author?.full_name} size={36} />
+              <Avatar userId={activity.user_id} name={activity.author?.full_name} size={36} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(activity.user_id)}>
                   {activity.author?.full_name}
@@ -823,7 +819,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
               <div style={{ marginTop: 12, borderTop: `0.5px solid ${T.border}`, paddingTop: 10 }}>
                 {activityComments.map(c => (
                   <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                    <Avatar name={c.author?.full_name} size={26} />
+                    <Avatar userId={c.user_id} name={c.author?.full_name} size={26} />
                     <div style={{ background: T.bgSubtle, borderRadius: 8, padding: "7px 10px", flex: 1 }}>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                         <div style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(c.user_id)}>
@@ -842,7 +838,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
                   </div>
                 ))}
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <Avatar name={profile?.full_name} size={26} />
+                  <Avatar userId={userId} name={profile?.full_name} size={26} />
                   <TagField
                     as="input"
                     value={commentInputs[activity.id] || ""}

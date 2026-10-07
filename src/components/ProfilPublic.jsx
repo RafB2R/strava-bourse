@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase, PUBLIC_PROFILE_COLUMNS } from "../supabase";
-import { T as TLive, avatarColors } from "../theme";
+import { T as TLive } from "../theme";
 import { getBadgeInfo } from "../badges";
 import Feed from "./Feed";
 import IndexDetail from "./IndexDetail";
@@ -9,6 +9,7 @@ import { detailFor } from "../indices";
 import { useDetailView } from "../useDetailView";
 import { fetchSuperInvestor, setFollowing, quarterLabel } from "../superInvestors";
 import NewsList from "./NewsList";
+import Avatar from "./Avatar";
 
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
 // Colonnes visibles par les autres membres : jamais prix_achat ni nombre_parts
@@ -133,11 +134,6 @@ function PieChart({ data, T, count = data.length }) {
   );
 }
 
-function Avatar({ name, size = 60 }) {
-  const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
-  const [bg, color] = avatarColors(name);
-  return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size*0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
-}
 
 // Profil, positions (colonnes publiques), badges et lien d'amitié avec moi
 // (les mouvements sont affichés par le composant du fil, onglet Activité)
@@ -295,7 +291,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
         <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 14 }}>
           {superInv
             ? <div style={{ width: 56, height: 56, borderRadius: 16, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>{superInv.icon}</div>
-            : <Avatar name={profile.full_name} size={56} />}
+            : <Avatar userId={userId} name={profile.full_name} size={56} />}
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 2 }}>{profile.full_name}</div>
             <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 6 }}>

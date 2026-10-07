@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
-import { T as TLive, avatarColors } from "../theme";
+import { T as TLive } from "../theme";
+import Avatar from "./Avatar";
 
 const FILTERS = [
   { id: "performance", label: "📈 Performance" },
@@ -10,11 +11,6 @@ const FILTERS = [
   { id: "badges", label: "🏅 Badges" },
 ];
 
-function Avatar({ name, size = 36 }) {
-  const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
-  const [bg, color] = avatarColors(name);
-  return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size*0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
-}
 
 const card = (T) => ({ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 });
 
@@ -117,7 +113,7 @@ export default function Classements({ session , T: TProp }) {
               <div style={{ fontSize: 18, minWidth: 28, textAlign: "center" }}>
                 {rankIcon(i) || <span style={{ fontSize: 13, color: T.textFaint, fontWeight: 600 }}>{i + 1}</span>}
               </div>
-              <Avatar name={u.full_name} size={36} />
+              <Avatar userId={u.id} name={u.full_name} size={36} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: u.isMe ? T.accent : T.text }}>
                   {u.full_name}

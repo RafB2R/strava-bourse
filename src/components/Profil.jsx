@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { T as TLive, avatarColors } from "../theme";
+import { useState, useEffect, useRef } from "react";
+import { T as TLive } from "../theme";
 import { supabase, PUBLIC_PROFILE_COLUMNS } from "../supabase";
 import Badges from "./Badges";
 import { syncBadges } from "../badges";
@@ -7,14 +7,11 @@ import KYC from "./KYC";
 import { normalizeUsername, usernameFormatError, isUsernameAvailable } from "../usernames";
 import InstallBanner from "./InstallBanner";
 import PushSettings from "./PushSettings";
+import Avatar from "./Avatar";
+import { avatarUrl, uploadAvatar, removeAvatar } from "../avatars";
 
 const STRATEGIES = ["ETF passif", "Stock picking", "Dividendes", "Value investing", "DCA", "Mixte"];
 
-function Avatar({ name, size = 36 }) {
-  const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
-  const [bg, color] = avatarColors(name);
-  return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
-}
 
 // Mes stats de portefeuille (colonnes publiques uniquement), ou null sans position
 async function fetchOwnStats(userId) {
@@ -106,6 +103,33 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
   const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" };
   const [profile, setProfile] = useState(initialProfile || {});
   const [section, setSection] = useState(initialSection);
+  // Photo de profil
+  const photoInput = useRef(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const [hasPhoto, setHasPhoto] = useState(false);
+  useEffect(() => {
+    const url = avatarUrl(session.user.id);
+    if (!url) return;
+    let ignore = false;
+    fetch(url, { method: "HEAD" }).then(r => { if (!ignore) setHasPhoto(r.ok); }).catch(() => {});
+    return () => { ignore = true; };
+  }, [session.user.id]);
+
+  async function changePhoto(file) {
+    if (!file) return;
+    setPhotoBusy(true); setPhotoError("");
+    try { await uploadAvatar(session.user.id, file); setHasPhoto(true); }
+    catch (e) { setPhotoError(e.message); }
+    setPhotoBusy(false);
+  }
+
+  async function deletePhoto() {
+    setPhotoBusy(true); setPhotoError("");
+    try { await removeAvatar(session.user.id); setHasPhoto(false); }
+    catch (e) { setPhotoError(e.message); }
+    setPhotoBusy(false);
+  }
   const [editing, setEditing] = useState(false);
   const [showKYC, setShowKYC] = useState(false);
   const [form, setForm] = useState({});
@@ -206,7 +230,6 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
     setEditing(false);
   }
 
-  const initials = profile.full_name ? profile.full_name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
   const perf = stats.perfPonderee;
   const alreadyIds = [...friends, ...pending, ...received].map(f => f.friend?.id).filter(Boolean);
 
@@ -218,7 +241,17 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
       <PushSettings T={T} />
       <div style={card}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
-          <div style={{ width: 52, height: 52, borderRadius: "50%", background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, flexShrink: 0 }}>{initials}</div>
+          {/* Photo de profil : clic pour en choisir une */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0 }}>
+            <input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp,image/heic" hidden
+              onChange={e => { changePhoto(e.target.files?.[0]); e.target.value = ""; }} />
+            <button onClick={() => photoInput.current?.click()} disabled={photoBusy} title="Changer ma photo de profil" aria-label="Changer ma photo de profil"
+              style={{ position: "relative", padding: 0, border: "none", background: "none", cursor: "pointer", borderRadius: "50%", opacity: photoBusy ? 0.5 : 1 }}>
+              <Avatar userId={session.user.id} name={profile.full_name} size={56} />
+              <span style={{ position: "absolute", right: -2, bottom: -2, width: 22, height: 22, borderRadius: "50%", background: T.bgCard, border: `0.5px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>📷</span>
+            </button>
+            {hasPhoto && <button onClick={deletePhoto} disabled={photoBusy} style={{ background: "none", border: "none", padding: 0, fontSize: 10, color: T.textFaint, cursor: "pointer", fontFamily: "inherit" }}>Retirer</button>}
+          </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 17, fontWeight: 700, color: T.text }}>{profile.full_name || "—"}</div>
             <div style={{ fontSize: 13, color: T.textMuted }}>@{profile.username || "—"}{profile.city ? ` · ${profile.city}` : ""}</div>
@@ -226,6 +259,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
           </div>
           <button style={btnSm} onClick={startEdit}>✏️ Éditer</button>
         </div>
+        {photoError && <div role="alert" style={{ fontSize: 12, color: T.red, margin: "-8px 0 12px" }}>{photoError}</div>}
 
         {profile.bio && <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.6, marginBottom: 16, padding: "10px 12px", background: T.bgSubtle, borderRadius: 8 }}>{profile.bio}</div>}
 
@@ -311,7 +345,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
             {searching && <div style={{ fontSize: 13, color: T.textFaint }}>Recherche…</div>}
             {searchResults.map(u => (
               <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `0.5px solid ${T.border}` }}>
-                <Avatar name={u.full_name} size={34} />
+                <Avatar userId={u.id} name={u.full_name} size={34} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}</div>
                   <div style={{ fontSize: 12, color: T.textFaint }}>@{u.username}</div>
@@ -327,7 +361,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
               <div style={sectionLabel}>Demandes reçues ({received.length})</div>
               {received.map(f => (
                 <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `0.5px solid ${T.border}` }}>
-                  <Avatar name={f.friend.full_name} size={34} />
+                  <Avatar userId={f.friend.id} name={f.friend.full_name} size={34} />
                   <div style={{ flex: 1, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(f.friend.id)}>
                     <div style={{ fontSize: 14, fontWeight: 600, color: T.accent }}>{f.friend.full_name}</div>
                     <div style={{ fontSize: 12, color: T.textFaint }}>@{f.friend.username}</div>
@@ -344,7 +378,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
             {friends.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem 0" }}>Aucun ami encore 🙂</div>}
             {friends.map(f => (
               <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `0.5px solid ${T.border}`, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(f.friend.id)}>
-                <Avatar name={f.friend.full_name} size={34} />
+                <Avatar userId={f.friend.id} name={f.friend.full_name} size={34} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: T.accent }}>{f.friend.full_name}</div>
                   <div style={{ fontSize: 12, color: T.textFaint }}>@{f.friend.username}{f.friend.city ? ` · ${f.friend.city}` : ""}</div>

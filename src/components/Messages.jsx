@@ -1,14 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { T as TLive, avatarColors } from "../theme";
+import { T as TLive } from "../theme";
 import { shortTime, fetchConversations, fetchMessages, sendMessage, markRead, startConversation, subscribeToConversation, fetchFriends, uploadMessageImages, signMessageImages, uploadMessageFiles, signMessageFile } from "../messages";
 import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage, MAX_FILES, FILE_ACCEPT_ATTR, checkFile } from "../media";
 import { PostImages, ComposerPreviews, PostFiles, ComposerFiles } from "./PostMedia";
+import Avatar from "./Avatar";
 
-export function Avatar({ name, size = 40 }) {
-  const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
-  const [bg, color] = avatarColors(name);
-  return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.34, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
-}
 
 // Fil d'une conversation : messages en temps réel, envoi, lecture
 // variant « page » (plein écran, bouton retour) ou « dock » (encart en bas d'écran : réduire, fermer)
@@ -131,7 +127,7 @@ export function Thread({ conversation, session, T, onBack, onViewProfile, onRead
       : { background: T.bgCard, border: `0.5px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, display: "flex", flexDirection: "column", height: "min(70vh, 640px)" }}>
       <div onClick={dock ? onToggleMinimize : undefined} style={{ display: "flex", alignItems: "center", gap: dock ? 8 : 10, padding: dock ? "8px 10px" : "12px 14px", borderBottom: minimized ? "none" : `0.5px solid ${T.border}`, cursor: dock ? "pointer" : "default" }}>
         {!dock && <button onClick={onBack} aria-label="Retour aux conversations" style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 18, padding: "0 4px" }}>←</button>}
-        <Avatar name={conversation.other_name} size={dock ? 30 : 34} />
+        <Avatar userId={conversation.other_id} name={conversation.other_name} size={dock ? 30 : 34} />
         <button onClick={e => { e.stopPropagation(); onViewProfile?.(conversation.other_id); }} style={{ flex: dock ? 1 : "none", minWidth: 0, background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
           <div style={{ fontSize: dock ? 14 : 15, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{conversation.other_name}</div>
           {conversation.other_username && !dock && <div style={{ fontSize: 12, color: T.textFaint }}>@{conversation.other_username}</div>}
@@ -289,7 +285,7 @@ export default function Messages({ session, T: TProp, openWith, onOpened, onView
           {friends?.length === 0 && <div style={{ fontSize: 13, color: T.textFaint }}>Ajoute des amis depuis Explore pour pouvoir leur écrire.</div>}
           {friends?.map(f => (
             <button key={f.id} onClick={() => openFriend(f.id)} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "8px 0", background: "none", border: "none", borderTop: `0.5px solid ${T.border}`, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
-              <Avatar name={f.full_name} size={32} />
+              <Avatar userId={f.id} name={f.full_name} size={32} />
               <div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{f.full_name}</div>
                 {f.username && <div style={{ fontSize: 12, color: T.textFaint }}>@{f.username}</div>}
@@ -310,7 +306,7 @@ export default function Messages({ session, T: TProp, openWith, onOpened, onView
         )}
         {conversations?.map((c, i) => (
           <button key={c.conversation_id} onClick={() => setActive(c)} style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "10px 0", background: "none", border: "none", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}`, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
-            <Avatar name={c.other_name} />
+            <Avatar userId={c.other_id} name={c.other_name} size={40} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                 <span style={{ fontSize: 14, fontWeight: c.unread ? 800 : 600, color: T.text }}>{c.other_name}</span>
