@@ -10,7 +10,7 @@ import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage, uploadImages, removeIm
 import { makePoll, isValidPoll, fetchPolls, vote, closeFinishedPolls } from "../polls";
 import { PostImages, ComposerPreviews, PostFiles, ComposerFiles, PollEditor, PollView } from "./PostMedia";
 import { AssetCard, AllocationCard, AssetPicker, AllocationPicker, AttachedChip } from "./PostAttachments";
-import { CHART_PERIODS } from "../attachments";
+import { CHART_PERIODS, resolveAsset } from "../attachments";
 import { RichText, TickerChips, TagSuggestions, TagField } from "./PostText";
 import { tagAtCaret, finalizeTags, hasHashtag } from "../tags";
 import IndexDetail from "./IndexDetail";
@@ -76,6 +76,29 @@ const FILTERS = [
 const COMMENT_COLUMNS = "id, activity_id, user_id, content, tags, created_at, author:profiles!activity_comments_user_id_fkey(full_name, username)";
 
 // Amis acceptés (moi inclus), activités à afficher selon le périmètre, avec leurs likes et commentaires
+// Titre d'un mouvement : le nom de la valeur (« Total Energies ») y est cliquable et ouvre sa fiche
+function MovementTitle({ meta, label, lookup, onOpenLabel, T }) {
+  const link = (
+    <button onClick={() => onOpenLabel(label)} title={`Voir le cours de ${label}`}
+      style={{ background: "none", border: "none", padding: 0, font: "inherit", color: "inherit", fontWeight: 600, textDecoration: "underline", textDecorationColor: T.borderStrong, textUnderlineOffset: 3, cursor: "pointer" }}>
+      {label}
+    </button>
+  );
+  const title = meta.title || "";
+  const at = label ? title.indexOf(label) : -1;
+  return (
+    <>
+      <div style={{ fontSize: 14, fontWeight: 500, color: T.text, lineHeight: 1.4 }}>
+        {at >= 0 ? <>{title.slice(0, at)}{link}{title.slice(at + label.length)}</> : title}
+      </div>
+      {meta.sub && <div style={{ fontSize: 13, color: T.textMuted, marginTop: 3 }}>{at < 0 && label && meta.sub === label ? link : meta.sub}</div>}
+      {lookup && (
+        <div role={lookup.error ? "alert" : "status"} style={{ fontSize: 12, color: lookup.error ? T.red : T.textFaint, marginTop: 4 }}>{lookup.error || "Recherche du cours…"}</div>
+      )}
+    </>
+  );
+}
+
 // Posts récents des clubs dont je suis membre (affichés dans le fil, avec « Tout » et « Posts »)
 async function fetchMyClubPosts(userId, hashtag = null) {
   const { data: memberships } = await supabase.from("club_members").select("club_id").eq("user_id", userId);
@@ -274,6 +297,16 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
     const pos = tag.start + token.length;
     setCaret(pos);
     requestAnimationFrame(() => { textRef.current?.focus(); textRef.current?.setSelectionRange(pos, pos); });
+  }
+
+  // Nom d'une valeur dans un mouvement (« Total Energies ») : retrouve la valeur cotée et ouvre sa fiche
+  const [labelLookup, setLabelLookup] = useState(null); // { id, error }
+  async function openLabel(activityId, label) {
+    setLabelLookup({ id: activityId, error: null });
+    const asset = await resolveAsset({ label });
+    if (!asset) { setLabelLookup({ id: activityId, error: `Cours introuvable pour « ${label} ».` }); return; }
+    setLabelLookup(null);
+    openAssetDetail({ ...asset, name: label });
   }
 
   function openAssetDetail(asset) {
@@ -608,8 +641,10 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
               </>
             ) : (
               <div style={{ borderLeft: `2px solid ${T.border}`, paddingLeft: 12, marginBottom: 12 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: T.text, lineHeight: 1.4 }}>{meta.title}</div>
-                {meta.sub && <div style={{ fontSize: 13, color: T.textMuted, marginTop: 3 }}>{meta.sub}</div>}
+                <MovementTitle meta={meta} T={T}
+                  label={TRADE_TYPES.includes(activity.type) ? activity.data?.label : null}
+                  lookup={labelLookup?.id === activity.id ? labelLookup : null}
+                  onOpenLabel={label => openLabel(activity.id, label)} />
                 {meta.stat && <span style={{ display: "inline-block", marginTop: 8, padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 500, background: meta.tagBg, color: meta.tagColor }}>{meta.stat}</span>}
               </div>
             )}
