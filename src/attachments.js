@@ -74,3 +74,12 @@ export function cleanAllocation(a) {
     .slice(0, 8).map(r => ({ label: r.label.slice(0, 40), pct: Math.max(0, Math.min(100, Number(r.pct))) }));
   return rows.length ? { mode: a.mode === "positions" ? "positions" : "classes", rows } : null;
 }
+
+// Valeur cotée correspondant à une position (ISIN d'abord, sinon son nom) ; null si introuvable
+export async function resolveAsset({ isin, label }) {
+  for (const q of [isin, label].map(x => (x || "").trim()).filter(x => x.length >= 2)) {
+    const results = await searchAssets(q);
+    if (results.length) return results[0];
+  }
+  return null;
+}
