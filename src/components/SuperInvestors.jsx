@@ -163,7 +163,7 @@ function InvestorDetail({ investor, T, onBack }) {
 
   return (
     <div>
-      <button onClick={onBack} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13, padding: 0, marginBottom: 14, fontFamily: "inherit" }}>← Super Investors</button>
+      <button onClick={onBack} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13, padding: 0, marginBottom: 14, fontFamily: "inherit" }}>← Légendes</button>
       <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 16 }}>
         <span style={{ width: 56, height: 56, borderRadius: 16, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>{investor.icon}</span>
         <div style={{ minWidth: 0 }}>

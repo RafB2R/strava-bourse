@@ -101,7 +101,7 @@ export default function Onboarding({ session, T: TProp, onDone }) {
         </div>
 
         {supers.length > 0 && <>
-          <div style={section}>🏆 Super Investors</div>
+          <div style={section}>🏆 Légendes</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {supers.map(s => (
               <button key={s.user_id} onClick={() => toggleSuper(s.user_id)} aria-pressed={followedSupers.has(s.user_id)} title={`${s.firm} · ${s.style}`} style={chip(followedSupers.has(s.user_id))}>
