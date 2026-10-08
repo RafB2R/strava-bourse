@@ -1,8 +1,8 @@
 export const config = { runtime: 'edge' };
 
-// Articles de presse récents sur un sujet (Google Actualités, en français).
-// Utilisé par l'onglet « Actualités » du profil d'un Super Investor.
-// GET /api/news?q=Warren Buffett → [{ title, source, url, date }]
+// Articles de presse récents sur un sujet (Google Actualités), dans la langue du membre.
+// GET /api/news?q=Warren Buffett&lang=en → [{ title, source, url, date }]
+// lang : fr (par défaut) ou en
 // Gardé 1 h en cache par Vercel.
 
 const decode = s => s
@@ -13,6 +13,11 @@ const decode = s => s
 const tag = (block, name) => {
   const m = block.match(new RegExp(`<${name}[^>]*>([\\s\\S]*?)</${name}>`, 'i'));
   return m ? decode(m[1]) : null;
+};
+
+const EDITIONS = {
+  fr: 'hl=fr&gl=FR&ceid=FR:fr',
+  en: 'hl=en-US&gl=US&ceid=US:en',
 };
 
 export function parseRss(xml, limit = 8) {
@@ -36,7 +41,8 @@ export default async function handler(req) {
   const q = (new URL(req.url).searchParams.get('q') || '').trim().slice(0, 100);
   if (q.length < 2) return Response.json({ error: 'q manquant' }, { status: 400 });
   try {
-    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=fr&gl=FR&ceid=FR:fr`;
+    const edition = EDITIONS[new URL(req.url).searchParams.get('lang')] || EDITIONS.fr;
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&${edition}`;
     const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Verio)' } });
     if (!res.ok) throw new Error(`Google Actualités ${res.status}`);
     return Response.json(parseRss(await res.text()), { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200' } });

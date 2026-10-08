@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { resolveAsset } from "./attachments";
+import { LANG } from "./i18n";
 
 // Sociétés et indices suivis : depuis leur fiche, à l'inscription, ou automatiquement
 // pour les actions de son portefeuille. « Ne plus suivre » garde la ligne (active = false)
@@ -76,7 +77,7 @@ export async function fetchCompanyNews(myId, { perAsset = 1, days = 3, assets = 
   const list = assets || await fetchFollowedAssets(myId);
   const since = Date.now() - days * 86400e3;
   const picks = await Promise.all(list.map(async asset => {
-    const articles = await fetch(`/api/news?q=${encodeURIComponent(`"${newsName(asset.name)}"`)}`).then(r => r.json()).catch(() => []);
+    const articles = await fetch(`/api/news?q=${encodeURIComponent(`"${newsName(asset.name)}"`)}&lang=${LANG}`).then(r => r.json()).catch(() => []);
     return (Array.isArray(articles) ? articles : [])
       .filter(a => a.date && new Date(a.date).getTime() > since)
       .slice(0, perAsset)

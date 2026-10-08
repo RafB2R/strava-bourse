@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import { t } from "./i18n";
+import { t, LANG } from "./i18n";
 
 // Super Investors : profils alimentés par leurs déclarations 13F à la SEC
 // (voir api/superinvestors-sync.js). On les suit par un abonnement, sans demande d'ami.
@@ -49,7 +49,7 @@ export async function fetchFollowedNews(myId) {
   const picks = await Promise.all((data || []).map(async inv => {
     const name = inv.profile?.full_name;
     if (!name) return null;
-    const articles = await fetch(`/api/news?q=${encodeURIComponent(`"${name}" OR "${inv.firm}"`)}`).then(r => r.json()).catch(() => []);
+    const articles = await fetch(`/api/news?q=${encodeURIComponent(`"${name}" OR "${inv.firm}"`)}&lang=${LANG}`).then(r => r.json()).catch(() => []);
     const article = (Array.isArray(articles) ? articles : []).find(a => a.date && new Date(a.date).getTime() > since);
     return article ? { kind: "news", id: article.url, created_at: article.date, article, investor: { id: inv.user_id, name, icon: inv.icon } } : null;
   }));
