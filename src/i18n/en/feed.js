@@ -78,7 +78,7 @@ export default {
   "Explique ce mouvement : ta stratégie, ton ressenti…": "Explain this move: your strategy, how you feel…",
   "Ajouter une description": "Add a description",
   "Pourquoi ce mouvement ? Ta stratégie, ton ressenti… ($ valeur, @ membre)": "Why this move? Your strategy, how you feel… ($ stock, @ member)",
-  "Enregistrement impossible. Réessaie.": "Couldn't save. Try again.",
+  "Enregistrement impossible. Réessaie.": "Couldn't save. Please try again.",
 
   // Actualités
   "Voir le profil de {name}": "View {name}'s profile",
@@ -106,7 +106,7 @@ export default {
   "Investisseur": "Investor",
   "· moi": "· me",
   "modifié": "edited",
-  "Ouvrir le club {name}": "Open club {name}",
+  "Ouvrir le club {name}": "Open the {name} club",
   "Lire et écrire les réponses dans le club": "Read and write replies in the club",
   "{n} réponse": "{n} reply",
   "{n} réponses": "{n} replies",
@@ -119,7 +119,7 @@ export default {
   "{n} fichiers maximum par post.": "{n} files max per post.",
   "Un sondage a besoin d'au moins 2 choix.": "A poll needs at least 2 options.",
   "Écris la question du sondage dans le texte du post.": "Write the poll question in the post text.",
-  "Publication impossible. Réessaie.": "Couldn't post. Try again.",
+  "Publication impossible. Réessaie.": "Couldn't post. Please try again.",
   "Modification impossible. Réessaie.": "Couldn't save changes. Try again.",
   "graphique {period}": "{period} chart",
   "Ma répartition par position ({n} lignes, en %)": "My allocation by position ({n} rows, in %)",

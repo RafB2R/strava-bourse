@@ -137,7 +137,7 @@ function DividendForecast({ forecast, hasIsin, T, card }) {
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{formatEur2(p.annual)}</div>
-                <div style={{ fontSize: 11, color: T.textMuted }}>{p.share.toLocaleString(LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %</div>
+                <div style={{ fontSize: 11, color: T.textMuted }}>{t("{v} %", { v: p.share.toLocaleString(LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}</div>
               </div>
             </div>
           ))}
@@ -477,14 +477,14 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
           <div style={sectionLabel}>{t("Exposition réelle")}</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
             {Object.entries(vehiculeCounts).map(([v, count]) => (
-              <span key={v} style={{ padding: "3px 10px", borderRadius: 999, fontSize: 12, background: T.bgSubtle, color: T.textMuted }}>{count} {t(v)}</span>
+              <span key={v} style={{ padding: "3px 10px", borderRadius: 999, fontSize: 12, background: T.bgSubtle, color: T.textMuted }}>{LANG === "en" ? `${t(v)} · ${count}` : `${count} ${v}`}</span>
             ))}
           </div>
           {Object.entries(byExpo).sort((a, b) => b[1] - a[1]).map(([expo, pct]) => (
             <div key={expo} style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <span style={{ fontSize: 14, fontWeight: 500, color: T.text }}>{t(expo)}</span>
-                <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{pct.toFixed(0)} %</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{t("{v} %", { v: pct.toFixed(0) })}</span>
               </div>
               <div style={{ height: 6, background: T.border, borderRadius: 3, overflow: "hidden" }}>
                 <div style={{ width: `${pct}%`, height: "100%", background: EXP_COLORS[expo] || "#888", borderRadius: 3 }} />
