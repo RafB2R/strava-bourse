@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import { photoStats, simulate, RISK_FREE } from "../compare";
+import { analyzeDiversification } from "../diversification";
 import Icon from "./Icon";
 import { t } from "../i18n";
 
@@ -26,7 +27,7 @@ const PHOTO = [
   { key: "classes", label: "Classes d'actifs", format: v => `${v}`, better: "high" },
   { key: "etf", label: "Part en ETF", format: v => `${Math.round(v)} %` },
 ];
-const SOON = ["ESG", "Zones géographiques", "Frais des ETF"];
+const SOON = ["ESG", "Frais des ETF"];
 
 const ENTRY_COLUMNS = "id, label, type, exposition, percentage, broker";
 
@@ -68,6 +69,21 @@ export default function Comparison({ myId, theirEntries, theirName, T }) {
     return () => { ignore = true; };
   }, [mine, theirEntries, period]);
 
+  // Zones et taille des entreprises (diversification détaillée)
+  const [div, setDiv] = useState(null); // { mine, theirs }
+  useEffect(() => {
+    if (!mine) return;
+    let ignore = false;
+    Promise.all([analyzeDiversification(mine).catch(() => null), analyzeDiversification(theirEntries).catch(() => null)])
+      .then(([a, b]) => { if (!ignore) setDiv({ mine: a, theirs: b }); });
+    return () => { ignore = true; };
+  }, [mine, theirEntries]);
+  const mainZone = d => {
+    const top = d?.zones?.filter(([k]) => !/Non identifiée|Hors zone/.test(k)).sort((a, b) => b[1] - a[1])[0];
+    return top ? `${t(top[0])} ${Math.round(top[1])} %` : null;
+  };
+  const smallMid = d => (d?.sizes?.length ? d.sizes.filter(([k]) => k === "Petites" || k === "Moyennes").reduce((s, [, v]) => s + v, 0) : null);
+
   const ready = sim.period === period;
   const photoMine = photoStats(mine), photoTheirs = photoStats(theirEntries);
   const coverage = [ready && sim.mine?.coverage, ready && sim.theirs?.coverage].filter(v => v != null && v !== false);
@@ -100,6 +116,8 @@ export default function Comparison({ myId, theirEntries, theirName, T }) {
 
       <div style={section}><Icon name="camera" size={12} />{t("Positions actuelles")}</div>
       {PHOTO.map(r => <Row key={r.key} T={T} {...r} mine={photoMine?.[r.key]} theirs={photoTheirs?.[r.key]} />)}
+      <Row T={T} label="Zone principale" format={v => v} mine={mainZone(div?.mine)} theirs={mainZone(div?.theirs)} />
+      <Row T={T} label="Petites et moyennes capi." format={v => `${Math.round(v)} %`} mine={smallMid(div?.mine)} theirs={smallMid(div?.theirs)} />
       {SOON.map(label => (
         <div key={label} style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, padding: "7px 0", borderTop: `0.5px solid ${T.border}`, alignItems: "center" }}>
           <div style={{ textAlign: "right", fontSize: 11, color: T.textFaint }}>{t("bientôt")}</div>

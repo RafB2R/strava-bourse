@@ -9,6 +9,7 @@ import { fetchMyIncome, incomeStats, incomeTypeFor, fmtYield, fetchDividendInfo,
 import ShareCard from "./ShareCard";
 import IndexDetail from "./IndexDetail";
 import Icon from "./Icon";
+import Diversification from "./Diversification";
 import { RefreshCw } from "lucide-react";
 import { resolveAsset } from "../attachments";
 import { detailFor } from "../indices";
@@ -204,6 +205,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [divVol, setDivVol] = useState(null);
   const [form, setForm] = useState({ label: "", isin: "", vehicule: "ETF", exposition: "Actions", percentage: "", prix_achat: "", prix_actuel: "", nombre_parts: "", broker: "" });
   const [error, setError] = useState("");
   const [openDetail, setOpenDetail] = useState({});
@@ -406,7 +408,8 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
   const scoreConc = maxPos <= 30 ? 25 : maxPos <= 50 ? 15 : 5;
   const scorePos = Math.min(entries.length * 3, 15);
   const scoreDiversif = scoreExpo + scoreBroker + scoreConc + scorePos;
-  const volPonderee = entries.reduce((s, e) => { const vol = EXP_VOLATILITY[e.exposition] || EXP_VOLATILITY[e.type] || 0.12; return s + vol * (Number(e.percentage) / 100); }, 0);
+  // Volatilité indicative : celle de l'analyse détaillée (zones, petites capi) dès qu'elle est prête
+  const volPonderee = divVol ?? entries.reduce((s, e) => { const vol = EXP_VOLATILITY[e.exposition] || EXP_VOLATILITY[e.type] || 0.12; return s + vol * (Number(e.percentage) / 100); }, 0);
   const profilRisque = volPonderee < 0.06 ? { label: "Défensif", color: T.blue, icon: "🛡️" } : volPonderee < 0.12 ? { label: "Équilibré", color: T.accent, icon: "⚖️" } : volPonderee < 0.20 ? { label: "Dynamique", color: T.yellow, icon: "🚀" } : { label: "Agressif", color: T.red, icon: "⚡" };
 
   const formValeur = form.prix_actuel && form.nombre_parts ? Number(form.prix_actuel) * Number(form.nombre_parts) : null;
@@ -751,6 +754,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
               <div style={{ fontSize: 14, fontWeight: 700, color: profilRisque.color }}>{t(profilRisque.label)}</div>
             </div>
           </div>
+          <Diversification entries={entries} T={T} onVol={setDivVol} />
         </div>
       )}
 
