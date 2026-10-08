@@ -8,6 +8,7 @@ import { fetchUnreadTotal } from "./messages";
 import Notifications from "./components/Notifications";
 import Comparison from "./components/Comparison";
 import Icon from "./components/Icon";
+import { t } from "./i18n";
 
 // Écrans chargés à la demande pour alléger le bundle initial
 const Landing = lazy(() => import("./Landing"));
@@ -36,8 +37,8 @@ const TABS = [
 const URL_TABS = ["feed", "explore", "portfolio", "profil", "messages"];
 function tabFromUrl() {
   try {
-    const t = new URLSearchParams(window.location.search).get("tab");
-    return URL_TABS.includes(t) ? t : null;
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    return URL_TABS.includes(tab) ? tab : null;
   } catch {
     return null;
   }
@@ -54,15 +55,15 @@ function desktopZoom() {
 function getGreeting(name) {
   const hour = new Date().getHours();
   const firstName = name?.split(" ")[0] || "";
-  if (hour < 12) return `Bonjour ${firstName}`;
-  if (hour < 18) return `Bon après-midi ${firstName}`;
-  return `Bonsoir ${firstName}`;
+  if (hour < 12) return t("Bonjour {name}", { name: firstName });
+  if (hour < 18) return t("Bon après-midi {name}", { name: firstName });
+  return t("Bonsoir {name}", { name: firstName });
 }
 
 // Bouton messagerie à côté de la cloche des notifications, avec le nombre de messages non lus
 function MessagesButton({ unread, onClick, active, T }) {
   return (
-    <button onClick={onClick} aria-label={unread > 0 ? `Messagerie, ${unread} message(s) non lu(s)` : "Messagerie"}
+    <button onClick={onClick} aria-label={unread > 0 ? t("Messagerie, {n} message(s) non lu(s)", { n: unread }) : t("Messagerie")}
       style={{ background: active ? T.accentBg : "none", border: `0.5px solid ${active ? T.accent : T.borderStrong}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer", position: "relative", display: "flex", alignItems: "center" }}>
       <Icon name="comment" size={16} style={{ color: T.textMuted }} />
       {unread > 0 && (
@@ -98,7 +99,7 @@ function MarketWidget({ T }) {
 
   return (
     <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: 16, marginBottom: 16 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}><Icon name="up" size={14} />Marchés</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}><Icon name="up" size={14} />{t("Marchés")}</div>
       {INDICES.map(({ label }) => {
         const d = data[label];
         const change = d?.change;
@@ -123,7 +124,7 @@ function ComparisonWidget({ data, myId, T }) {
   if (!data) return null;
   return (
     <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: 16, marginBottom: 16 }}>
-      <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, display: "flex", alignItems: "center", gap: 5 }}><Icon name="scale" size={13} />Comparaison</div>
+      <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, display: "flex", alignItems: "center", gap: 5 }}><Icon name="scale" size={13} />{t("Comparaison")}</div>
       <Comparison key={data.userId} myId={myId} theirEntries={data.entries} theirName={data.profile.full_name?.split(" ")[0]} T={T} />
     </div>
   );
@@ -296,7 +297,7 @@ export default function App() {
 
   const loadingScreen = (
     <div style={{ minHeight: "100vh", background: T.bg, display: "flex", alignItems: "center", justifyContent: "center", color: T.textMuted, fontFamily: "'Outfit', system-ui, sans-serif" }}>
-      Chargement…
+      {t("Chargement…")}
     </div>
   );
 
@@ -313,17 +314,17 @@ export default function App() {
     <div style={{ background: T.accentBg, borderBottom: `1px solid ${T.border}`, padding: "10px 24px", display: "flex", alignItems: "center", gap: 12 }}>
       <Icon name="list" size={18} style={{ color: T.accent }} />
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: T.accent }}>Complète ton profil investisseur</div>
-        <div style={{ fontSize: 12, color: T.textMuted }}>Personnalise ton expérience en 2 minutes</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: T.accent }}>{t("Complète ton profil investisseur")}</div>
+        <div style={{ fontSize: 12, color: T.textMuted }}>{t("Personnalise ton expérience en 2 minutes")}</div>
       </div>
       <button onClick={() => setShowKYC(true)} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>
-        Commencer →
+        {t("Commencer →")}
       </button>
     </div>
   ) : null;
 
   const content = (
-    <Suspense fallback={<div style={{ color: T.textFaint, fontSize: 13, textAlign: "center", padding: "2rem" }}>Chargement…</div>}>
+    <Suspense fallback={<div style={{ color: T.textFaint, fontSize: 13, textAlign: "center", padding: "2rem" }}>{t("Chargement…")}</div>}>
       {showKYC && <KYC session={session} profile={profile} T={T} onComplete={() => { setShowKYC(false); setShowOnboarding(true); loadProfile(); }} onSkip={() => setShowKYC(false)} />}
       {/* Après le questionnaire : premiers comptes, sociétés et indices à suivre */}
       {showOnboarding && <Onboarding session={session} T={T} onDone={() => { setShowOnboarding(false); setNavKey(k => k + 1); }} />}
@@ -339,7 +340,7 @@ export default function App() {
           {/* Un post ouvert depuis une notification, commentaires ouverts */}
           {tab === "post" && exploreIntent?.activityId != null && (
             <div>
-              <button onClick={() => goToTab("feed")} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13, padding: 0, marginBottom: 14, fontFamily: "inherit" }}>← Fil</button>
+              <button onClick={() => goToTab("feed")} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13, padding: 0, marginBottom: 14, fontFamily: "inherit" }}>← {t("Fil")}</button>
               <Feed key={`post-${exploreIntent.activityId}-${navKey}`} session={session} T={T} focusId={exploreIntent.activityId} onViewProfile={viewProfile} onOpenClub={club => goToTab("explore", { section: "clubs", club })} />
             </div>
           )}
@@ -357,24 +358,24 @@ export default function App() {
           ve<span style={{ color: T.accent }}>rio</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => goToTab(t.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 10, border: "none", background: tab === t.id ? T.accentBg : "transparent", color: tab === t.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === t.id ? 700 : 400, fontSize: 14 }}>
-              <Icon name={t.icon} size={18} />{t.label}
+          {TABS.map(tb => (
+            <button key={tb.id} onClick={() => goToTab(tb.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 10, border: "none", background: tab === tb.id ? T.accentBg : "transparent", color: tab === tb.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === tb.id ? 700 : 400, fontSize: 14 }}>
+              <Icon name={tb.icon} size={18} />{t(tb.label)}
             </button>
           ))}
         </div>
         <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
           <button onClick={toggleTheme} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 10, border: "none", background: "transparent", color: T.textMuted, cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
             <Icon name={themeKey === "dark" ? "sun" : "moon"} size={16} />
-            {themeKey === "dark" ? "Mode clair" : "Mode sombre"}
+            {themeKey === "dark" ? t("Mode clair") : t("Mode sombre")}
           </button>
           {profile?.full_name && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px" }}>
               <div style={{ width: 30, height: 30, borderRadius: "50%", background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
                 {profile.full_name[0]}
               </div>
-              <button onClick={() => goToTab("profil")} title="Mon profil" style={{ flex: 1, minWidth: 0, textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.full_name}</button>
-              <button onClick={handleLogout} aria-label="Déconnexion" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center" }} title="Déconnexion"><Icon name="logout" size={16} /></button>
+              <button onClick={() => goToTab("profil")} title={t("Mon profil")} style={{ flex: 1, minWidth: 0, textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.full_name}</button>
+              <button onClick={handleLogout} aria-label={t("Déconnexion")} style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center" }} title={t("Déconnexion")}><Icon name="logout" size={16} /></button>
             </div>
           )}
         </div>
@@ -427,12 +428,12 @@ export default function App() {
             {profile?.full_name && <div style={{ fontSize: 12, color: T.textMuted, marginTop: 1 }}>{getGreeting(profile.full_name)}</div>}
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <button onClick={toggleTheme} aria-label={themeKey === "dark" ? "Passer en mode clair" : "Passer en mode sombre"} style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "6px 10px", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", color: T.textMuted }}>
+            <button onClick={toggleTheme} aria-label={themeKey === "dark" ? t("Passer en mode clair") : t("Passer en mode sombre")} style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "6px 10px", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", color: T.textMuted }}>
               <Icon name={themeKey === "dark" ? "sun" : "moon"} size={16} />
             </button>
             <Notifications session={session} T={T} onOpen={openNotification} />
             <MessagesButton unread={unreadMessages} active={tab === "messages"} onClick={() => goToTab("messages")} T={T} />
-            <button onClick={handleLogout} style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>Déco.</button>
+            <button onClick={handleLogout} style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "6px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{t("Déco.")}</button>
           </div>
         </div>
       </div>
@@ -443,9 +444,9 @@ export default function App() {
       </div>
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: T.bgSecondary, borderTop: `0.5px solid ${T.border}`, paddingBottom: "env(safe-area-inset-bottom)", zIndex: 10 }}>
         <div style={{ maxWidth: 620, margin: "0 auto", display: "flex" }}>
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => goToTab(t.id)} style={{ flex: 1, padding: "12px 4px 14px", fontSize: 10, background: "none", border: "none", color: tab === t.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === t.id ? 600 : 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <Icon name={t.icon} size={20} />{t.label}
+          {TABS.map(tb => (
+            <button key={tb.id} onClick={() => goToTab(tb.id)} style={{ flex: 1, padding: "12px 4px 14px", fontSize: 10, background: "none", border: "none", color: tab === tb.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === tb.id ? 600 : 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <Icon name={tb.icon} size={20} />{t(tb.label)}
             </button>
           ))}
         </div>

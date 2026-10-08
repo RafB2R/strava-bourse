@@ -11,6 +11,7 @@ import { detailFor } from "../indices";
 import { useDetailView } from "../useDetailView";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
+import { t } from "../i18n";
 
 // Prévient les membres mentionnés dans un post ou une réponse de club
 async function notifyMentions(tags, myId, data) {
@@ -51,10 +52,10 @@ const lbl = (T) => ({ fontSize: 12, color: T.textMuted, marginBottom: 4, display
 
 function timeAgo(date) {
   const diff = (Date.now() - new Date(date)) / 1000;
-  if (diff < 60) return "à l'instant";
-  if (diff < 3600) return `il y a ${Math.floor(diff / 60)} min`;
-  if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`;
-  return `il y a ${Math.floor(diff / 86400)} j`;
+  if (diff < 60) return t("à l'instant");
+  if (diff < 3600) return t("il y a {n} min", { n: Math.floor(diff / 60) });
+  if (diff < 86400) return t("il y a {n}h", { n: Math.floor(diff / 3600) });
+  return t("il y a {n} j", { n: Math.floor(diff / 86400) });
 }
 
 function Post({ post, session, isMember, onReact, onDelete, onAsset, onProfile }) {
@@ -111,7 +112,7 @@ function Post({ post, session, isMember, onReact, onDelete, onAsset, onProfile }
             {post.author?.username && <span style={{ fontSize: 12, color: T.textFaint }}>@{post.author.username}</span>}
             <span style={{ fontSize: 11, color: T.textFaint }}>{timeAgo(post.created_at)}</span>
             {post.user_id === session.user.id && (
-              <button onClick={() => onDelete(post.id)} style={{ marginLeft: "auto", background: "transparent", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 11, fontFamily: "inherit", display: "flex", alignItems: "center" }} aria-label="Supprimer"><Icon name="close" size={13} /></button>
+              <button onClick={() => onDelete(post.id)} style={{ marginLeft: "auto", background: "transparent", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 11, fontFamily: "inherit", display: "flex", alignItems: "center" }} aria-label={t("Supprimer")}><Icon name="close" size={13} /></button>
             )}
           </div>
           {post.content?.trim() && (
@@ -129,7 +130,7 @@ function Post({ post, session, isMember, onReact, onDelete, onAsset, onProfile }
               </button>
             ))}
             <button onClick={toggleReplies} style={{ ...btnSm(T), fontSize: 12, padding: "3px 10px", marginLeft: 4, ...inl }}>
-              <Icon name="comment" size={13} /> {post.reply_count > 0 ? `${post.reply_count} réponse${post.reply_count > 1 ? "s" : ""}` : "Répondre"}
+              <Icon name="comment" size={13} /> {post.reply_count > 0 ? t(post.reply_count > 1 ? "{n} réponses" : "{n} réponse", { n: post.reply_count }) : t("Répondre")}
             </button>
           </div>
         </div>
@@ -137,7 +138,7 @@ function Post({ post, session, isMember, onReact, onDelete, onAsset, onProfile }
 
       {showReplies && (
         <div style={{ marginTop: 14, paddingLeft: 44, borderLeft: `1.5px solid ${T.border}`, marginLeft: 17 }}>
-          {loadingReplies && <div style={{ fontSize: 12, color: T.textFaint, padding: "8px 0" }}>Chargement…</div>}
+          {loadingReplies && <div style={{ fontSize: 12, color: T.textFaint, padding: "8px 0" }}>{t("Chargement…")}</div>}
           {replies.map(reply => (
             <div key={reply.id} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
               <Avatar userId={reply.user_id} name={reply.author?.full_name} size={26} />
@@ -146,7 +147,7 @@ function Post({ post, session, isMember, onReact, onDelete, onAsset, onProfile }
                   <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{reply.author?.full_name}</span>
                   {reply.author?.username && <span style={{ fontSize: 11, color: T.textFaint }}>@{reply.author.username}</span>}
                   <span style={{ fontSize: 11, color: T.textFaint }}>{timeAgo(reply.created_at)}</span>
-                  {reply.user_id === session.user.id && <button onClick={() => deleteReply(reply.id)} style={{ marginLeft: "auto", background: "transparent", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 11, fontFamily: "inherit", display: "flex", alignItems: "center" }} aria-label="Supprimer"><Icon name="close" size={12} /></button>}
+                  {reply.user_id === session.user.id && <button onClick={() => deleteReply(reply.id)} style={{ marginLeft: "auto", background: "transparent", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 11, fontFamily: "inherit", display: "flex", alignItems: "center" }} aria-label={t("Supprimer")}><Icon name="close" size={12} /></button>}
                 </div>
                 <div style={{ fontSize: 13, color: T.text, lineHeight: 1.5, background: T.bgSubtle, borderRadius: 8, padding: "7px 10px", wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
                   <RichText text={reply.content} tickers={reply.tags?.tickers} mentions={reply.tags?.mentions} T={T} onAsset={onAsset} onProfile={onProfile} />
@@ -157,9 +158,9 @@ function Post({ post, session, isMember, onReact, onDelete, onAsset, onProfile }
           {isMember && (
             <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
               <Avatar userId={session.user.id} name={session.user.email} size={26} />
-              <TagField as="input" style={{ ...inp(T), marginBottom: 0, flex: 1, fontSize: 12, padding: "7px 10px" }} placeholder="Répondre… ($ valeur, @ membre)"
+              <TagField as="input" style={{ ...inp(T), marginBottom: 0, flex: 1, fontSize: 12, padding: "7px 10px" }} placeholder={t("Répondre… ($ valeur, @ membre)")}
                 value={replyInput} onValueChange={setReplyInput} tags={replyTags} onTagsChange={setReplyTags} onSubmit={sendReply} myId={session.user.id} T={T} />
-              <button onClick={sendReply} disabled={sendingReply || !replyInput.trim()} style={{ ...btn(T), padding: "7px 14px", fontSize: 12, flexShrink: 0, display: "flex", alignItems: "center" }} aria-label="Envoyer"><Icon name="enter" size={14} /></button>
+              <button onClick={sendReply} disabled={sendingReply || !replyInput.trim()} style={{ ...btn(T), padding: "7px 14px", fontSize: 12, flexShrink: 0, display: "flex", alignItems: "center" }} aria-label={t("Envoyer")}><Icon name="enter" size={14} /></button>
             </div>
           )}
         </div>
@@ -178,7 +179,7 @@ async function fetchClubRanking(clubId, userId) {
     .in("id", memberships.map(m => m.user_id));
   return (stats || []).map(s => ({
     user_id: s.id,
-    name: s.full_name || "Investisseur",
+    name: s.full_name || t("Investisseur"),
     username: s.username,
     streak: Number(s.streak_mois),
     perf: s.perf === null ? null : Number(s.perf),
@@ -248,14 +249,14 @@ function ClubRanking({ clubId, session }) {
       <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
         {[["performance", "up", "Performance"], ["regularite", "flame", "Régularité"], ["badges", "award", "Badges"]].map(([id, icon, label]) => (
           <button key={id} onClick={() => setFilter(id)} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filter === id ? T.accent : T.border}`, background: filter === id ? T.accentBg : "none", color: filter === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...inl }}>
-            <Icon name={icon} size={13} />{label}
+            <Icon name={icon} size={13} />{t(label)}
           </button>
         ))}
       </div>
-      {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>Chargement…</div>}
+      {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>{t("Chargement…")}</div>}
       {!loading && sorted.map((m, i) => {
         const val = filter === "performance" ? (m.perf !== null ? `${m.perf >= 0 ? "+" : ""}${m.perf.toFixed(1)}%` : "—")
-          : filter === "regularite" ? (m.streak > 0 ? <span style={inl}><Icon name="flame" size={14} />{m.streak} mois</span> : "—")
+          : filter === "regularite" ? (m.streak > 0 ? <span style={inl}><Icon name="flame" size={14} />{t("{n} mois", { n: m.streak })}</span> : "—")
           : <span style={inl}><Icon name="award" size={14} />{m.nbBadges}</span>;
         const color = filter === "performance" ? (m.perf === null ? T.textFaint : m.perf >= 0 ? T.up : T.red) : filter === "regularite" ? T.yellow : T.gold;
         return (
@@ -266,7 +267,7 @@ function ClubRanking({ clubId, session }) {
             <Avatar userId={m.user_id} name={m.name} size={32} />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: m.isMe ? T.accent : T.text }}>
-                {m.name}{m.isMe && <span style={{ fontSize: 11, color: T.textFaint, marginLeft: 6 }}>· moi</span>}
+                {m.name}{m.isMe && <span style={{ fontSize: 11, color: T.textFaint, marginLeft: 6 }}>· {t("moi")}</span>}
               </div>
             </div>
             <div style={{ fontSize: 14, fontWeight: 600, color }}>{val}</div>
@@ -313,7 +314,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
     if (files.length === 0) return;
     setPostError("");
     const room = MAX_IMAGES - postImages.length - preparing;
-    if (files.length > room) setPostError(`${MAX_IMAGES} images maximum par post.`);
+    if (files.length > room) setPostError(t("{n} images maximum par post.", { n: MAX_IMAGES }));
     const batch = files.slice(0, Math.max(0, room));
     setPreparing(n => n + batch.length);
     for (const file of batch) {
@@ -321,7 +322,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
         const img = await compressImage(file);
         setPostImages(p => [...p, { ...img, preview: URL.createObjectURL(img.blob) }]);
       } catch (e) {
-        setPostError(e.message || "Image illisible.");
+        setPostError(e.message || t("Image illisible."));
       } finally {
         setPreparing(n => n - 1);
       }
@@ -333,7 +334,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
     setPostError("");
     const ok = files.filter(f => { const err = checkFile(f); if (err) setPostError(err); return !err; });
     const room = MAX_FILES - postFiles.length;
-    if (ok.length > room) setPostError(`${MAX_FILES} fichiers maximum par post.`);
+    if (ok.length > room) setPostError(t("{n} fichiers maximum par post.", { n: MAX_FILES }));
     if (room > 0) setPostFiles(p => [...p, ...ok.slice(0, room)]);
   }
 
@@ -359,7 +360,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
     const { data: created, error } = await supabase.from("club_posts").insert(row).select("id").single();
     if (error) {
       await Promise.all([removeImages(images.map(i => i.path)), removeFiles(files.map(f => f.path))]);
-      setPostError("Publication impossible. Réessaie."); setSending(false); return;
+      setPostError(t("Publication impossible. Réessaie.")); setSending(false); return;
     }
     notifyMentions(tags, session.user.id, { club_id: club.id, post_id: created?.id, excerpt: content.slice(0, 80) });
     postImages.forEach(i => URL.revokeObjectURL(i.preview));
@@ -405,7 +406,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
 
   return (
     <div>
-      <button onClick={onBack} style={{ ...btnSm(T), marginBottom: 16 }}>← Retour</button>
+      <button onClick={onBack} style={{ ...btnSm(T), marginBottom: 16 }}>{t("← Retour")}</button>
 
       <div style={card(T)}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
@@ -413,12 +414,12 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: T.text, marginBottom: 4 }}>{club.name}</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{club.subcategory}</span>
-              <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted, ...inl, gap: 4 }}><Icon name="users" size={12} />{memberCount} membre{memberCount > 1 ? "s" : ""}</span>
+              <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{t(club.subcategory)}</span>
+              <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted, ...inl, gap: 4 }}><Icon name="users" size={12} />{t(memberCount > 1 ? "{n} membres" : "{n} membre", { n: memberCount })}</span>
             </div>
             {club.description && <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5, marginTop: 6 }}>{club.description}</div>}
           </div>
-          {isMember ? <button onClick={onLeave} style={btnSm(T)}>Quitter</button> : <button onClick={onJoin} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>+ Rejoindre</button>}
+          {isMember ? <button onClick={onLeave} style={btnSm(T)}>{t("Quitter")}</button> : <button onClick={onJoin} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>{t("+ Rejoindre")}</button>}
         </div>
       </div>
 
@@ -426,7 +427,7 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
       <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
         {[["discussion", "comment", "Discussion"], ["classement", "trophy", "Classement"]].map(([id, icon, label]) => (
           <button key={id} onClick={() => setClubTab(id)} style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, border: `0.5px solid ${clubTab === id ? T.accent : T.border}`, background: clubTab === id ? T.accentBg : "none", color: clubTab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...inl, gap: 6 }}>
-            <Icon name={icon} size={14} />{label}
+            <Icon name={icon} size={14} />{t(label)}
           </button>
         ))}
       </div>
@@ -443,38 +444,38 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
         <div>
           {isMember && (
             <div style={{ ...card(T), marginBottom: 20 }}>
-              <TagField as="textarea" style={{ ...inp(T), marginBottom: 8, height: 80, resize: "none" }} placeholder="Partage une idée, une question… $ pour citer une valeur, @ pour un membre"
+              <TagField as="textarea" style={{ ...inp(T), marginBottom: 8, height: 80, resize: "none" }} placeholder={t("Partage une idée, une question… $ pour citer une valeur, @ pour un membre")}
                 value={input} onValueChange={setInput} tags={inputTags} onTagsChange={setInputTags} myId={session.user.id} T={T}
                 onPaste={e => { const files = [...e.clipboardData.files].filter(isImage); if (files.length) { e.preventDefault(); addImages(files); } }} />
               <ComposerPreviews items={postImages} onRemove={i => setPostImages(p => p.filter((_, j) => j !== i))} T={T} />
               <ComposerFiles files={postFiles} onRemove={i => setPostFiles(p => p.filter((_, j) => j !== i))} T={T} />
-              {preparing > 0 && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 6 }}>Préparation de l'image…</div>}
+              {preparing > 0 && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 6 }}>{t("Préparation de l'image…")}</div>}
               {postError && <div role="alert" style={{ fontSize: 12, color: T.red, marginTop: 6 }}>{postError}</div>}
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, flexWrap: "wrap" }}>
                 <input ref={imageInput} type="file" accept={ACCEPT_ATTR} multiple hidden onChange={e => { addImages(e.target.files); e.target.value = ""; }} />
                 <input ref={fileInput} type="file" accept={FILE_ACCEPT_ATTR} multiple hidden onChange={e => { addFiles(e.target.files); e.target.value = ""; }} />
                 <button onClick={() => imageInput.current?.click()} disabled={postImages.length + preparing >= MAX_IMAGES}
-                  style={{ background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 36 }} aria-label="Photo"><Icon name="image" size={18} /><span className="tool-label">Photo</span></button>
-                <button onClick={() => fileInput.current?.click()} disabled={postFiles.length >= MAX_FILES} title="PDF, Excel, Word, PowerPoint, CSV · 10 Mo max"
-                  style={{ background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 36 }} aria-label="Fichier"><Icon name="clip" size={18} /><span className="tool-label">Fichier</span></button>
+                  style={{ background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 36 }} aria-label={t("Photo")}><Icon name="image" size={18} /><span className="tool-label">{t("Photo")}</span></button>
+                <button onClick={() => fileInput.current?.click()} disabled={postFiles.length >= MAX_FILES} title={t("PDF, Excel, Word, PowerPoint, CSV · 10 Mo max")}
+                  style={{ background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 36 }} aria-label={t("Fichier")}><Icon name="clip" size={18} /><span className="tool-label">{t("Fichier")}</span></button>
                 <span style={{ flex: 1 }} />
-                <button style={{ ...btn(T), padding: "8px 20px", opacity: canPost ? 1 : 0.5 }} onClick={sendPost} disabled={!canPost}>{sending ? "Publication…" : "Publier"}</button>
+                <button style={{ ...btn(T), padding: "8px 20px", opacity: canPost ? 1 : 0.5 }} onClick={sendPost} disabled={!canPost}>{sending ? t("Publication…") : t("Publier")}</button>
               </div>
             </div>
           )}
-          {!isMember && <div style={{ textAlign: "center", padding: "1rem 0 1.5rem", fontSize: 13, color: T.textFaint }}>Rejoins ce club pour participer aux discussions</div>}
+          {!isMember && <div style={{ textAlign: "center", padding: "1rem 0 1.5rem", fontSize: 13, color: T.textFaint }}>{t("Rejoins ce club pour participer aux discussions")}</div>}
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>{total} post{total > 1 ? "s" : ""}</div>
+            <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>{t(total > 1 ? "{n} posts" : "{n} post", { n: total })}</div>
             <div style={{ display: "flex", gap: 6 }}>
               {[["date", "clock", "Récents"], ["popularite", "flame", "Populaires"]].map(([id, icon, label]) => (
-                <button key={id} onClick={() => { if (id !== sort) { setLoading(true); setSort(id); setPage(1); } }} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${sort === id ? T.accent : T.border}`, background: sort === id ? T.accentBg : "none", color: sort === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...inl }}><Icon name={icon} size={12} />{label}</button>
+                <button key={id} onClick={() => { if (id !== sort) { setLoading(true); setSort(id); setPage(1); } }} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${sort === id ? T.accent : T.border}`, background: sort === id ? T.accentBg : "none", color: sort === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...inl }}><Icon name={icon} size={12} />{t(label)}</button>
               ))}
             </div>
           </div>
 
-          {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>Chargement…</div>}
-          {!loading && posts.length === 0 && <div style={{ ...card(T), textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>Aucun post encore — lance la discussion !</div>}
+          {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>{t("Chargement…")}</div>}
+          {!loading && posts.length === 0 && <div style={{ ...card(T), textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>{t("Aucun post encore — lance la discussion !")}</div>}
           {posts.map(post => (
             <Post key={post.id} post={post} session={session} isMember={isMember} onReact={handleReact} onDelete={deletePost}
               onAsset={showAsset} onProfile={id => onViewProfile?.(id)} />
@@ -482,9 +483,9 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
 
           {totalPages > 1 && (
             <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16 }}>
-              <button onClick={() => { setLoading(true); setPage(p => Math.max(1, p - 1)); }} disabled={page === 1} style={{ ...btnSm(T), opacity: page === 1 ? 0.3 : 1 }}>← Préc.</button>
+              <button onClick={() => { setLoading(true); setPage(p => Math.max(1, p - 1)); }} disabled={page === 1} style={{ ...btnSm(T), opacity: page === 1 ? 0.3 : 1 }}>{t("← Préc.")}</button>
               <span style={{ fontSize: 13, color: T.textMuted, padding: "5px 12px" }}>{page} / {totalPages}</span>
-              <button onClick={() => { setLoading(true); setPage(p => Math.min(totalPages, p + 1)); }} disabled={page === totalPages} style={{ ...btnSm(T), opacity: page === totalPages ? 0.3 : 1 }}>Suiv. →</button>
+              <button onClick={() => { setLoading(true); setPage(p => Math.min(totalPages, p + 1)); }} disabled={page === totalPages} style={{ ...btnSm(T), opacity: page === totalPages ? 0.3 : 1 }}>{t("Suiv. →")}</button>
             </div>
           )}
         </div>
@@ -540,9 +541,9 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
 
   async function createClub() {
     setError("");
-    if (!form.name.trim()) return setError("Donne un nom au club.");
-    if (!form.category) return setError("Choisis une catégorie.");
-    if (!form.subcategory) return setError("Choisis une sous-catégorie.");
+    if (!form.name.trim()) return setError(t("Donne un nom au club."));
+    if (!form.category) return setError(t("Choisis une catégorie."));
+    if (!form.subcategory) return setError(t("Choisis une sous-catégorie."));
     setSaving(true);
     const { data, error: err } = await supabase.from("clubs").insert({ name: form.name.trim(), description: form.description.trim(), category: form.category, subcategory: form.subcategory, creator_id: session.user.id }).select().single();
     if (err) { setError(err.message); setSaving(false); return; }
@@ -595,64 +596,64 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         {["explorer", "mes-clubs"].map(v => (
           <button key={v} onClick={() => setView(v)} style={{ padding: "7px 16px", borderRadius: 999, fontSize: 13, border: `0.5px solid ${view === v ? T.accent : T.border}`, background: view === v ? T.accentBg : "none", color: view === v ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...inl, gap: 6 }}>
-            <Icon name={v === "explorer" ? "search" : "users"} size={14} />{v === "explorer" ? "Explorer" : `Mes clubs (${myClubs.length})`}
+            <Icon name={v === "explorer" ? "search" : "users"} size={14} />{v === "explorer" ? t("Explorer") : t("Mes clubs ({n})", { n: myClubs.length })}
           </button>
         ))}
         <button onClick={() => setShowForm(!showForm)} style={{ ...btn(T), marginLeft: "auto", padding: "7px 16px" }}>
-          {showForm ? "Annuler" : "+ Créer"}
+          {showForm ? t("Annuler") : t("+ Créer")}
         </button>
       </div>
 
       {showForm && (
         <div style={card(T)}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 16 }}>Créer un club</div>
-          <span style={lbl(T)}>Nom du club</span>
-          <input style={inp(T)} placeholder="ex: ETF World Investors France" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-          <span style={lbl(T)}>Description (optionnel)</span>
-          <textarea style={{ ...inp(T), height: 70, resize: "vertical" }} placeholder="De quoi parle ce club ?" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
-          <span style={lbl(T)}>Catégorie principale</span>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 16 }}>{t("Créer un club")}</div>
+          <span style={lbl(T)}>{t("Nom du club")}</span>
+          <input style={inp(T)} placeholder={t("ex: ETF World Investors France")} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+          <span style={lbl(T)}>{t("Description (optionnel)")}</span>
+          <textarea style={{ ...inp(T), height: 70, resize: "vertical" }} placeholder={t("De quoi parle ce club ?")} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+          <span style={lbl(T)}>{t("Catégorie principale")}</span>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
             {Object.keys(CATEGORIES).map(cat => (
-              <button key={cat} onClick={() => setForm({ ...form, category: cat, subcategory: "" })} style={{ padding: "5px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${form.category === cat ? T.accent : T.border}`, background: form.category === cat ? T.accentBg : "none", color: form.category === cat ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...inl }}><CatIcon category={cat} size={13} />{catText(cat)}</button>
+              <button key={cat} onClick={() => setForm({ ...form, category: cat, subcategory: "" })} style={{ padding: "5px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${form.category === cat ? T.accent : T.border}`, background: form.category === cat ? T.accentBg : "none", color: form.category === cat ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...inl }}><CatIcon category={cat} size={13} />{t(catText(cat))}</button>
             ))}
           </div>
           {form.category && (
             <>
-              <span style={lbl(T)}>Sous-catégorie</span>
+              <span style={lbl(T)}>{t("Sous-catégorie")}</span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
                 {CATEGORIES[form.category].map(sub => (
-                  <button key={sub} onClick={() => setForm({ ...form, subcategory: sub })} style={{ padding: "5px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${form.subcategory === sub ? T.accent : T.border}`, background: form.subcategory === sub ? T.accentBg : "none", color: form.subcategory === sub ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{sub}</button>
+                  <button key={sub} onClick={() => setForm({ ...form, subcategory: sub })} style={{ padding: "5px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${form.subcategory === sub ? T.accent : T.border}`, background: form.subcategory === sub ? T.accentBg : "none", color: form.subcategory === sub ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{t(sub)}</button>
                 ))}
               </div>
             </>
           )}
           {error && <div style={{ fontSize: 13, color: T.red, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}><Icon name="warning" size={14} />{error}</div>}
-          <button style={btn(T)} onClick={createClub} disabled={saving}>{saving ? "Création…" : "Créer le club"}</button>
+          <button style={btn(T)} onClick={createClub} disabled={saving}>{saving ? t("Création…") : t("Créer le club")}</button>
         </div>
       )}
 
       {!showForm && view === "explorer" && (
         <>
-          <input style={{ ...inp(T), marginBottom: 12 }} placeholder="Rechercher un club par nom…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+          <input style={{ ...inp(T), marginBottom: 12 }} placeholder={t("Rechercher un club par nom…")} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
             {categories.map(cat => (
               <button key={cat} onClick={() => { setFilterCat(cat); setFilterSub("Tous"); }} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filterCat === cat ? T.accent : T.border}`, background: filterCat === cat ? T.accentBg : "none", color: filterCat === cat ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", ...inl }}>
-                {cat !== "Tous" && <CatIcon category={cat} size={13} />}{cat === "Tous" ? "Tous" : catText(cat)}
+                {cat !== "Tous" && <CatIcon category={cat} size={13} />}{cat === "Tous" ? t("Tous") : t(catText(cat))}
               </button>
             ))}
           </div>
           {filterCat !== "Tous" && (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
-              <button onClick={() => setFilterSub("Tous")} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${filterSub === "Tous" ? T.accent : T.border}`, background: filterSub === "Tous" ? T.accentBg : "none", color: filterSub === "Tous" ? T.accent : T.textFaint, cursor: "pointer", fontFamily: "inherit" }}>Tous</button>
+              <button onClick={() => setFilterSub("Tous")} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${filterSub === "Tous" ? T.accent : T.border}`, background: filterSub === "Tous" ? T.accentBg : "none", color: filterSub === "Tous" ? T.accent : T.textFaint, cursor: "pointer", fontFamily: "inherit" }}>{t("Tous")}</button>
               {CATEGORIES[filterCat].map(sub => (
-                <button key={sub} onClick={() => setFilterSub(sub)} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${filterSub === sub ? T.accent : T.border}`, background: filterSub === sub ? T.accentBg : "none", color: filterSub === sub ? T.accent : T.textFaint, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>{sub}</button>
+                <button key={sub} onClick={() => setFilterSub(sub)} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${filterSub === sub ? T.accent : T.border}`, background: filterSub === sub ? T.accentBg : "none", color: filterSub === sub ? T.accent : T.textFaint, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>{t(sub)}</button>
               ))}
             </div>
           )}
           {filterCat === "Tous" && <div style={{ marginBottom: 16 }} />}
-          {searchQuery && <div style={{ fontSize: 12, color: T.textFaint, marginBottom: 12 }}>{filteredClubs.length} résultat{filteredClubs.length > 1 ? "s" : ""} pour "{searchQuery}"</div>}
-          {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>Chargement…</div>}
-          {!loading && filteredClubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}>{searchQuery ? `Aucun club pour "${searchQuery}"` : "Aucun club — crée le premier !"}</div>}
+          {searchQuery && <div style={{ fontSize: 12, color: T.textFaint, marginBottom: 12 }}>{t(filteredClubs.length > 1 ? "{n} résultats pour \"{query}\"" : "{n} résultat pour \"{query}\"", { n: filteredClubs.length, query: searchQuery })}</div>}
+          {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>{t("Chargement…")}</div>}
+          {!loading && filteredClubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}>{searchQuery ? t("Aucun club pour \"{query}\"", { query: searchQuery }) : t("Aucun club — crée le premier !")}</div>}
           {filteredClubs.map(club => (
             <div key={club.id} style={{ ...card(T), cursor: "pointer" }} onClick={() => setSelectedClub(club)}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
@@ -662,9 +663,9 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
                     {highlight(club.name, searchQuery, T.accent)}
                   </div>
                   <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
-                    <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{club.subcategory}</span>
-                    <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted, ...inl, gap: 4 }}><Icon name="users" size={12} />{memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
-                    {myClubs.includes(club.id) && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent, ...inl, gap: 4 }}><Icon name="check" size={11} />Membre</span>}
+                    <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{t(club.subcategory)}</span>
+                    <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted, ...inl, gap: 4 }}><Icon name="users" size={12} />{t((memberCounts[club.id] || 0) > 1 ? "{n} membres" : "{n} membre", { n: memberCounts[club.id] || 0 })}</span>
+                    {myClubs.includes(club.id) && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent, ...inl, gap: 4 }}><Icon name="check" size={11} />{t("Membre")}</span>}
                   </div>
                   {club.description && <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5 }}>{club.description}</div>}
                 </div>
@@ -677,7 +678,7 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
 
       {view === "mes-clubs" && !showForm && (
         <>
-          {myClubsData.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}>Tu n'as rejoint aucun club</div>}
+          {myClubsData.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}>{t("Tu n'as rejoint aucun club")}</div>}
           {myClubsData.map(club => (
             <div key={club.id} style={{ ...card(T), cursor: "pointer" }} onClick={() => setSelectedClub(club)}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -685,8 +686,8 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{club.name}</div>
                   <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                    <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{club.subcategory}</span>
-                    <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted, ...inl, gap: 4 }}><Icon name="users" size={12} />{memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
+                    <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{t(club.subcategory)}</span>
+                    <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted, ...inl, gap: 4 }}><Icon name="users" size={12} />{t((memberCounts[club.id] || 0) > 1 ? "{n} membres" : "{n} membre", { n: memberCounts[club.id] || 0 })}</span>
                   </div>
                 </div>
                 <div style={{ fontSize: 18, color: T.textFaint }}>›</div>
