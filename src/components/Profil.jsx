@@ -10,6 +10,7 @@ import PushSettings from "./PushSettings";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
 import { avatarUrl, uploadAvatar, removeAvatar } from "../avatars";
+import { t, LANG, setLang } from "../i18n";
 
 const STRATEGIES = ["ETF passif", "Stock picking", "Dividendes", "Value investing", "DCA", "Mixte"];
 
@@ -64,9 +65,9 @@ function StatsSection({ profile, session, friends, perf, T, onViewProfile }) {
 
   return (
     <div style={{ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "1.25rem", marginBottom: 12 }}>
-      <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Classement amis</div>
-      {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>Chargement…</div>}
-      {!loading && friends.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem 0" }}>Ajoute des amis pour voir le classement</div>}
+      <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Classement amis")}</div>
+      {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>{t("Chargement…")}</div>}
+      {!loading && friends.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem 0" }}>{t("Ajoute des amis pour voir le classement")}</div>}
       {!loading && ranking.map((f, i) => (
         <div key={i} onClick={() => !f.me && onViewProfile && onViewProfile(f.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}`, cursor: f.me ? "default" : "pointer" }}>
           <div style={{ fontSize: 13, color: i === 0 ? T.gold : i === 1 ? T.medals["🥈"] : i === 2 ? T.medals["🥉"] : T.textFaint, minWidth: 20, fontWeight: 600 }}>{i + 1}</div>
@@ -74,7 +75,7 @@ function StatsSection({ profile, session, friends, perf, T, onViewProfile }) {
             {f.name?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)}
           </div>
           <div style={{ flex: 1, fontSize: 14, color: f.me ? T.text : T.accent }}>
-            {f.name}{f.me && <span style={{ fontSize: 11, color: T.textFaint }}> · moi</span>}
+            {f.name}{f.me && <span style={{ fontSize: 11, color: T.textFaint }}> · {t("moi")}</span>}
           </div>
           <div style={{ fontSize: 14, fontWeight: 600, color: f.perf === null ? T.textFaint : f.perf >= 0 ? T.up : T.red }}>
             {f.perf === null ? "—" : `${f.perf >= 0 ? "+" : ""}${f.perf.toFixed(1)}%`}
@@ -195,8 +196,8 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
 
   async function sendRequest(receiverId) {
     const { error } = await supabase.from("friendships").insert({ requester_id: session.user.id, receiver_id: receiverId, status: "pending" });
-    if (error) setMessage("Demande déjà envoyée.");
-    else { setMessage("Demande envoyée"); setSearch(""); setSearchResults([]); reloadFriendships(); }
+    if (error) setMessage(t("Demande déjà envoyée."));
+    else { setMessage(t("Demande envoyée")); setSearch(""); setSearchResults([]); reloadFriendships(); }
     setTimeout(() => setMessage(""), 3000);
   }
 
@@ -219,14 +220,14 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
     const username = normalizeUsername(form.username);
     if (username !== (profile.username || "")) {
       const formatError = usernameFormatError(username);
-      if (formatError) { setEditError(`Nom d'utilisateur : ${formatError.toLowerCase()}`); return; }
+      if (formatError) { setEditError(t("Nom d'utilisateur : {error}", { error: formatError.toLowerCase() })); return; }
       setSaving(true);
-      if (await isUsernameAvailable(username) === false) { setEditError(`@${username} est déjà pris, choisis-en un autre.`); setSaving(false); return; }
+      if (await isUsernameAvailable(username) === false) { setEditError(t("@{username} est déjà pris, choisis-en un autre.", { username })); setSaving(false); return; }
     }
     setSaving(true);
     const { data, error } = await supabase.from("profiles").update({ full_name: form.full_name, username, city: form.city, bio: form.bio, strategy: form.strategy, investing_since: form.investing_since || null }).eq("id", session.user.id).select(PUBLIC_PROFILE_COLUMNS).single();
     setSaving(false);
-    if (error || !data) { setEditError("Enregistrement impossible. Réessaie."); return; }
+    if (error || !data) { setEditError(t("Enregistrement impossible. Réessaie.")); return; }
     setProfile(p => ({ ...p, ...data })); setSaved(true); setTimeout(() => setSaved(false), 2000);
     setEditing(false);
   }
@@ -240,25 +241,34 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
     <div>
       <InstallBanner T={T} always />
       <PushSettings T={T} />
+      <div style={{ display: "flex", alignItems: "center", gap: 12, background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "10px 14px", marginBottom: 16 }}>
+        <span style={{ display: "flex", flexShrink: 0, color: T.textMuted }} aria-hidden="true"><Icon name="globe" size={20} /></span>
+        <label htmlFor="verio-lang" style={{ flex: 1, fontSize: 14, fontWeight: 700, color: T.text }}>Langue / Language</label>
+        <select id="verio-lang" value={LANG} onChange={e => setLang(e.target.value)}
+          style={{ padding: "6px 10px", fontSize: 13, borderRadius: 8, border: `0.5px solid ${T.input.border}`, background: T.bgCard, color: T.text, fontFamily: "inherit", cursor: "pointer" }}>
+          <option value="fr" style={{ background: T.bgSecondary }}>Français</option>
+          <option value="en" style={{ background: T.bgSecondary }}>English</option>
+        </select>
+      </div>
       <div style={card}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
           {/* Photo de profil : clic pour en choisir une */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0 }}>
             <input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp,image/heic" hidden
               onChange={e => { changePhoto(e.target.files?.[0]); e.target.value = ""; }} />
-            <button onClick={() => photoInput.current?.click()} disabled={photoBusy} title="Changer ma photo de profil" aria-label="Changer ma photo de profil"
+            <button onClick={() => photoInput.current?.click()} disabled={photoBusy} title={t("Changer ma photo de profil")} aria-label={t("Changer ma photo de profil")}
               style={{ position: "relative", padding: 0, border: "none", background: "none", cursor: "pointer", borderRadius: "50%", opacity: photoBusy ? 0.5 : 1 }}>
               <Avatar userId={session.user.id} name={profile.full_name} size={56} />
               <span style={{ position: "absolute", right: -2, bottom: -2, width: 22, height: 22, borderRadius: "50%", background: T.bgCard, border: `0.5px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: T.textMuted }}><Icon name="camera" size={12} /></span>
             </button>
-            {hasPhoto && <button onClick={deletePhoto} disabled={photoBusy} style={{ background: "none", border: "none", padding: 0, fontSize: 10, color: T.textFaint, cursor: "pointer", fontFamily: "inherit" }}>Retirer</button>}
+            {hasPhoto && <button onClick={deletePhoto} disabled={photoBusy} style={{ background: "none", border: "none", padding: 0, fontSize: 10, color: T.textFaint, cursor: "pointer", fontFamily: "inherit" }}>{t("Retirer")}</button>}
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 17, fontWeight: 700, color: T.text }}>{profile.full_name || "—"}</div>
             <div style={{ fontSize: 13, color: T.textMuted }}>@{profile.username || "—"}{profile.city ? ` · ${profile.city}` : ""}</div>
-            {profile.strategy && <span style={{ display: "inline-block", marginTop: 4, padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: T.accentBg, color: T.accent }}>{profile.strategy}</span>}
+            {profile.strategy && <span style={{ display: "inline-block", marginTop: 4, padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: T.accentBg, color: T.accent }}>{t(profile.strategy)}</span>}
           </div>
-          <button style={{ ...btnSm, display: "inline-flex", alignItems: "center", gap: 5 }} onClick={startEdit}><Icon name="edit" size={13} />Éditer</button>
+          <button style={{ ...btnSm, display: "inline-flex", alignItems: "center", gap: 5 }} onClick={startEdit}><Icon name="edit" size={13} />{t("Éditer")}</button>
         </div>
         {photoError && <div role="alert" style={{ fontSize: 12, color: T.red, margin: "-8px 0 12px" }}>{photoError}</div>}
 
@@ -266,9 +276,9 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
           {[
-            ["Positions", stats.positions, T.accent],
-            ["Perf. depuis l'achat", perf === null ? "—" : `${perf >= 0 ? "+" : ""}${perf.toFixed(2)}%`, perf === null ? T.textFaint : perf >= 0 ? T.up : T.red],
-            ["Depuis", profile.investing_since || "—", T.text],
+            [t("Positions"), stats.positions, T.accent],
+            [t("Perf. depuis l'achat"), perf === null ? "—" : `${perf >= 0 ? "+" : ""}${perf.toFixed(2)}%`, perf === null ? T.textFaint : perf >= 0 ? T.up : T.red],
+            [t("Depuis"), profile.investing_since || "—", T.text],
           ].map(([label, val, color]) => (
             <div key={label} style={{ background: T.bgSubtle, borderRadius: 10, padding: 12 }}>
               <div style={{ fontSize: 12, color: T.textFaint, marginBottom: 4 }}>{label}</div>
@@ -276,38 +286,38 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
             </div>
           ))}
         </div>
-        {saved && <div style={{ marginTop: 12, padding: "8px 12px", background: T.accentBg, borderRadius: 8, fontSize: 13, color: T.accent, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon name="ok" size={14} />Profil mis à jour !</div>}
+        {saved && <div style={{ marginTop: 12, padding: "8px 12px", background: T.accentBg, borderRadius: 8, fontSize: 13, color: T.accent, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Icon name="ok" size={14} />{t("Profil mis à jour !")}</div>}
       </div>
 
       {editing && (
         <div style={card}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}><Icon name="edit" size={15} />Modifier mon profil</div>
-          {[["Prénom et nom", "full_name", "Raphael Dupont"], ["Nom d'utilisateur", "username", "raphaeld"], ["Ville", "city", "Paris"]].map(([label, key, ph]) => (
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}><Icon name="edit" size={15} />{t("Modifier mon profil")}</div>
+          {[[t("Prénom et nom"), "full_name", "Raphael Dupont"], [t("Nom d'utilisateur"), "username", "raphaeld"], [t("Ville"), "city", "Paris"]].map(([label, key, ph]) => (
             <div key={key}>
               <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{label}</label>
               <input style={inp} placeholder={ph} value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} />
             </div>
           ))}
-          <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Bio</label>
-          <textarea style={{ ...inp, height: 80, resize: "vertical" }} placeholder="Investisseur passif…" value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} />
-          <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Stratégie</label>
+          <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Bio")}</label>
+          <textarea style={{ ...inp, height: 80, resize: "vertical" }} placeholder={t("Investisseur passif…")} value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} />
+          <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Stratégie")}</label>
           <select style={{ ...inp, background: T.bgCard }} value={form.strategy} onChange={e => setForm({ ...form, strategy: e.target.value })}>
-            {STRATEGIES.map(s => <option key={s} style={{ background: T.bgSecondary }}>{s}</option>)}
+            {STRATEGIES.map(s => <option key={s} value={s} style={{ background: T.bgSecondary }}>{t(s)}</option>)}
           </select>
-          <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Investisseur depuis (année)</label>
+          <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Investisseur depuis (année)")}</label>
           <input style={inp} placeholder="2018" type="number" value={form.investing_since} onChange={e => setForm({ ...form, investing_since: e.target.value })} />
           <div style={{ height: "0.5px", background: T.border, margin: "16px 0" }} />
-          <div style={{ fontSize: 13, fontWeight: 600, color: T.textMuted, marginBottom: 10 }}>Profil investisseur</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: T.textMuted, marginBottom: 10 }}>{t("Profil investisseur")}</div>
           <button
             onClick={() => { setEditing(false); setShowKYC(true); }}
             style={{ width: "100%", padding: "10px", background: T.accentBg, border: `0.5px solid ${T.accentBorder}`, borderRadius: 10, fontSize: 13, color: T.accent, cursor: "pointer", fontFamily: "inherit", marginBottom: 14, textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}
           >
-            <Icon name="list" size={14} />Modifier mon profil investisseur →
+            <Icon name="list" size={14} />{t("Modifier mon profil investisseur")} →
           </button>
           <div style={{ display: "flex", gap: 8 }}>
             {editError && <div role="alert" style={{ fontSize: 13, color: T.red, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}><Icon name="warning" size={14} />{editError}</div>}
-            <button style={btn} onClick={saveProfile} disabled={saving}>{saving ? "Enregistrement…" : "Sauvegarder"}</button>
-            <button style={btnSm} onClick={() => setEditing(false)}>Annuler</button>
+            <button style={btn} onClick={saveProfile} disabled={saving}>{saving ? t("Enregistrement…") : t("Sauvegarder")}</button>
+            <button style={btnSm} onClick={() => setEditing(false)}>{t("Annuler")}</button>
           </div>
         </div>
       )}
@@ -322,7 +332,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
       )}
 
       <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-        {[["stats", "Stats", "chart"], ["badges", `Badges (${unlockedCount})`, "award"], ["reseau", "Réseau", "users"]].map(([id, label, icon]) => (
+        {[["stats", t("Stats"), "chart"], ["badges", t("Badges ({n})", { n: unlockedCount }), "award"], ["reseau", t("Réseau"), "users"]].map(([id, label, icon]) => (
           <button key={id} onClick={() => setSection(id)} style={{ padding: "6px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${section === id ? T.accent : T.border}`, background: section === id ? T.accentBg : "none", color: section === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 }}>
             <Icon name={icon} size={14} />{label}
           </button>
@@ -340,10 +350,10 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
       {section === "reseau" && (
         <div>
           <div style={card}>
-            <div style={sectionLabel}>Rechercher un investisseur</div>
-            <input style={inp} placeholder="Nom ou @username…" value={search} onChange={e => { setSearch(e.target.value); searchUsers(e.target.value); }} />
+            <div style={sectionLabel}>{t("Rechercher un investisseur")}</div>
+            <input style={inp} placeholder={t("Nom ou @username…")} value={search} onChange={e => { setSearch(e.target.value); searchUsers(e.target.value); }} />
             {message && <div style={{ fontSize: 13, color: T.accent, marginBottom: 10 }}>{message}</div>}
-            {searching && <div style={{ fontSize: 13, color: T.textFaint }}>Recherche…</div>}
+            {searching && <div style={{ fontSize: 13, color: T.textFaint }}>{t("Recherche…")}</div>}
             {searchResults.map(u => (
               <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `0.5px solid ${T.border}` }}>
                 <Avatar userId={u.id} name={u.full_name} size={34} />
@@ -351,15 +361,15 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
                   <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}</div>
                   <div style={{ fontSize: 12, color: T.textFaint }}>@{u.username}</div>
                 </div>
-                {alreadyIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.textFaint }}>Déjà ajouté</span> : <button style={btnGreen} onClick={() => sendRequest(u.id)}>+ Ajouter</button>}
+                {alreadyIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.textFaint }}>{t("Déjà ajouté")}</span> : <button style={btnGreen} onClick={() => sendRequest(u.id)}>+ {t("Ajouter")}</button>}
               </div>
             ))}
-            {search.length >= 2 && !searching && searchResults.length === 0 && <div style={{ fontSize: 13, color: T.textFaint }}>Aucun résultat</div>}
+            {search.length >= 2 && !searching && searchResults.length === 0 && <div style={{ fontSize: 13, color: T.textFaint }}>{t("Aucun résultat")}</div>}
           </div>
 
           {received.length > 0 && (
             <div style={card}>
-              <div style={sectionLabel}>Demandes reçues ({received.length})</div>
+              <div style={sectionLabel}>{t("Demandes reçues ({n})", { n: received.length })}</div>
               {received.map(f => (
                 <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `0.5px solid ${T.border}` }}>
                   <Avatar userId={f.friend.id} name={f.friend.full_name} size={34} />
@@ -367,25 +377,25 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
                     <div style={{ fontSize: 14, fontWeight: 600, color: T.accent }}>{f.friend.full_name}</div>
                     <div style={{ fontSize: 12, color: T.textFaint }}>@{f.friend.username}</div>
                   </div>
-                  <button style={{ ...btnGreen, display: "inline-flex" }} onClick={() => acceptRequest(f.id)} aria-label="Accepter"><Icon name="check" size={14} /></button>
-                  <button style={{ ...btnRed, display: "inline-flex" }} onClick={() => declineRequest(f.id)} aria-label="Refuser"><Icon name="close" size={14} /></button>
+                  <button style={{ ...btnGreen, display: "inline-flex" }} onClick={() => acceptRequest(f.id)} aria-label={t("Accepter")}><Icon name="check" size={14} /></button>
+                  <button style={{ ...btnRed, display: "inline-flex" }} onClick={() => declineRequest(f.id)} aria-label={t("Refuser")}><Icon name="close" size={14} /></button>
                 </div>
               ))}
             </div>
           )}
 
           <div style={card}>
-            <div style={sectionLabel}>Mes amis ({friends.length})</div>
-            {friends.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem 0" }}>Aucun ami encore</div>}
+            <div style={sectionLabel}>{t("Mes amis ({n})", { n: friends.length })}</div>
+            {friends.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem 0" }}>{t("Aucun ami encore")}</div>}
             {friends.map(f => (
               <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `0.5px solid ${T.border}`, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(f.friend.id)}>
                 <Avatar userId={f.friend.id} name={f.friend.full_name} size={34} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: T.accent }}>{f.friend.full_name}</div>
                   <div style={{ fontSize: 12, color: T.textFaint }}>@{f.friend.username}{f.friend.city ? ` · ${f.friend.city}` : ""}</div>
-                  {f.friend.strategy && <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 999, background: T.accentBg, color: T.accent }}>{f.friend.strategy}</span>}
+                  {f.friend.strategy && <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 999, background: T.accentBg, color: T.accent }}>{t(f.friend.strategy)}</span>}
                 </div>
-                <button style={btnRed} onClick={() => declineRequest(f.id)}>Retirer</button>
+                <button style={btnRed} onClick={() => declineRequest(f.id)}>{t("Retirer")}</button>
               </div>
             ))}
           </div>

@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { CHART_PERIODS, searchAssets, fetchQuote, myAllocation, cleanAsset, cleanAllocation } from "../attachments";
 import { fetchChart, fmtChange } from "../indices";
 import Icon from "./Icon";
+import { t, LANG, LOCALE } from "../i18n";
 
 // Pièces jointes « marché » d'un post : valeur citée (avec ou sans graphique), répartition en %
 
 const box = T => ({ border: `0.5px solid ${T.border}`, borderRadius: 12, background: T.bgSubtle, padding: "12px 14px", marginBottom: 12 });
 const chip = (T, active) => ({ padding: "4px 10px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${active ? T.accent : T.border}`, background: active ? T.accentBg : "none", color: active ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" });
-const fmtPrice = (v, currency) => `${v.toLocaleString("fr-FR", { maximumFractionDigits: v < 10 ? 3 : 2 })}${currency ? ` ${currency === "EUR" ? "€" : currency === "USD" ? "$" : currency}` : ""}`;
+const fmtPrice = (v, currency) => `${v.toLocaleString(LOCALE, { maximumFractionDigits: v < 10 ? 3 : 2 })}${currency ? ` ${currency === "EUR" ? "€" : currency === "USD" ? "$" : currency}` : ""}`;
 
 function AreaChart({ points, color }) {
   if (!points || points.length < 2) return null;
@@ -44,8 +45,7 @@ export function AssetCard({ asset: raw, T, onOpen }) {
   if (!asset) return null;
   const up = (quote?.change ?? 0) >= 0;
   const periodUp = (chart?.change ?? 0) >= 0;
-  const periodLabel = CHART_PERIODS.find(p => p.id === period)?.label;
-  const clickable = onOpen ? { role: "button", tabIndex: 0, onClick: () => onOpen(asset), onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(asset); } }, "aria-label": `Voir la fiche de ${asset.name}` } : {};
+  const clickable = onOpen ? { role: "button", tabIndex: 0, onClick: () => onOpen(asset), onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(asset); } }, "aria-label": t("Voir la fiche de {name}", { name: asset.name }) } : {};
   return (
     <div {...clickable} style={{ ...box(T), ...(onOpen ? { cursor: "pointer" } : {}) }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
@@ -58,9 +58,9 @@ export function AssetCard({ asset: raw, T, onOpen }) {
           {quote ? (
             <>
               <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{fmtPrice(quote.price, asset.type === "Indice" ? null : quote.currency)}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: up ? T.up : T.red }}>{fmtChange(quote.change)} auj.</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: up ? T.up : T.red }}>{t("{change} auj.", { change: fmtChange(quote.change) })}</div>
             </>
-          ) : <div style={{ fontSize: 12, color: T.textFaint }}>Cours…</div>}
+          ) : <div style={{ fontSize: 12, color: T.textFaint }}>{t("Cours…")}</div>}
         </div>
       </div>
       {period && (
@@ -68,13 +68,13 @@ export function AssetCard({ asset: raw, T, onOpen }) {
           <>
             <AreaChart points={chart.points} color={periodUp ? T.up : T.red} />
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: T.textFaint, marginTop: 4 }}>
-              <span>Sur {periodLabel === "1A" ? "1 an" : periodLabel === "5A" ? "5 ans" : periodLabel === "6M" ? "6 mois" : "1 mois"}</span>
+              <span>{period === "1y" ? t("Sur 1 an") : period === "5y" ? t("Sur 5 ans") : period === "6mo" ? t("Sur 6 mois") : t("Sur 1 mois")}</span>
               <span style={{ fontWeight: 700, color: periodUp ? T.up : T.red }}>{fmtChange(chart.change)}</span>
             </div>
           </>
         ) : <div style={{ height: 90, marginTop: 10, borderRadius: 8, background: T.bgCard, opacity: 0.6 }} />
       )}
-      {onOpen && <div style={{ fontSize: 12, fontWeight: 600, color: T.accent, marginTop: 8, textAlign: "right" }}>Voir la fiche ›</div>}
+      {onOpen && <div style={{ fontSize: 12, fontWeight: 600, color: T.accent, marginTop: 8, textAlign: "right" }}>{t("Voir la fiche ›")}</div>}
     </div>
   );
 }
@@ -89,17 +89,17 @@ export function AllocationCard({ allocation: raw, T, title }) {
   return (
     <div style={box(T)}>
       <div style={{ fontSize: 12, fontWeight: 700, color: T.textMuted, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-        {title || <><Icon name="pie" size={14} />{allocation.mode === "positions" ? "Ma répartition par position" : "Ma répartition par classe d'actifs"}</>}
+        {title || <><Icon name="pie" size={14} />{allocation.mode === "positions" ? t("Ma répartition par position") : t("Ma répartition par classe d'actifs")}</>}
       </div>
       <div style={{ display: "flex", height: 12, borderRadius: 999, overflow: "hidden", marginBottom: 10 }}>
-        {allocation.rows.map((r, i) => <div key={r.label} title={`${r.label} : ${r.pct} %`} style={{ width: `${r.pct}%`, background: colors[i % colors.length] }} />)}
+        {allocation.rows.map((r, i) => <div key={r.label} title={t("{label} : {pct} %", { label: r.label, pct: r.pct })} style={{ width: `${r.pct}%`, background: colors[i % colors.length] }} />)}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "4px 12px" }}>
         {allocation.rows.map((r, i) => (
           <div key={r.label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, minWidth: 0 }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, background: colors[i % colors.length], flexShrink: 0 }} />
             <span style={{ flex: 1, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
-            <span style={{ color: T.textMuted, fontWeight: 600 }}>{String(r.pct).replace(".", ",")} %</span>
+            <span style={{ color: T.textMuted, fontWeight: 600 }}>{t("{n} %", { n: LANG === "en" ? String(r.pct) : String(r.pct).replace(".", ",") })}</span>
           </div>
         ))}
       </div>
@@ -127,17 +127,17 @@ export function AssetPicker({ T, onPick, onClose }) {
   return (
     <div style={panel(T)}>
       <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
-        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: T.textMuted, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="up" size={14} />Joindre un graphique</span>
-        <button onClick={onClose} aria-label="Fermer" style={closeBtn(T)}><Icon name="close" size={12} /></button>
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: T.textMuted, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="up" size={14} />{t("Joindre un graphique")}</span>
+        <button onClick={onClose} aria-label={t("Fermer")} style={closeBtn(T)}><Icon name="close" size={12} /></button>
       </div>
-      <input autoFocus value={query} onChange={e => setQuery(e.target.value)} placeholder="TotalEnergies, CW8, FR0000120271…" aria-label="Rechercher une valeur"
+      <input autoFocus value={query} onChange={e => setQuery(e.target.value)} placeholder="TotalEnergies, CW8, FR0000120271…" aria-label={t("Rechercher une valeur")}
         style={{ width: "100%", padding: "8px 10px", fontSize: 13, borderRadius: 8, border: `0.5px solid ${T.border}`, background: T.bgCard, color: T.text, fontFamily: "inherit" }} />
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-        <span style={{ fontSize: 12, color: T.textMuted }}>Période :</span>
+        <span style={{ fontSize: 12, color: T.textMuted }}>{t("Période :")}</span>
         {CHART_PERIODS.map(p => <button key={p.id} onClick={() => setChart(p.id)} style={chip(T, chart === p.id)}>{p.label}</button>)}
       </div>
-      {shown === null && query.trim().length >= 2 && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 8 }}>Recherche…</div>}
-      {shown?.length === 0 && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 8 }}>Aucune valeur trouvée.</div>}
+      {shown === null && query.trim().length >= 2 && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 8 }}>{t("Recherche…")}</div>}
+      {shown?.length === 0 && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 8 }}>{t("Aucune valeur trouvée.")}</div>}
       {shown?.map(r => (
         <button key={r.symbol} onClick={() => onPick({ symbol: r.symbol, name: r.name, type: r.type, chart })}
           style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left", background: "none", border: "none", borderTop: `0.5px solid ${T.border}`, padding: "8px 2px", cursor: "pointer", fontFamily: "inherit", marginTop: 4 }}>
@@ -145,7 +145,7 @@ export function AssetPicker({ T, onPick, onClose }) {
             <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
             <span style={{ display: "block", fontSize: 11, color: T.textFaint }}>{r.symbol} · {r.type}{r.exchange ? ` · ${r.exchange}` : ""}</span>
           </span>
-          <span style={{ fontSize: 12, color: T.accent, fontWeight: 700 }}>Ajouter</span>
+          <span style={{ fontSize: 12, color: T.accent, fontWeight: 700 }}>{t("Ajouter")}</span>
         </button>
       ))}
     </div>
@@ -166,19 +166,19 @@ export function AllocationPicker({ T, onPick, onClose }) {
   return (
     <div style={panel(T)}>
       <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
-        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: T.textMuted, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="pie" size={14} />Partager ma répartition <span style={{ fontWeight: 400 }}>· en % uniquement, jamais de montant</span></span>
-        <button onClick={onClose} aria-label="Fermer" style={closeBtn(T)}><Icon name="close" size={12} /></button>
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: T.textMuted, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="pie" size={14} />{t("Partager ma répartition")} <span style={{ fontWeight: 400 }}>{t("· en % uniquement, jamais de montant")}</span></span>
+        <button onClick={onClose} aria-label={t("Fermer")} style={closeBtn(T)}><Icon name="close" size={12} /></button>
       </div>
       <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-        <button onClick={() => { setRows(null); setMode("classes"); }} style={chip(T, mode === "classes")}>Par classe d'actifs</button>
-        <button onClick={() => { setRows(null); setMode("positions"); }} style={chip(T, mode === "positions")}>Par position</button>
+        <button onClick={() => { setRows(null); setMode("classes"); }} style={chip(T, mode === "classes")}>{t("Par classe d'actifs")}</button>
+        <button onClick={() => { setRows(null); setMode("positions"); }} style={chip(T, mode === "positions")}>{t("Par position")}</button>
       </div>
-      {rows === null && <div style={{ fontSize: 12, color: T.textFaint }}>Calcul…</div>}
-      {rows?.length === 0 && <div style={{ fontSize: 12, color: T.textFaint }}>Ajoute des positions dans ton portefeuille pour partager ta répartition.</div>}
+      {rows === null && <div style={{ fontSize: 12, color: T.textFaint }}>{t("Calcul…")}</div>}
+      {rows?.length === 0 && <div style={{ fontSize: 12, color: T.textFaint }}>{t("Ajoute des positions dans ton portefeuille pour partager ta répartition.")}</div>}
       {rows?.length > 0 && (
         <>
-          <AllocationCard allocation={{ mode, rows }} T={T} title="Aperçu" />
-          <button onClick={() => onPick({ mode, rows })} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>Joindre au post</button>
+          <AllocationCard allocation={{ mode, rows }} T={T} title={t("Aperçu")} />
+          <button onClick={() => onPick({ mode, rows })} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>{t("Joindre au post")}</button>
         </>
       )}
     </div>
@@ -191,7 +191,7 @@ export function AttachedChip({ T, icon, label, onRemove }) {
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, padding: "6px 10px", borderRadius: 8, border: `0.5px solid ${T.accent}`, background: T.accentBg, minWidth: 0 }}>
       <span style={{ display: "inline-flex", alignItems: "center", color: T.accent }}>{icon}</span>
       <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
-      <button onClick={onRemove} aria-label="Retirer" style={closeBtn(T)}><Icon name="close" size={12} /></button>
+      <button onClick={onRemove} aria-label={t("Retirer")} style={closeBtn(T)}><Icon name="close" size={12} /></button>
     </div>
   );
 }

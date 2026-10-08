@@ -5,29 +5,30 @@ import { badgeFromData } from "../badges";
 import { momentNotification } from "../moments";
 import { closeFinishedPolls, pollEndedText } from "../polls";
 import Icon from "./Icon";
+import { t } from "../i18n";
 
 function timeAgo(date) {
   const diff = (Date.now() - new Date(date)) / 1000;
-  if (diff < 60) return "à l'instant";
-  if (diff < 3600) return `il y a ${Math.floor(diff / 60)} min`;
-  if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`;
-  return `il y a ${Math.floor(diff / 86400)} j`;
+  if (diff < 60) return t("à l'instant");
+  if (diff < 3600) return t("il y a {n} min", { n: Math.floor(diff / 60) });
+  if (diff < 86400) return t("il y a {n}h", { n: Math.floor(diff / 3600) });
+  return t("il y a {n} j", { n: Math.floor(diff / 86400) });
 }
 
 function getNotifMeta(notif) {
   const d = notif.data || {};
   switch (notif.type) {
-    case "friend_request": return { icon: "👥", text: `${d.from_name} t'a envoyé une demande d'ami` };
-    case "friend_accepted": return { icon: "🤝", text: `${d.from_name} a accepté ta demande d'ami` };
-    case "badge_unlocked": { const info = badgeFromData(d); return { icon: info.medal, text: `Tu as débloqué le badge ${info.name}` }; }
-    case "activity_like": return { icon: "👍", text: `${d.from_name} a aimé ton activité` };
-    case "activity_comment": return { icon: "💬", text: `${d.from_name} a commenté : « ${d.excerpt} »` };
+    case "friend_request": return { icon: "👥", text: t("{name} t'a envoyé une demande d'ami", { name: d.from_name }) };
+    case "friend_accepted": return { icon: "🤝", text: t("{name} a accepté ta demande d'ami", { name: d.from_name }) };
+    case "badge_unlocked": { const info = badgeFromData(d); return { icon: info.medal, text: t("Tu as débloqué le badge {badge}", { badge: info.name }) }; }
+    case "activity_like": return { icon: "👍", text: t("{name} a aimé ton activité", { name: d.from_name }) };
+    case "activity_comment": return { icon: "💬", text: t("{name} a commenté : « {excerpt} »", { name: d.from_name, excerpt: d.excerpt }) };
     case "moment": return { icon: d.moment_id?.startsWith("anniversaire") ? "🎂" : "🌟", text: momentNotification(d.moment_id) };
-    case "mention": return { icon: "💬", text: `${d.from_name} t'a mentionné : « ${d.excerpt} »` };
+    case "mention": return { icon: "💬", text: t("{name} t'a mentionné : « {excerpt} »", { name: d.from_name, excerpt: d.excerpt }) };
     case "poll_ended": return { icon: "📊", text: pollEndedText(d) };
-    case "super_filing": return { icon: "🏛️", text: `${d.name || "Une légende"} a publié ses mouvements du trimestre : ${d.moves ?? 0} changement${d.moves > 1 ? "s" : ""}` };
-    case "post_reaction": return { icon: d.reaction || "👍", text: `${d.from_name} a réagi à ton post` };
-    default: return { icon: "🔔", text: "Nouvelle notification" };
+    case "super_filing": return { icon: "🏛️", text: t(d.moves > 1 ? "{name} a publié ses mouvements du trimestre : {n} changements" : "{name} a publié ses mouvements du trimestre : {n} changement", { name: d.name || t("Une légende"), n: d.moves ?? 0 }) };
+    case "post_reaction": return { icon: d.reaction || "👍", text: t("{name} a réagi à ton post", { name: d.from_name }) };
+    default: return { icon: "🔔", text: t("Nouvelle notification") };
   }
 }
 
@@ -90,16 +91,16 @@ export default function Notifications({ session, T: TProp, onOpen }) {
       {open && (
         <div style={{ position: "fixed", top: 60, right: 16, width: 320, background: T.bgSecondary, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.15)", zIndex: 100, overflow: "hidden" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", borderBottom: `0.5px solid ${T.border}` }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Notifications</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{t("Notifications")}</span>
             {unread > 0 && (
               <button onClick={markAllRead} style={{ background: "none", border: "none", fontSize: 12, color: T.accent, cursor: "pointer", fontFamily: "inherit" }}>
-                Tout marquer lu
+                {t("Tout marquer lu")}
               </button>
             )}
           </div>
           <div style={{ maxHeight: 380, overflowY: "auto" }}>
             {notifs.length === 0 && (
-              <div style={{ padding: "2rem", textAlign: "center", fontSize: 13, color: T.textFaint }}>Aucune notification</div>
+              <div style={{ padding: "2rem", textAlign: "center", fontSize: 13, color: T.textFaint }}>{t("Aucune notification")}</div>
             )}
             {notifs.map(notif => {
               const meta = getNotifMeta(notif);

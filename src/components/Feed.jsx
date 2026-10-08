@@ -19,6 +19,7 @@ import { fetchFollowedIds, fetchFollowedNews, quarterLabel } from "../superInves
 import { fetchCompanyNews, fetchFollowedAssets, setFollowingAsset } from "../assetFollows";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
+import { t, LANG } from "../i18n";
 
 // Actualités dans le fil (Super Investors et sociétés suivis) : 4 au plus, un titre une seule fois
 const FEED_NEWS_MAX = 4;
@@ -26,10 +27,10 @@ const FEED_NEWS_MAX = 4;
 
 function timeAgo(date) {
   const diff = (Date.now() - new Date(date)) / 1000;
-  if (diff < 60) return "à l'instant";
-  if (diff < 3600) return `il y a ${Math.floor(diff / 60)} min`;
-  if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`;
-  return `il y a ${Math.floor(diff / 86400)} j`;
+  if (diff < 60) return t("à l'instant");
+  if (diff < 3600) return t("il y a {n} min", { n: Math.floor(diff / 60) });
+  if (diff < 86400) return t("il y a {n}h", { n: Math.floor(diff / 3600) });
+  return t("il y a {n} j", { n: Math.floor(diff / 86400) });
 }
 
 const BADGE_TYPES = ["badge"];
@@ -38,42 +39,42 @@ const FEED_TYPES = ["post", ...TRADE_TYPES, ...MOMENT_TYPES, ...BADGE_TYPES];
 
 function getActivityMeta(activity) {
   const d = activity.data || {};
-  const name = activity.author?.full_name || "Quelqu'un";
+  const name = activity.author?.full_name || t("Quelqu'un");
   const badge = badgeFromData(d);
   const trade = tradeTexts(activity.type, d);
   if (trade) {
     const up = activity.type === "renforcement";
-    return { tag: { renforcement: "Renforcement", allegement: "Allègement", vente: "Vente" }[activity.type], tagBg: up ? T.upBg : "rgba(240,153,123,0.1)", tagColor: up ? T.up : T.orange, title: `${name} ${trade.sentence}`, sub: trade.detail, stat: trade.stat };
+    return { tag: { renforcement: t("Renforcement"), allegement: t("Allègement"), vente: t("Vente") }[activity.type], tagBg: up ? T.upBg : "rgba(240,153,123,0.1)", tagColor: up ? T.up : T.orange, title: `${name} ${trade.sentence}`, sub: trade.detail, stat: trade.stat };
   }
   if (isMoment(activity.type)) {
     const m = MOMENTS[activity.type];
     return { tag: m.tag, tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: momentSentence(activity.type, d, name), sub: m.sub?.(d) || "", stat: m.stat?.(d) || "" };
   }
   const map = {
-    declaration_13f: { tag: "Déclaration 13F", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} a publié ses mouvements du ${quarterLabel(d.period)}`, sub: d.positions ? `${d.positions} positions en portefeuille` : "", stat: "" },
-    new_position: { tag: "Nouvelle position", tagBg: "rgba(123,184,240,0.1)", tagColor: T.blue, title: `${name} a ajouté une nouvelle position`, sub: d.label, stat: `${d.exposition || d.vehicule || ""}${d.broker ? ` · ${d.broker}` : ""}${d.percentage ? ` · ${d.percentage}%` : ""}` },
-    renforcement: { tag: "Renforcement", tagBg: T.upBg, tagColor: T.up, title: `${name} a renforcé une position`, sub: d.label, stat: "" },
-    vente: { tag: "Vente", tagBg: "rgba(240,153,123,0.1)", tagColor: T.orange, title: `${name} a vendu une position`, sub: d.label, stat: "" },
-    allegement: { tag: "Allègement", tagBg: "rgba(240,153,123,0.1)", tagColor: T.orange, title: `${name} a allégé une position`, sub: d.label, stat: "" },
-    dividende: { tag: "Dividende", tagIcon: "coins", tagBg: "rgba(240,203,123,0.1)", tagColor: T.yellow, title: `${name} a reçu un dividende`, sub: d.label, stat: "" },
-    coupon: { tag: "Coupon", tagBg: "rgba(240,203,123,0.1)", tagColor: T.yellow, title: `${name} a reçu un coupon`, sub: d.label, stat: "" },
-    versement: { tag: "Versement", tagBg: T.upBg, tagColor: T.up, title: `${name} a effectué un versement`, sub: d.broker, stat: "" },
-    retrait: { tag: "Retrait", tagBg: "rgba(240,153,123,0.1)", tagColor: T.orange, title: `${name} a effectué un retrait`, sub: d.broker, stat: "" },
-    rebalancement: { tag: "Rééquilibrage", tagBg: "rgba(240,203,123,0.1)", tagColor: T.yellow, title: `${name} a rééquilibré son portefeuille`, sub: "", stat: "" },
-    suppression_position: { tag: "Position supprimée", tagBg: "rgba(128,128,128,0.1)", tagColor: "#888", title: `${name} a supprimé une position`, sub: d.label, stat: "" },
-    new_broker: { tag: "Nouveau broker", tagBg: "rgba(175,169,236,0.1)", tagColor: T.purple, title: `${name} a ajouté un broker`, sub: d.broker, stat: "" },
-    badge: { tag: "Badge", tagIcon: "award", tagBg: "rgba(240,215,0,0.08)", tagColor: T.gold, title: `${name} a débloqué un badge`, sub: badge.category, stat: `${badge.medal} ${badge.name}` },
+    declaration_13f: { tag: t("Déclaration 13F"), tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: t("{name} a publié ses mouvements du {quarter}", { name, quarter: quarterLabel(d.period) }), sub: d.positions ? t("{n} positions en portefeuille", { n: d.positions }) : "", stat: "" },
+    new_position: { tag: t("Nouvelle position"), tagBg: "rgba(123,184,240,0.1)", tagColor: T.blue, title: t("{name} a ajouté une nouvelle position", { name }), sub: d.label, stat: `${d.exposition || d.vehicule || ""}${d.broker ? ` · ${d.broker}` : ""}${d.percentage ? ` · ${d.percentage}%` : ""}` },
+    renforcement: { tag: t("Renforcement"), tagBg: T.upBg, tagColor: T.up, title: t("{name} a renforcé une position", { name }), sub: d.label, stat: "" },
+    vente: { tag: t("Vente"), tagBg: "rgba(240,153,123,0.1)", tagColor: T.orange, title: t("{name} a vendu une position", { name }), sub: d.label, stat: "" },
+    allegement: { tag: t("Allègement"), tagBg: "rgba(240,153,123,0.1)", tagColor: T.orange, title: t("{name} a allégé une position", { name }), sub: d.label, stat: "" },
+    dividende: { tag: t("Dividende"), tagIcon: "coins", tagBg: "rgba(240,203,123,0.1)", tagColor: T.yellow, title: t("{name} a reçu un dividende", { name }), sub: d.label, stat: "" },
+    coupon: { tag: t("Coupon"), tagBg: "rgba(240,203,123,0.1)", tagColor: T.yellow, title: t("{name} a reçu un coupon", { name }), sub: d.label, stat: "" },
+    versement: { tag: t("Versement"), tagBg: T.upBg, tagColor: T.up, title: t("{name} a effectué un versement", { name }), sub: d.broker, stat: "" },
+    retrait: { tag: t("Retrait"), tagBg: "rgba(240,153,123,0.1)", tagColor: T.orange, title: t("{name} a effectué un retrait", { name }), sub: d.broker, stat: "" },
+    rebalancement: { tag: t("Rééquilibrage"), tagBg: "rgba(240,203,123,0.1)", tagColor: T.yellow, title: t("{name} a rééquilibré son portefeuille", { name }), sub: "", stat: "" },
+    suppression_position: { tag: t("Position supprimée"), tagBg: "rgba(128,128,128,0.1)", tagColor: "#888", title: t("{name} a supprimé une position", { name }), sub: d.label, stat: "" },
+    new_broker: { tag: t("Nouveau broker"), tagBg: "rgba(175,169,236,0.1)", tagColor: T.purple, title: t("{name} a ajouté un broker", { name }), sub: d.broker, stat: "" },
+    badge: { tag: t("Badge"), tagIcon: "award", tagBg: "rgba(240,215,0,0.08)", tagColor: T.gold, title: t("{name} a débloqué un badge", { name }), sub: badge.category, stat: `${badge.medal} ${badge.name}` },
   };
-  return map[activity.type] || { tag: "Activité", tagBg: "rgba(128,128,128,0.1)", tagColor: "#888", title: `${name} a eu une activité`, sub: "", stat: "" };
+  return map[activity.type] || { tag: t("Activité"), tagBg: "rgba(128,128,128,0.1)", tagColor: "#888", title: t("{name} a eu une activité", { name }), sub: "", stat: "" };
 }
 
 // Posts : ce que les membres écrivent · Activité : les mouvements (factuels)
 // Moments : moments automatiques et badges
 const FILTERS = [
-  { id: "all", label: "Tout" },
-  { id: "posts", label: "Posts" },
-  { id: "activite", label: "Activité" },
-  { id: "moments", label: "Moments" },
+  { id: "all", label: t("Tout") },
+  { id: "posts", label: t("Posts") },
+  { id: "activite", label: t("Activité") },
+  { id: "moments", label: t("Moments") },
 ];
 
 const NEWS_COMMENT_COLUMNS = "id, url, user_id, content, tags, created_at, author:profiles!news_comments_user_id_fkey(full_name, username)";
@@ -83,7 +84,7 @@ const COMMENT_COLUMNS = "id, activity_id, user_id, content, tags, created_at, au
 // Titre d'un mouvement : le nom de la valeur (« Total Energies ») y est cliquable et ouvre sa fiche
 function MovementTitle({ meta, label, lookup, onOpenLabel, T }) {
   const link = (
-    <button onClick={() => onOpenLabel(label)} title={`Voir le cours de ${label}`}
+    <button onClick={() => onOpenLabel(label)} title={t("Voir le cours de {label}", { label })}
       style={{ background: "none", border: "none", padding: 0, font: "inherit", color: "inherit", fontWeight: 600, textDecoration: "underline", textDecorationColor: T.borderStrong, textUnderlineOffset: 3, cursor: "pointer" }}>
       {label}
     </button>
@@ -97,7 +98,7 @@ function MovementTitle({ meta, label, lookup, onOpenLabel, T }) {
       </div>
       {meta.sub && <div style={{ fontSize: 13, color: T.textMuted, marginTop: 3 }}>{at < 0 && label && meta.sub === label ? link : meta.sub}</div>}
       {lookup && (
-        <div role={lookup.error ? "alert" : "status"} style={{ fontSize: 12, color: lookup.error ? T.red : T.textFaint, marginTop: 4 }}>{lookup.error || "Recherche du cours…"}</div>
+        <div role={lookup.error ? "alert" : "status"} style={{ fontSize: 12, color: lookup.error ? T.red : T.textFaint, marginTop: 4 }}>{lookup.error || t("Recherche du cours…")}</div>
       )}
     </>
   );
@@ -107,13 +108,13 @@ function MovementTitle({ meta, label, lookup, onOpenLabel, T }) {
 // résumé (« 3 nouvelles · 8 renforcements… ») et les 3 plus gros mouvements sur une ligne
 // chacun ; dépliée, tous les mouvements avec leur détail. Chaque valeur ouvre sa fiche.
 const DECL_MOVES = {
-  new: { label: "Nouvelle position", short: "Nouvelle", plural: ["nouvelle", "nouvelles"], up: true },
-  up: { label: "Renforcement", short: "Renfort", plural: ["renforcement", "renforcements"], up: true },
-  down: { label: "Allègement", short: "Allègement", plural: ["allègement", "allègements"], up: false },
-  sold: { label: "Vente totale", short: "Vente", plural: ["vente", "ventes"], up: false },
+  new: { label: t("Nouvelle position"), short: t("Nouvelle"), count: n => (n > 1 ? t("{n} nouvelles", { n }) : t("{n} nouvelle", { n })), up: true },
+  up: { label: t("Renforcement"), short: t("Renfort"), count: n => (n > 1 ? t("{n} renforcements", { n }) : t("{n} renforcement", { n })), up: true },
+  down: { label: t("Allègement"), short: t("Allègement"), count: n => (n > 1 ? t("{n} allègements", { n }) : t("{n} allègement", { n })), up: false },
+  sold: { label: t("Vente totale"), short: t("Vente"), count: n => (n > 1 ? t("{n} ventes", { n }) : t("{n} vente", { n })), up: false },
 };
-const fmtPctFr = n => `${String(Math.round(Number(n) * 10) / 10).replace(".", ",")} %`;
-const fmtNum = n => String(Math.round(Number(n) * 10) / 10).replace(".", ",");
+const fmtNum = n => { const s = String(Math.round(Number(n) * 10) / 10); return LANG === "en" ? s : s.replace(".", ","); };
+const fmtPctFr = n => t("{n} %", { n: fmtNum(n) });
 
 function DeclarationMoves({ data, T, onOpenLabel }) {
   const [open, setOpen] = useState(false);
@@ -125,14 +126,14 @@ function DeclarationMoves({ data, T, onOpenLabel }) {
     .map(([type, meta]) => [meta, moves.filter(m => m.type === type).length])
     .filter(([, n]) => n > 0);
   const nameBtn = label => (
-    <button onClick={() => onOpenLabel(label)} title={`Voir le cours de ${label}`}
+    <button onClick={() => onOpenLabel(label)} title={t("Voir le cours de {label}", { label })}
       style={{ display: "block", maxWidth: "100%", background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: 13, fontWeight: 600, color: T.text, textAlign: "left", cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
       {label}
     </button>
   );
   const toggle = (
     <button onClick={() => setOpen(v => !v)} style={{ background: "none", border: "none", padding: "6px 0 0", fontSize: 12, fontWeight: 600, color: T.accent, cursor: "pointer", fontFamily: "inherit" }}>
-      {open ? "Réduire" : `Voir les ${moves.length} mouvements`}
+      {open ? t("Réduire") : t("Voir les {n} mouvements", { n: moves.length })}
     </button>
   );
 
@@ -140,7 +141,7 @@ function DeclarationMoves({ data, T, onOpenLabel }) {
     return (
       <div style={{ marginTop: 8 }}>
         <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>
-          {counts.map(([meta, n]) => `${n} ${meta.plural[n > 1 ? 1 : 0]}`).join(" · ")}
+          {counts.map(([meta, n]) => meta.count(n)).join(" · ")}
         </div>
         {top.map((m, i) => {
           const meta = DECL_MOVES[m.type] || DECL_MOVES.up;
@@ -166,14 +167,14 @@ function DeclarationMoves({ data, T, onOpenLabel }) {
           <div key={`${m.label}-${i}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}` }}>
             <span style={{ flex: 1, minWidth: 0 }}>
               {nameBtn(m.label)}
-              <span style={{ fontSize: 11, color: T.textFaint }}>{meta.label}{m.variation != null && (m.type === "up" || m.type === "down") ? ` · ${m.variation > 0 ? "+" : ""}${m.variation} % d'actions` : ""}</span>
+              <span style={{ fontSize: 11, color: T.textFaint }}>{meta.label}{m.variation != null && (m.type === "up" || m.type === "down") ? ` · ${t("{n} % d'actions", { n: `${m.variation > 0 ? "+" : ""}${m.variation}` })}` : ""}</span>
             </span>
             <span style={{ fontSize: 12, fontWeight: 700, color, flexShrink: 0 }}>{fmtPctFr(m.avant)} → {fmtPctFr(m.apres)}</span>
           </div>
         );
       })}
       {toggle}
-      {data.moves_total > moves.length && <div style={{ fontSize: 11, color: T.textFaint, marginTop: 4 }}>+ {data.moves_total - moves.length} petits mouvements non affichés</div>}
+      {data.moves_total > moves.length && <div style={{ fontSize: 11, color: T.textFaint, marginTop: 4 }}>{t("+ {n} petits mouvements non affichés", { n: data.moves_total - moves.length })}</div>}
     </div>
   );
 }
@@ -183,8 +184,8 @@ function DeclarationMoves({ data, T, onOpenLabel }) {
 function NewsFeedCard({ item, T, card, onProfile, onAsset, like, onLike, btnAct, commentCount, onToggleComments, comments }) {
   const { article, investor, company } = item;
   const who = investor
-    ? { icon: investor.icon, name: investor.name, title: `Voir le profil de ${investor.name}`, open: () => onProfile(investor.id) }
-    : { icon: company.type === "Indice" ? "📈" : "🏢", name: company.name, title: `Voir la fiche de ${company.name}`, open: () => onAsset(company) };
+    ? { icon: investor.icon, name: investor.name, title: t("Voir le profil de {name}", { name: investor.name }), open: () => onProfile(investor.id) }
+    : { icon: company.type === "Indice" ? "📈" : "🏢", name: company.name, title: t("Voir la fiche de {name}", { name: company.name }), open: () => onAsset(company) };
   return (
     <div style={card}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
@@ -194,7 +195,7 @@ function NewsFeedCard({ item, T, card, onProfile, onAsset, like, onLike, btnAct,
           <button onClick={who.open} style={{ background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: 14, fontWeight: 600, color: T.text, cursor: "pointer", textAlign: "left" }}>{who.name}</button>
           <div style={{ fontSize: 11, color: T.textFaint }}>{timeAgo(item.created_at)}</div>
         </div>
-        <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: T.bgSubtle, color: T.textMuted, flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="news" size={12} />Actualité</span>
+        <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: T.bgSubtle, color: T.textMuted, flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="news" size={12} />{t("Actualité")}</span>
       </div>
       <a href={article.url} target="_blank" rel="noopener noreferrer"
         style={{ display: "block", padding: "10px 12px", borderRadius: 10, border: `0.5px solid ${T.border}`, background: T.bgSubtle, textDecoration: "none" }}>
@@ -203,9 +204,9 @@ function NewsFeedCard({ item, T, card, onProfile, onAsset, like, onLike, btnAct,
       </a>
       <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
         <button onClick={onLike} style={{ ...btnAct, ...(like.mine ? { borderColor: T.accent, color: T.accent } : {}) }}>
-          <Icon name="like" size={14} />{like.mine ? "Liké" : "Like"}{like.count > 0 ? ` · ${like.count}` : ""}
+          <Icon name="like" size={14} />{like.mine ? t("Liké") : t("Like")}{like.count > 0 ? ` · ${like.count}` : ""}
         </button>
-        <button onClick={onToggleComments} style={btnAct}><Icon name="comment" size={14} />{commentCount > 0 ? commentCount : "Commenter"}</button>
+        <button onClick={onToggleComments} style={btnAct}><Icon name="comment" size={14} />{commentCount > 0 ? commentCount : t("Commenter")}</button>
       </div>
       {comments}
     </div>
@@ -412,8 +413,8 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
     if (files.length === 0) return;
     setPostError("");
     const room = MAX_IMAGES - postImages.length - preparing;
-    if (room <= 0) { setPostError(`${MAX_IMAGES} images maximum par post.`); return; }
-    if (files.length > room) setPostError(`${MAX_IMAGES} images maximum par post.`);
+    if (room <= 0) { setPostError(t("{n} images maximum par post.", { n: MAX_IMAGES })); return; }
+    if (files.length > room) setPostError(t("{n} images maximum par post.", { n: MAX_IMAGES }));
     const batch = files.slice(0, room);
     setPreparing(n => n + batch.length);
     for (const file of batch) {
@@ -421,7 +422,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
         const img = await compressImage(file);
         setPostImages(p => [...p, { ...img, preview: URL.createObjectURL(img.blob) }]);
       } catch (e) {
-        setPostError(e.message || "Image illisible.");
+        setPostError(e.message || t("Image illisible."));
       } finally {
         setPreparing(n => n - 1);
       }
@@ -445,7 +446,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
       if (err) setPostError(err); else ok.push(f);
     }
     const room = MAX_FILES - postFiles.length;
-    if (ok.length > room) setPostError(`${MAX_FILES} fichiers maximum par post.`);
+    if (ok.length > room) setPostError(t("{n} fichiers maximum par post.", { n: MAX_FILES }));
     if (room > 0) setPostFiles(p => [...p, ...ok.slice(0, room)]);
   }
 
@@ -470,7 +471,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
   async function openLabel(activityId, label) {
     setLabelLookup({ id: activityId, error: null });
     const asset = await resolveAsset({ label });
-    if (!asset) { setLabelLookup({ id: activityId, error: `Cours introuvable pour « ${label} ».` }); return; }
+    if (!asset) { setLabelLookup({ id: activityId, error: t("Cours introuvable pour « {label} ».", { label }) }); return; }
     setLabelLookup(null);
     openAssetDetail({ ...asset, name: label });
   }
@@ -492,8 +493,8 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
   async function publishPost() {
     const content = postInput.trim();
     if (!hasContent || posting || preparing) return;
-    if (poll && !isValidPoll(poll)) { setPostError("Un sondage a besoin d'au moins 2 choix."); return; }
-    if (poll && !content) { setPostError("Écris la question du sondage dans le texte du post."); return; }
+    if (poll && !isValidPoll(poll)) { setPostError(t("Un sondage a besoin d'au moins 2 choix.")); return; }
+    if (poll && !content) { setPostError(t("Écris la question du sondage dans le texte du post.")); return; }
     setPosting(true);
     setPostError("");
     let images, files;
@@ -524,7 +525,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
     const { data: created, error } = await supabase.from("activities").insert({ user_id: userId, type: "post", data }).select("id").single();
     if (error) {
       await Promise.all([removeImages(images.map(i => i.path)), removeFiles(files.map(f => f.path))]);
-      setPostError("Publication impossible. Réessaie.");
+      setPostError(t("Publication impossible. Réessaie."));
       setPosting(false);
       return;
     }
@@ -555,7 +556,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
     const tags = finalizeTags(text, postEdit.tags);
     setPostEdit(e => ({ ...e, saving: true, error: "" }));
     const { data, error } = await supabase.rpc("update_my_post", { activity: String(activity.id), content: text, tickers: tags?.tickers || null, mentions: tags?.mentions || null });
-    if (error || !data) { setPostEdit(e => ({ ...e, saving: false, error: "Modification impossible. Réessaie." })); return; }
+    if (error || !data) { setPostEdit(e => ({ ...e, saving: false, error: t("Modification impossible. Réessaie.") })); return; }
     setActivities(list => list.map(a => (a.id === activity.id ? { ...a, data } : a)));
     setPostEdit(null);
   }
@@ -654,12 +655,12 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
             <div style={{ background: T.bgSubtle, borderRadius: 8, padding: "7px 10px", flex: 1 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(c.user_id)}>
-                  {c.author?.full_name || "Investisseur"}
+                  {c.author?.full_name || t("Investisseur")}
                   {c.author?.username && <span style={{ fontWeight: 400, color: T.textFaint, marginLeft: 5 }}>@{c.author.username}</span>}
                 </div>
                 <div style={{ fontSize: 11, color: T.textFaint, flex: 1 }}>{timeAgo(c.created_at)}</div>
                 {(c.user_id === userId || canDeleteAll) && (
-                  <button onClick={() => onDelete(c.id)} title="Supprimer" aria-label="Supprimer le commentaire" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, padding: 0, display: "inline-flex", alignItems: "center" }}><Icon name="close" size={12} /></button>
+                  <button onClick={() => onDelete(c.id)} title={t("Supprimer")} aria-label={t("Supprimer le commentaire")} style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, padding: 0, display: "inline-flex", alignItems: "center" }}><Icon name="close" size={12} /></button>
                 )}
               </div>
               <div style={{ fontSize: 13, color: T.text, marginTop: 2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
@@ -679,11 +680,11 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
             onSubmit={onAdd}
             myId={userId}
             T={T}
-            placeholder="Commenter… ($ valeur, @ membre)"
+            placeholder={t("Commenter… ($ valeur, @ membre)")}
             maxLength={1000}
             style={{ flex: 1, padding: "7px 10px", fontSize: 13, borderRadius: 8, border: `0.5px solid ${T.border}`, background: T.bgCard, color: T.text, fontFamily: "inherit" }}
           />
-          <button onMouseDown={e => e.preventDefault()} onClick={onAdd} aria-label="Envoyer le commentaire" title="Envoyer" style={{ ...btnAct, padding: "7px 12px" }}><Icon name="enter" size={14} /></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={onAdd} aria-label={t("Envoyer le commentaire")} title={t("Envoyer")} style={{ ...btnAct, padding: "7px 12px" }}><Icon name="enter" size={14} /></button>
         </div>
       </div>
     );
@@ -762,7 +763,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
 
 
   if (openAsset) {
-    return <IndexDetail index={detailFor(openAsset)} T={T} backLabel={embedded ? "← Profil" : "← Fil"} initialPeriod={openAsset.chart || "1y"} onBack={closeAssetDetail} />;
+    return <IndexDetail index={detailFor(openAsset)} T={T} backLabel={embedded ? t("← Profil") : t("← Fil")} initialPeriod={openAsset.chart || "1y"} onBack={closeAssetDetail} />;
   }
 
   return (
@@ -786,7 +787,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
               onBlur={() => setFocused(false)}
               onKeyDown={e => { if (e.key === "Escape" && tag) { e.preventDefault(); setDismissedTag(`${tag.start}${tag.sign}${tag.query}`); } }}
               onPaste={e => { const files = [...e.clipboardData.files].filter(isImage); if (files.length) { e.preventDefault(); addImages(files); } }}
-              placeholder="Partage une pensée, une analyse… $ pour citer une valeur, @ pour un membre"
+              placeholder={t("Partage une pensée, une analyse… $ pour citer une valeur, @ pour un membre")}
               maxLength={5000}
               style={{ width: "100%", background: "none", border: "none", outline: "none", color: T.text, fontFamily: "inherit", fontSize: 14, resize: "none", lineHeight: 1.5, minHeight: 60 }}
             />
@@ -795,11 +796,11 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
             <ComposerFiles files={postFiles} onRemove={i => setPostFiles(p => p.filter((_, j) => j !== i))} T={T} />
             {postAsset && (
               <AttachedChip T={T} icon={postAsset.chart ? <Icon name="up" size={14} /> : "$"} onRemove={() => setPostAsset(null)}
-                label={`${postAsset.name} (${postAsset.symbol})${postAsset.chart ? ` · graphique ${CHART_PERIODS.find(p => p.id === postAsset.chart)?.label}` : ""}`} />
+                label={`${postAsset.name} (${postAsset.symbol})${postAsset.chart ? ` · ${t("graphique {period}", { period: CHART_PERIODS.find(p => p.id === postAsset.chart)?.label })}` : ""}`} />
             )}
             {postAllocation && (
               <AttachedChip T={T} icon={<Icon name="pie" size={14} />} onRemove={() => setPostAllocation(null)}
-                label={`Ma répartition ${postAllocation.mode === "positions" ? "par position" : "par classe d'actifs"} (${postAllocation.rows.length} lignes, en %)`} />
+                label={postAllocation.mode === "positions" ? t("Ma répartition par position ({n} lignes, en %)", { n: postAllocation.rows.length }) : t("Ma répartition par classe d'actifs ({n} lignes, en %)", { n: postAllocation.rows.length })} />
             )}
             {picker === "chart" && (
               <AssetPicker key={picker} T={T} onClose={() => setPicker(null)}
@@ -809,39 +810,39 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
               <AllocationPicker T={T} onClose={() => setPicker(null)} onPick={a => { setPostAllocation(a); setPicker(null); }} />
             )}
             {pollOptions && <PollEditor options={pollOptions} onOptions={setPollOptions} days={pollDays} onDays={setPollDays} onRemove={() => setPollOptions(null)} T={T} />}
-            {preparing > 0 && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 6 }}>Préparation de l'image…</div>}
+            {preparing > 0 && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 6 }}>{t("Préparation de l'image…")}</div>}
             {postError && <div style={{ fontSize: 12, color: T.red, marginTop: 6 }}>{postError}</div>}
             <div className="composer-toolbar" style={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap", marginTop: 10, paddingTop: 10, borderTop: `0.5px solid ${T.border}` }}>
               <input ref={fileInput} type="file" accept={ACCEPT_ATTR} multiple hidden
                 onChange={e => { addImages(e.target.files); e.target.value = ""; }} />
-              <button onClick={() => fileInput.current?.click()} disabled={postImages.length + preparing >= MAX_IMAGES} aria-label="Image"
-                title={`Ajouter jusqu'à ${MAX_IMAGES} images`}
+              <button onClick={() => fileInput.current?.click()} disabled={postImages.length + preparing >= MAX_IMAGES} aria-label={t("Image")}
+                title={t("Ajouter jusqu'à {n} images", { n: MAX_IMAGES })}
                 style={{ ...toolBtn, opacity: postImages.length + preparing >= MAX_IMAGES ? 0.4 : 1 }}>
-                <Icon name="image" size={18} /><span className="tool-label">Image</span>
+                <Icon name="image" size={18} /><span className="tool-label">{t("Image")}</span>
               </button>
               <input ref={docInput} type="file" accept={FILE_ACCEPT_ATTR} multiple hidden
                 onChange={e => { addFiles(e.target.files); e.target.value = ""; }} />
-              <button onClick={() => docInput.current?.click()} disabled={postFiles.length >= MAX_FILES} aria-label="Fichier"
-                title={`Joindre jusqu'à ${MAX_FILES} fichiers (PDF, Excel, CSV, Word, PowerPoint · 10 Mo max)`}
+              <button onClick={() => docInput.current?.click()} disabled={postFiles.length >= MAX_FILES} aria-label={t("Fichier")}
+                title={t("Joindre jusqu'à {n} fichiers (PDF, Excel, CSV, Word, PowerPoint · 10 Mo max)", { n: MAX_FILES })}
                 style={{ ...toolBtn, opacity: postFiles.length >= MAX_FILES ? 0.4 : 1 }}>
-                <Icon name="clip" size={18} /><span className="tool-label">Fichier</span>
+                <Icon name="clip" size={18} /><span className="tool-label">{t("Fichier")}</span>
               </button>
-              <button onClick={() => setPollOptions(o => (o ? null : ["", ""]))} aria-pressed={!!pollOptions} aria-label="Sondage"
-                title="Ajouter un sondage" style={{ ...toolBtn, ...(pollOptions ? { background: T.accentBg } : {}) }}>
-                <Icon name="chart" size={18} /><span className="tool-label">Sondage</span>
+              <button onClick={() => setPollOptions(o => (o ? null : ["", ""]))} aria-pressed={!!pollOptions} aria-label={t("Sondage")}
+                title={t("Ajouter un sondage")} style={{ ...toolBtn, ...(pollOptions ? { background: T.accentBg } : {}) }}>
+                <Icon name="chart" size={18} /><span className="tool-label">{t("Sondage")}</span>
               </button>
-              <button onClick={() => setPicker(p => (p === "chart" ? null : "chart"))} aria-pressed={picker === "chart"} aria-label="Graphique" title="Joindre la courbe d'une valeur ou d'un indice"
+              <button onClick={() => setPicker(p => (p === "chart" ? null : "chart"))} aria-pressed={picker === "chart"} aria-label={t("Graphique")} title={t("Joindre la courbe d'une valeur ou d'un indice")}
                 style={{ ...toolBtn, ...(picker === "chart" || postAsset?.chart ? { background: T.accentBg } : {}) }}>
-                <Icon name="up" size={18} /><span className="tool-label">Graphique</span>
+                <Icon name="up" size={18} /><span className="tool-label">{t("Graphique")}</span>
               </button>
-              <button onClick={() => setPicker(p => (p === "allocation" ? null : "allocation"))} aria-pressed={picker === "allocation"} aria-label="Répartition" title="Partager ta répartition, en % uniquement"
+              <button onClick={() => setPicker(p => (p === "allocation" ? null : "allocation"))} aria-pressed={picker === "allocation"} aria-label={t("Répartition")} title={t("Partager ta répartition, en % uniquement")}
                 style={{ ...toolBtn, ...(picker === "allocation" || postAllocation ? { background: T.accentBg } : {}) }}>
-                <Icon name="pie" size={18} /><span className="tool-label">Répartition</span>
+                <Icon name="pie" size={18} /><span className="tool-label">{t("Répartition")}</span>
               </button>
               <div style={{ flex: 1 }} />
               {hasContent && (
                 <button className="composer-publish" onClick={publishPost} disabled={posting || preparing > 0} style={{ background: T.accent, border: "none", borderRadius: 999, padding: "6px 18px", fontSize: 13, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", opacity: preparing ? 0.6 : 1 }}>
-                  {posting ? "Envoi…" : "Publier"}
+                  {posting ? t("Envoi…") : t("Publier")}
                 </button>
               )}
             </div>
@@ -851,7 +852,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
 
       {/* Scope */}
       {!embedded && <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-        {[["verio", "Découvrir", "flame"], ["amis", "Mon fil", "pin"], ["valeurs", "Mes valeurs", "building"]].map(([id, label, icon]) => (
+        {[["verio", t("Découvrir"), "flame"], ["amis", t("Mon fil"), "pin"], ["valeurs", t("Mes valeurs"), "building"]].map(([id, label, icon]) => (
           <button key={id} onClick={() => { if (id !== scope) { setLoading(true); setScope(id); } }} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${scope === id ? T.accent : T.border}`, background: scope === id ? T.accentBg : "none", color: scope === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 }}>
             <Icon name={icon} size={14} />{label}
           </button>
@@ -861,15 +862,15 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
       {/* Mes valeurs : sociétés et indices suivis (croix pour ne plus suivre) */}
       {!embedded && scope === "valeurs" && !loading && (
         <div style={{ ...card, padding: "0.9rem 1rem" }}>
-          <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Sociétés et indices suivis</div>
+          <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>{t("Sociétés et indices suivis")}</div>
           {followedAssets.length === 0
-            ? <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5 }}>Les actions de ton portefeuille sont suivies automatiquement. Tu peux aussi suivre une société ou un indice depuis sa fiche.</div>
+            ? <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5 }}>{t("Les actions de ton portefeuille sont suivies automatiquement. Tu peux aussi suivre une société ou un indice depuis sa fiche.")}</div>
             : <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {followedAssets.map(a => (
                   <span key={a.symbol} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 6px 4px 10px", borderRadius: 999, border: `0.5px solid ${T.border}`, background: T.bgSubtle, fontSize: 12 }}>
                     <button onClick={() => openAssetDetail(a)} style={{ background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: T.text, cursor: "pointer" }}>{a.name}</button>
-                    {a.auto && <span title="Suivie automatiquement : elle est dans ton portefeuille" style={{ fontSize: 10, color: T.textFaint }}>portefeuille</span>}
-                    <button onClick={() => unfollowAsset(a)} aria-label={`Ne plus suivre ${a.name}`} title="Ne plus suivre"
+                    {a.auto && <span title={t("Suivie automatiquement : elle est dans ton portefeuille")} style={{ fontSize: 10, color: T.textFaint }}>{t("portefeuille")}</span>}
+                    <button onClick={() => unfollowAsset(a)} aria-label={t("Ne plus suivre {name}", { name: a.name })} title={t("Ne plus suivre")}
                       style={{ width: 18, height: 18, borderRadius: "50%", border: "none", background: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, lineHeight: 1, padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Icon name="close" size={12} /></button>
                   </span>
                 ))}
@@ -886,16 +887,16 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
         ))}
       </div>}
 
-      {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>Chargement…</div>}
+      {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>{t("Chargement…")}</div>}
 
       {!loading && visible.length === 0 && (
         <div style={{ ...card, textAlign: "center", padding: "2.5rem 1rem" }}>
           <div style={{ marginBottom: 12, color: T.textFaint, display: "flex", justifyContent: "center" }}><Icon name="users" size={32} /></div>
           <div style={{ fontSize: 14, fontWeight: 600, color: T.textMuted, marginBottom: 8 }}>
-            {focusId != null ? "Ce post n'existe plus" : hashtag ? `Aucun post avec #${hashtag} pour le moment` : embedded ? (only === "posts" ? "Aucun post pour le moment" : "Aucun mouvement pour le moment") : scope === "amis" && friendIds.length <= 1 ? "Ajoute des amis pour voir leurs investissements" : "Aucune activité dans cette catégorie"}
+            {focusId != null ? t("Ce post n'existe plus") : hashtag ? t("Aucun post avec #{hashtag} pour le moment", { hashtag }) : embedded ? (only === "posts" ? t("Aucun post pour le moment") : t("Aucun mouvement pour le moment")) : scope === "amis" && friendIds.length <= 1 ? t("Ajoute des amis pour voir leurs investissements") : t("Aucune activité dans cette catégorie")}
           </div>
           <div style={{ fontSize: 13, color: T.textFaint, lineHeight: 1.6 }}>
-            {hashtag ? "Ajoute ce hashtag à un post pour lancer le sujet" : embedded && only === "posts" ? "Ses publications apparaîtront ici" : !embedded && scope === "amis" && friendIds.length <= 1 ? "Va dans Explore pour trouver des investisseurs" : "Les mouvements apparaîtront ici automatiquement"}
+            {hashtag ? t("Ajoute ce hashtag à un post pour lancer le sujet") : embedded && only === "posts" ? t("Ses publications apparaîtront ici") : !embedded && scope === "amis" && friendIds.length <= 1 ? t("Va dans Explore pour trouver des investisseurs") : t("Les mouvements apparaîtront ici automatiquement")}
           </div>
         </div>
       )}
@@ -918,7 +919,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
           );
         }
         const meta = activity.type === "post"
-          ? { tag: "Post", tagBg: "rgba(175,169,236,0.1)", tagColor: T.purple, title: null, sub: null, stat: null }
+          ? { tag: t("Post"), tagBg: "rgba(175,169,236,0.1)", tagColor: T.purple, title: null, sub: null, stat: null }
           : getActivityMeta(activity);
         const isMe = activity.user_id === session.user.id;
         const activityComments = comments[activity.id] || [];
@@ -932,9 +933,9 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(activity.user_id)}>
                   {activity.author?.full_name}
                   {activity.author?.username && <span style={{ fontSize: 12, fontWeight: 400, color: T.textFaint, marginLeft: 6 }}>@{activity.author.username}</span>}
-                  {isMe && <span style={{ fontSize: 11, color: T.textFaint, marginLeft: 6 }}>· moi</span>}
+                  {isMe && <span style={{ fontSize: 11, color: T.textFaint, marginLeft: 6 }}>{t("· moi")}</span>}
                 </div>
-                <div style={{ fontSize: 12, color: T.textFaint }}>{timeAgo(activity.created_at)}{activity.type === "post" && activity.data?.edited_at ? " · modifié" : ""}</div>
+                <div style={{ fontSize: 12, color: T.textFaint }}>{timeAgo(activity.created_at)}{activity.type === "post" && activity.data?.edited_at ? ` · ${t("modifié")}` : ""}</div>
               </div>
               <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: meta.tagBg, color: meta.tagColor, display: "inline-flex", alignItems: "center", gap: 5 }}>{meta.tagIcon && <Icon name={meta.tagIcon} size={12} />}{meta.tag}</span>
             </div>
@@ -950,9 +951,9 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
                     {postEdit.error && <div role="alert" style={{ fontSize: 12, color: T.red, marginTop: 4 }}>{postEdit.error}</div>}
                     <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 6 }}>
                       {/* onMouseDown : garde le focus pour que la liste de suggestions ne se ferme pas sous le clic */}
-                      <button onMouseDown={e => e.preventDefault()} onClick={() => setPostEdit(null)} style={btnAct}>Annuler</button>
+                      <button onMouseDown={e => e.preventDefault()} onClick={() => setPostEdit(null)} style={btnAct}>{t("Annuler")}</button>
                       <button onMouseDown={e => e.preventDefault()} onClick={() => savePostEdit(activity)} disabled={postEdit.saving}
-                        style={{ ...btnAct, background: T.accent, borderColor: T.accent, color: T.onAccent, fontWeight: 700 }}>{postEdit.saving ? "…" : "Enregistrer"}</button>
+                        style={{ ...btnAct, background: T.accent, borderColor: T.accent, color: T.onAccent, fontWeight: 700 }}>{postEdit.saving ? "…" : t("Enregistrer")}</button>
                     </div>
                   </div>
                 ) : activity.data?.content && (
@@ -998,30 +999,30 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
               <button onClick={() => toggleLike(activity)} style={{ ...btnAct, ...(like.mine ? { borderColor: T.accent, color: T.accent } : {}) }}>
-                <Icon name="like" size={14} />{like.mine ? "Liké" : "Like"}{like.count > 0 ? ` · ${like.count}` : ""}
+                <Icon name="like" size={14} />{like.mine ? t("Liké") : t("Like")}{like.count > 0 ? ` · ${like.count}` : ""}
               </button>
               <button onClick={() => toggleComment(activity.id)} style={btnAct}>
-                <Icon name="comment" size={14} />{activityComments.length > 0 ? activityComments.length : "Commenter"}
+                <Icon name="comment" size={14} />{activityComments.length > 0 ? activityComments.length : t("Commenter")}
               </button>
               {isMe && TRADE_TYPES.includes(activity.type) && !activity.note && noteEditing !== activity.id && (
-                <button onClick={() => setNoteEditing(activity.id)} title="Explique ce mouvement : ta stratégie, ton ressenti…"
+                <button onClick={() => setNoteEditing(activity.id)} title={t("Explique ce mouvement : ta stratégie, ton ressenti…")}
                   style={{ ...btnAct, border: "none", color: T.textMuted }}>
-                  <Icon name="edit" size={14} />Ajouter une description
+                  <Icon name="edit" size={14} />{t("Ajouter une description")}
                 </button>
               )}
               {isMe && activity.type === "post" && postEdit?.id !== activity.id && confirmDelete !== activity.id && (
                 <button onClick={() => setPostEdit({ id: activity.id, text: activity.data?.content || "", tags: { tickers: activity.data?.tickers || [], mentions: activity.data?.mentions || [] }, saving: false, error: "" })}
-                  title="Modifier le post" aria-label="Modifier le post" style={{ ...btnAct, marginLeft: "auto", border: "none" }}><Icon name="edit" size={14} /></button>
+                  title={t("Modifier le post")} aria-label={t("Modifier le post")} style={{ ...btnAct, marginLeft: "auto", border: "none" }}><Icon name="edit" size={14} /></button>
               )}
               {isMe && activity.type === "post" && (
                 confirmDelete === activity.id ? (
                   <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontSize: 12, color: T.textMuted }}>Supprimer ce post ?</span>
-                    <button onClick={() => deletePost(activity)} disabled={deleting} style={{ ...btnAct, borderColor: T.red, color: T.red }}>{deleting ? "…" : "Supprimer"}</button>
-                    <button onClick={() => setConfirmDelete(null)} style={btnAct}>Annuler</button>
+                    <span style={{ fontSize: 12, color: T.textMuted }}>{t("Supprimer ce post ?")}</span>
+                    <button onClick={() => deletePost(activity)} disabled={deleting} style={{ ...btnAct, borderColor: T.red, color: T.red }}>{deleting ? "…" : t("Supprimer")}</button>
+                    <button onClick={() => setConfirmDelete(null)} style={btnAct}>{t("Annuler")}</button>
                   </span>
                 ) : (
-                  <button onClick={() => setConfirmDelete(activity.id)} title="Supprimer le post" aria-label="Supprimer le post" style={{ ...btnAct, ...(postEdit?.id === activity.id ? { marginLeft: "auto" } : {}), border: "none" }}><Icon name="trash" size={14} /></button>
+                  <button onClick={() => setConfirmDelete(activity.id)} title={t("Supprimer le post")} aria-label={t("Supprimer le post")} style={{ ...btnAct, ...(postEdit?.id === activity.id ? { marginLeft: "auto" } : {}), border: "none" }}><Icon name="trash" size={14} /></button>
                 )
               )}
             </div>

@@ -3,6 +3,7 @@ import { supabase } from "../supabase";
 import { avatarColors } from "../theme";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
+import { t } from "../i18n";
 
 // Encarts de la colonne de droite (ordinateur), sous les marchés : mes clubs, suggestions d'amis
 
@@ -33,15 +34,15 @@ export function ClubsWidget({ session, T, onOpenClub, onAllClubs }) {
   if (clubs === null) return null;
   return (
     <div style={box(T)}>
-      <div style={title(T)}><Icon name="users" size={14} />Vos clubs</div>
+      <div style={title(T)}><Icon name="users" size={14} />{t("Vos clubs")}</div>
       {clubs.length === 0 ? (
-        <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5 }}>Rejoins un club pour échanger avec des investisseurs qui partagent ta stratégie.</div>
+        <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5 }}>{t("Rejoins un club pour échanger avec des investisseurs qui partagent ta stratégie.")}</div>
       ) : (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {clubs.slice(0, 8).map(c => {
             const [bg, color] = avatarColors(c.name, T);
             return (
-              <button key={c.id} onClick={() => onOpenClub(c)} title={c.name} aria-label={`Ouvrir le club ${c.name}`}
+              <button key={c.id} onClick={() => onOpenClub(c)} title={c.name} aria-label={t("Ouvrir le club {name}", { name: c.name })}
                 style={{ width: 52, height: 52, borderRadius: 10, border: `0.5px solid ${T.border}`, background: bg, color, fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {clubInitials(c.name)}
               </button>
@@ -49,7 +50,7 @@ export function ClubsWidget({ session, T, onOpenClub, onAllClubs }) {
           })}
         </div>
       )}
-      <button onClick={() => onAllClubs(clubs.length > 0)} style={linkBtn(T)}>{clubs.length ? "Voir mes clubs" : "Découvrir les clubs"}</button>
+      <button onClick={() => onAllClubs(clubs.length > 0)} style={linkBtn(T)}>{clubs.length ? t("Voir mes clubs") : t("Découvrir les clubs")}</button>
     </div>
   );
 }
@@ -77,18 +78,18 @@ export function FriendSuggestions({ session, T, onViewProfile, onFindFriends }) 
   if (list === null) return null;
   return (
     <div style={box(T)}>
-      <div style={title(T)}><Icon name="handshake" size={14} />Suggestions d'amis</div>
+      <div style={title(T)}><Icon name="handshake" size={14} />{t("Suggestions d'amis")}</div>
       {list.length === 0 && (
-        <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5 }}>Ajoute des amis ou rejoins des clubs : on te proposera des investisseurs de ton réseau.</div>
+        <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5 }}>{t("Ajoute des amis ou rejoins des clubs : on te proposera des investisseurs de ton réseau.")}</div>
       )}
       {list.map((s, i) => {
         const state = sent[s.id];
         const reason = s.mutual_friends > 0
-          ? `${s.mutual_friends} ami${s.mutual_friends > 1 ? "s" : ""} en commun`
-          : s.shared_club ? `Club ${s.shared_club}` : "";
+          ? t(s.mutual_friends > 1 ? "{n} amis en commun" : "{n} ami en commun", { n: s.mutual_friends })
+          : s.shared_club ? t("Club {name}", { name: s.shared_club }) : "";
         return (
           <div key={s.id} style={{ display: "flex", gap: 10, alignItems: "flex-start", paddingTop: i ? 10 : 0, marginTop: i ? 10 : 0, borderTop: i ? `0.5px solid ${T.border}` : "none" }}>
-            <button onClick={() => onViewProfile(s.id)} aria-label={`Voir le profil de ${s.full_name}`} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+            <button onClick={() => onViewProfile(s.id)} aria-label={t("Voir le profil de {name}", { name: s.full_name })} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
               <Avatar userId={s.id} name={s.full_name} size={38} />
             </button>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -99,13 +100,13 @@ export function FriendSuggestions({ session, T, onViewProfile, onFindFriends }) 
               {reason && <div style={{ fontSize: 11, color: T.textFaint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{reason}</div>}
               <button onClick={() => sendRequest(s.id)} disabled={!!state}
                 style={{ marginTop: 6, background: state === "sent" ? "none" : T.accentBg, border: `0.5px solid ${T.accent}`, borderRadius: 8, padding: "4px 12px", fontSize: 12, fontWeight: 700, color: T.accent, cursor: state ? "default" : "pointer", fontFamily: "inherit" }}>
-                {state === "sent" ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="check" size={13} />Demande envoyée</span> : state === "sending" ? "…" : "+ Ajouter"}
+                {state === "sent" ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="check" size={13} />{t("Demande envoyée")}</span> : state === "sending" ? "…" : t("+ Ajouter")}
               </button>
             </div>
           </div>
         );
       })}
-      <button onClick={onFindFriends} style={linkBtn(T)}>Trouver des amis</button>
+      <button onClick={onFindFriends} style={linkBtn(T)}>{t("Trouver des amis")}</button>
     </div>
   );
 }

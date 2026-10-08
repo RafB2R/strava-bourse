@@ -3,6 +3,7 @@ import { supabase } from "../supabase";
 import { RichText, TagField } from "./PostText";
 import { finalizeTags } from "../tags";
 import Icon from "./Icon";
+import { t } from "../i18n";
 
 // Description de l'auteur sous un mouvement automatique (comme celle d'une course
 // Strava) : visible par tous, modifiable par l'auteur seul.
@@ -22,7 +23,7 @@ export default function MovementNote({ activity, isMe, myId, T, onSaved, onAsset
     <div style={{ fontSize: 14, color: T.text, lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
       <RichText text={activity.note} tickers={activity.note_tags?.tickers} mentions={activity.note_tags?.mentions} T={T} onAsset={onAsset} onProfile={onProfile} />
       {isMe && (
-        <button onClick={() => onEditingChange(true)} style={{ marginLeft: 8, background: "none", border: "none", padding: 0, fontSize: 12, color: T.textFaint, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 5, verticalAlign: "middle" }}><Icon name="edit" size={12} />Modifier</button>
+        <button onClick={() => onEditingChange(true)} style={{ marginLeft: 8, background: "none", border: "none", padding: 0, fontSize: 12, color: T.textFaint, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 5, verticalAlign: "middle" }}><Icon name="edit" size={12} />{t("Modifier")}</button>
       )}
     </div>
   );
@@ -41,7 +42,7 @@ function NoteEditor({ activity, myId, T, onCancel, onSaved }) {
     setSaving(true); setError("");
     const { error: err } = await supabase.rpc("set_activity_note", { activity: String(activity.id), note_text: content, tags: finalTags });
     setSaving(false);
-    if (err) { setError("Enregistrement impossible. Réessaie."); return; }
+    if (err) { setError(t("Enregistrement impossible. Réessaie.")); return; }
     // Prévient les membres nouvellement mentionnés
     const before = new Set((activity.note_tags?.mentions || []).map(m => m.id));
     for (const m of finalTags?.mentions || []) {
@@ -53,13 +54,13 @@ function NoteEditor({ activity, myId, T, onCancel, onSaved }) {
   return (
     <div style={{ marginBottom: 12 }}>
       <TagField as="textarea" value={text} onValueChange={setText} tags={tags} onTagsChange={setTags} myId={myId} T={T}
-        autoFocus maxLength={1000} placeholder="Pourquoi ce mouvement ? Ta stratégie, ton ressenti… ($ valeur, @ membre)"
+        autoFocus maxLength={1000} placeholder={t("Pourquoi ce mouvement ? Ta stratégie, ton ressenti… ($ valeur, @ membre)")}
         style={{ minHeight: 70, resize: "vertical", padding: "9px 12px", fontSize: 14, lineHeight: 1.5, borderRadius: 10, border: `0.5px solid ${T.accent}`, background: T.bgCard, color: T.text, fontFamily: "inherit" }} />
       {error && <div role="alert" style={{ fontSize: 12, color: T.red, marginTop: 4 }}>{error}</div>}
       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 6 }}>
         {/* onMouseDown : garde le focus pour que la liste de suggestions ne se ferme pas sous le clic */}
-        <button onMouseDown={e => e.preventDefault()} onClick={onCancel} style={{ background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>
-        <button onMouseDown={e => e.preventDefault()} onClick={save} disabled={saving} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "5px 14px", fontSize: 12, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>{saving ? "…" : "Enregistrer"}</button>
+        <button onMouseDown={e => e.preventDefault()} onClick={onCancel} style={{ background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{t("Annuler")}</button>
+        <button onMouseDown={e => e.preventDefault()} onClick={save} disabled={saving} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "5px 14px", fontSize: 12, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>{saving ? "…" : t("Enregistrer")}</button>
       </div>
     </div>
   );

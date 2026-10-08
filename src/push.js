@@ -2,6 +2,7 @@
 // supabase/migrations/20261014000001_notifications_push.sql)
 import { supabase } from "./supabase";
 import { isStandalone, isIosSafari } from "./pwa";
+import { t } from "./i18n";
 
 // Clé publique VAPID (la même que dans api/push.js ; elle n'a rien de secret)
 const VAPID_PUBLIC_KEY = "BDwFtRF-NhQFspShPQpzHrry6wLC4PmHdVLEL90rbv8udXd_h1ey1kra8Ss48rbQb2zj8w5VnBGzfSGlhf314GA";
@@ -39,7 +40,7 @@ export async function enablePush() {
   const { error } = await supabase.rpc("register_push_subscription", {
     p_endpoint: endpoint, p_p256dh: keys.p256dh, p_auth: keys.auth, p_user_agent: navigator.userAgent,
   });
-  if (error) { await sub.unsubscribe(); throw new Error("Enregistrement impossible. Réessaie."); }
+  if (error) { await sub.unsubscribe(); throw new Error(t("Enregistrement impossible. Réessaie.")); }
   return "on";
 }
 

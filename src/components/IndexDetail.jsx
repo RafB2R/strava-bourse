@@ -6,9 +6,10 @@ import { PERIODS, DEFAULT_PERIOD, TOP5_UPDATED, INDICES, fetchChart, fmtChange, 
 import { supabase } from "../supabase";
 import { isFollowingAsset, setFollowingAsset, newsName } from "../assetFollows";
 import NewsList from "./NewsList";
+import { t, LOCALE } from "../i18n";
 
 // 0 décimale au-delà de 1 000, 4 sous 10 (devises), 2 sinon
-const fmtPrice = p => (p === null || p === undefined ? "—" : p.toLocaleString("fr-FR", { maximumFractionDigits: p > 1000 ? 0 : p < 10 ? 4 : 2 }));
+const fmtPrice = p => (p === null || p === undefined ? "—" : p.toLocaleString(LOCALE, { maximumFractionDigits: p > 1000 ? 0 : p < 10 ? 4 : 2 }));
 // Valeur affichée selon le type : taux en %, sinon cours avec son unité ($/oz…)
 const valueFormatter = index => (index.isRate
   ? v => (v === null || v === undefined ? "—" : `${v.toFixed(2).replace(".", ",")} %`)
@@ -18,9 +19,9 @@ const fmtPoints = d => `${d >= 0 ? "+" : "−"}${Math.abs(d).toFixed(2).replace(
 
 function fmtDate(ts, period) {
   const d = new Date(ts);
-  if (period === "1d") return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-  if (period === "5d") return d.toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" });
-  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  if (period === "1d") return d.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
+  if (period === "5d") return d.toLocaleString(LOCALE, { weekday: "short", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleDateString(LOCALE, { day: "numeric", month: "short", year: "numeric" });
 }
 
 // Mini-courbe sans axe, pour la tuile d'un indice
@@ -58,9 +59,9 @@ function LineChart({ points, period, color, T, fmt = fmtPrice }) {
   return (
     <div style={{ position: "relative" }}>
       <div style={{ height: 22, fontSize: 12, color: T.textMuted, marginBottom: 4 }}>
-        {h ? <><strong style={{ color: T.text }}>{fmt(h[1])}</strong> · {fmtDate(h[0], period)}</> : <span style={{ color: T.textFaint }}>Survole la courbe pour lire un point</span>}
+        {h ? <><strong style={{ color: T.text }}>{fmt(h[1])}</strong> · {fmtDate(h[0], period)}</> : <span style={{ color: T.textFaint }}>{t("Survole la courbe pour lire un point")}</span>}
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label="Évolution de l'indice sur la période"
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={t("Évolution de l'indice sur la période")}
         style={{ width: "100%", height: 220, display: "block", touchAction: "pan-y", cursor: "crosshair" }}
         onMouseMove={e => locate(e.clientX, e.currentTarget)} onMouseLeave={() => setHover(null)}
         onTouchMove={e => locate(e.touches[0].clientX, e.currentTarget)} onTouchEnd={() => setHover(null)}>
@@ -84,7 +85,7 @@ function LineChart({ points, period, color, T, fmt = fmtPrice }) {
 
 // Fiche d'un indice (avec présentation et top 5) ou de n'importe quelle valeur
 // (action, ETF… : seulement la courbe). « backLabel » : texte du bouton retour.
-export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← Marchés", initialPeriod = DEFAULT_PERIOD }) {
+export default function IndexDetail({ index, onBack, T: TProp, backLabel = t("← Marchés"), initialPeriod = DEFAULT_PERIOD }) {
   const T = TProp || TLive;
   // « index.periods » : périodes proposées (historique mensuel des taux OAT et Bund : pas de 1J…)
   const periods = index.periods ? PERIODS.filter(p => index.periods.includes(p.id)) : PERIODS;
@@ -133,7 +134,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
     const next = !follow.on;
     setFollow(f => ({ ...f, on: next, busy: true, error: "" }));
     const ok = await setFollowingAsset(me, { symbol: index.symbol, name: index.name, type: isIndex ? "Indice" : index.type }, next);
-    setFollow(f => ({ ...f, on: ok ? next : !next, busy: false, error: ok ? "" : "Impossible pour le moment." }));
+    setFollow(f => ({ ...f, on: ok ? next : !next, busy: false, error: ok ? "" : t("Impossible pour le moment.") }));
   }
 
   const facts = keyFacts?.symbol === index.symbol ? keyFacts : null;
@@ -155,13 +156,13 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
       <div style={card}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
           <div style={{ fontSize: 22, fontWeight: 800, color: T.text }}>{index.country && <Flag country={index.country} size={18} />}{index.name}</div>
-          <div style={{ fontSize: 13, color: T.textFaint }}>{index.symbol.startsWith("RATE:") ? "BCE · moyenne mensuelle" : index.symbol}{index.type ? ` · ${index.type}` : ""}</div>
+          <div style={{ fontSize: 13, color: T.textFaint }}>{index.symbol.startsWith("RATE:") ? t("BCE · moyenne mensuelle") : index.symbol}{index.type ? ` · ${t(index.type)}` : ""}</div>
           {canFollow && followReady && (
             <button onClick={toggleFollow} disabled={follow.busy} aria-pressed={follow.on}
-              title={follow.on ? "Ne plus suivre" : "Suivre : ses actualités arriveront dans ton fil"}
+              title={follow.on ? t("Ne plus suivre") : t("Suivre : ses actualités arriveront dans ton fil")}
               style={{ marginLeft: "auto", padding: "5px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
                 ...(follow.on ? { background: T.accentBg, border: `0.5px solid ${T.accentBorder}`, color: T.accent } : { background: T.accent, border: `0.5px solid ${T.accent}`, color: T.onAccent }) }}>
-              {follow.on ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>Suivi <Icon name="check" size={13} /></span> : "+ Suivre"}
+              {follow.on ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>{t("Suivi")} <Icon name="check" size={13} /></span> : t("+ Suivre")}
             </button>
           )}
         </div>
@@ -186,7 +187,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
           {data && periodInfo && <div style={{ fontSize: 12, color: T.textFaint }}>{periodPhrase(periodInfo)}</div>}
         </div>
         {!index.isRate && data?.annualized != null && (period === "5y" || period === "10y" || period === "max") && (
-          <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 8 }}>soit ≈ {fmtChange(data.annualized)} par an</div>
+          <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 8 }}>{t("soit ≈ {value} par an", { value: fmtChange(data.annualized) })}</div>
         )}
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap", margin: "8px 0 14px" }}>
           {periods.map(p => (
@@ -195,23 +196,23 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
             </button>
           ))}
         </div>
-        {loading && <div style={{ height: 250, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: T.textFaint }}>Chargement…</div>}
-        {!loading && !data && <div style={{ height: 250, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: T.textFaint }}>Données indisponibles pour le moment.</div>}
+        {loading && <div style={{ height: 250, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: T.textFaint }}>{t("Chargement…")}</div>}
+        {!loading && !data && <div style={{ height: 250, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: T.textFaint }}>{t("Données indisponibles pour le moment.")}</div>}
         {!loading && data && data.points.length > 1 && <LineChart key={period} points={data.points} period={period} color={color} T={T} fmt={fmtValue} />}
       </div>
 
       {/* Société : chiffres clés (sur un an) et actualités */}
       {isCompany && facts && (facts.year || facts.ytd) && (
         <div style={card}>
-          <div style={sectionLabel}><Icon name="pin" size={13} />Chiffres clés</div>
+          <div style={sectionLabel}><Icon name="pin" size={13} />{t("Chiffres clés")}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
             {[
-              ["Depuis le 1er janvier", facts.ytd ? fmtChange(facts.ytd.change) : "—", facts.ytd?.change == null ? T.text : facts.ytd.change >= 0 ? T.up : T.red],
-              ["Sur 1 an", facts.year ? fmtChange(facts.year.change) : "—", facts.year?.change == null ? T.text : facts.year.change >= 0 ? T.up : T.red],
-              ["Plus haut 1 an", facts.year ? fmtValue(facts.year.high) : "—", T.text],
-              ["Plus bas 1 an", facts.year ? fmtValue(facts.year.low) : "—", T.text],
-              ["Dividende 12 mois", facts.year?.dividends ? `${fmtPrice(facts.year.dividends)}${facts.year.currency ? ` ${facts.year.currency}` : ""}` : "Aucun", T.text],
-              ["Rendement", facts.year?.dividendYield ? `${facts.year.dividendYield.toFixed(1).replace(".", ",")} %` : "—", T.text],
+              [t("Depuis le 1er janvier"), facts.ytd ? fmtChange(facts.ytd.change) : "—", facts.ytd?.change == null ? T.text : facts.ytd.change >= 0 ? T.up : T.red],
+              [t("Sur 1 an"), facts.year ? fmtChange(facts.year.change) : "—", facts.year?.change == null ? T.text : facts.year.change >= 0 ? T.up : T.red],
+              [t("Plus haut 1 an"), facts.year ? fmtValue(facts.year.high) : "—", T.text],
+              [t("Plus bas 1 an"), facts.year ? fmtValue(facts.year.low) : "—", T.text],
+              [t("Dividende 12 mois"), facts.year?.dividends ? `${fmtPrice(facts.year.dividends)}${facts.year.currency ? ` ${facts.year.currency}` : ""}` : t("Aucun"), T.text],
+              [t("Rendement"), facts.year?.dividendYield ? `${facts.year.dividendYield.toFixed(1).replace(".", ",")} %` : "—", T.text],
             ].map(([label, value, color]) => (
               <div key={label} style={{ background: T.bgSubtle, borderRadius: 10, padding: "10px 12px" }}>
                 <div style={{ fontSize: 11, color: T.textFaint, marginBottom: 2 }}>{label}</div>
@@ -219,19 +220,19 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 11, color: T.textFaint, marginTop: 8 }}>Cours de clôture, dividendes versés sur les 12 derniers mois.</div>
+          <div style={{ fontSize: 11, color: T.textFaint, marginTop: 8 }}>{t("Cours de clôture, dividendes versés sur les 12 derniers mois.")}</div>
         </div>
       )}
       {isCompany && (
         <div>
-          <div style={{ ...sectionLabel, margin: "4px 4px 8px" }}><Icon name="news" size={13} />Actualités</div>
+          <div style={{ ...sectionLabel, margin: "4px 4px 8px" }}><Icon name="news" size={13} />{t("Actualités")}</div>
           <NewsList query={`"${newsName(index.name)}"`} T={T} />
         </div>
       )}
 
       {/* Top 5 (indices seulement) */}
       {top5.length > 0 && <div style={card}>
-        <div style={sectionLabel}><Icon name="trophy" size={13} />Les poids lourds de l'indice</div>
+        <div style={sectionLabel}><Icon name="trophy" size={13} />{t("Les poids lourds de l'indice")}</div>
         {top5.map((c, i) => {
           const row = top?.period === period ? top.rows[i] : null;
           const ch = row?.data?.change;
@@ -250,7 +251,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
             </div>
           );
         })}
-        <div style={{ fontSize: 11, color: T.textFaint, marginTop: 10 }}>Liste indicative des plus gros poids de l'indice, mise à jour en {TOP5_UPDATED}.</div>
+        <div style={{ fontSize: 11, color: T.textFaint, marginTop: 10 }}>{t("Liste indicative des plus gros poids de l'indice, mise à jour en {date}.", { date: TOP5_UPDATED })}</div>
       </div>}
     </div>
   );

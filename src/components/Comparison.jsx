@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import { photoStats, simulate, RISK_FREE } from "../compare";
 import Icon from "./Icon";
+import { t } from "../i18n";
 
 // Comparaison « Moi / ce membre » : un bloc sur une période au choix (simulation à
 // répartition actuelle) et un bloc « photo » des positions d'aujourd'hui.
@@ -36,7 +37,7 @@ function Row({ label, mine, theirs, format, better, T }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, padding: "7px 0", borderTop: `0.5px solid ${T.border}`, alignItems: "center" }}>
       <div style={{ textAlign: "right", fontSize: 13, fontWeight: 700, color: meBetter ? T.up : T.text }}>{mine != null ? format(mine) : "—"}</div>
-      <div style={{ textAlign: "center", fontSize: 10, color: T.textFaint, minWidth: 84 }}>{label}</div>
+      <div style={{ textAlign: "center", fontSize: 10, color: T.textFaint, minWidth: 84 }}>{t(label)}</div>
       <div style={{ textAlign: "left", fontSize: 13, fontWeight: 700, color: theyBetter ? T.up : T.text }}>{theirs != null ? format(theirs) : "—"}</div>
     </div>
   );
@@ -75,35 +76,35 @@ export default function Comparison({ myId, theirEntries, theirName, T }) {
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, marginBottom: 4 }}>
-        <div style={{ textAlign: "right", fontSize: 12, fontWeight: 700, color: T.text }}>Moi</div>
+        <div style={{ textAlign: "right", fontSize: 12, fontWeight: 700, color: T.text }}>{t("Moi")}</div>
         <div style={{ minWidth: 84 }} />
         <div style={{ textAlign: "left", fontSize: 12, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{theirName}</div>
       </div>
 
-      <div style={section}><Icon name="timer" size={12} />Sur la période</div>
+      <div style={section}><Icon name="timer" size={12} />{t("Sur la période")}</div>
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }}>
         {PERIODS.map(([id, label]) => (
           <button key={id} onClick={() => setPeriod(id)} aria-pressed={period === id}
             style={{ padding: "3px 9px", borderRadius: 999, fontSize: 11, fontFamily: "inherit", cursor: "pointer", border: `0.5px solid ${period === id ? T.accent : T.border}`, background: period === id ? T.accentBg : "none", color: period === id ? T.accent : T.textMuted, fontWeight: period === id ? 700 : 400 }}>
-            {label}
+            {t(label)}
           </button>
         ))}
       </div>
       {!ready
-        ? <div style={{ fontSize: 12, color: T.textFaint, textAlign: "center", padding: "12px 0" }}>Calcul en cours…</div>
+        ? <div style={{ fontSize: 12, color: T.textFaint, textAlign: "center", padding: "12px 0" }}>{t("Calcul en cours…")}</div>
         : EVOLVING.map(r => <Row key={r.key} T={T} {...r} mine={sim.mine?.[r.key]} theirs={sim.theirs?.[r.key]} />)}
       <div style={{ fontSize: 10, color: T.textFaint, lineHeight: 1.5, marginTop: 6 }}>
-        Simulation : la répartition actuelle appliquée aux cours passés, pas la performance réelle.
-        {coverage.length > 0 && ` Calculée sur ${coverage.join(" % et ")} % des portefeuilles.`} Sharpe avec un taux sans risque de {RISK_FREE} %.
+        {t("Simulation : la répartition actuelle appliquée aux cours passés, pas la performance réelle.")}
+        {coverage.length > 0 && ` ${t("Calculée sur {coverage} % des portefeuilles.", { coverage: coverage.join(t(" % et ")) })}`} {t("Sharpe avec un taux sans risque de {rate} %.", { rate: RISK_FREE })}
       </div>
 
-      <div style={section}><Icon name="camera" size={12} />Positions actuelles</div>
+      <div style={section}><Icon name="camera" size={12} />{t("Positions actuelles")}</div>
       {PHOTO.map(r => <Row key={r.key} T={T} {...r} mine={photoMine?.[r.key]} theirs={photoTheirs?.[r.key]} />)}
       {SOON.map(label => (
         <div key={label} style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, padding: "7px 0", borderTop: `0.5px solid ${T.border}`, alignItems: "center" }}>
-          <div style={{ textAlign: "right", fontSize: 11, color: T.textFaint }}>bientôt</div>
-          <div style={{ textAlign: "center", fontSize: 10, color: T.textFaint, minWidth: 84 }}>{label}</div>
-          <div style={{ textAlign: "left", fontSize: 11, color: T.textFaint }}>bientôt</div>
+          <div style={{ textAlign: "right", fontSize: 11, color: T.textFaint }}>{t("bientôt")}</div>
+          <div style={{ textAlign: "center", fontSize: 10, color: T.textFaint, minWidth: 84 }}>{t(label)}</div>
+          <div style={{ textAlign: "left", fontSize: 11, color: T.textFaint }}>{t("bientôt")}</div>
         </div>
       ))}
     </div>

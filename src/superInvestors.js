@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { t } from "./i18n";
 
 // Super Investors : profils alimentés par leurs déclarations 13F à la SEC
 // (voir api/superinvestors-sync.js). On les suit par un abonnement, sans demande d'ami.
@@ -60,8 +61,9 @@ export async function fetchFollowedNews(myId) {
 
 // « 2026-06-30 » → « 2e trimestre 2026 » (ou « T2 2026 » en court)
 export function quarterLabel(period, short = false) {
-  if (!period) return "trimestre";
+  if (!period) return t("trimestre");
   const [y, m] = period.split("-").map(Number);
   const q = Math.ceil(m / 3);
-  return short ? `T${q} ${y}` : `${q === 1 ? "1er" : `${q}e`} trimestre ${y}`;
+  if (short) return t("T{q} {y}", { q, y });
+  return q === 1 ? t("1er trimestre {y}", { y }) : t("{q}e trimestre {y}", { q, y });
 }

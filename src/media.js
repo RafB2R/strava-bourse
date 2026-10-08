@@ -1,6 +1,7 @@
 // Images des posts : compression dans le navigateur puis envoi dans Supabase Storage
 // (bucket « post-media », supabase/migrations/20261010000001_medias.sql)
 import { supabase } from "./supabase";
+import { t, LANG } from "./i18n";
 
 const BUCKET = "post-media";
 export const MAX_IMAGES = 4;
@@ -21,7 +22,7 @@ function toBlob(canvas, type, quality) {
 // Les GIF sont gardés tels quels pour conserver l'animation.
 export async function compressImage(file) {
   if (file.type === "image/gif") {
-    if (file.size > MAX_GIF_BYTES) throw new Error("GIF trop lourd (5 Mo maximum).");
+    if (file.size > MAX_GIF_BYTES) throw new Error(t("GIF trop lourd (5 Mo maximum)."));
     const bitmap = await createImageBitmap(file);
     const size = { width: bitmap.width, height: bitmap.height };
     bitmap.close?.();
@@ -29,7 +30,7 @@ export async function compressImage(file) {
   }
   let bitmap;
   try { bitmap = await createImageBitmap(file, { imageOrientation: "from-image" }); }
-  catch { throw new Error("Format d'image non reconnu."); }
+  catch { throw new Error(t("Format d'image non reconnu.")); }
   const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
   const width = Math.round(bitmap.width * scale), height = Math.round(bitmap.height * scale);
   const canvas = document.createElement("canvas");
@@ -41,7 +42,7 @@ export async function compressImage(file) {
   bitmap.close?.();
   let blob = await toBlob(canvas, "image/webp", 0.82);
   if (!blob || blob.type !== "image/webp") blob = await toBlob(canvas, "image/jpeg", 0.85);
-  if (!blob) throw new Error("Impossible de préparer l'image.");
+  if (!blob) throw new Error(t("Impossible de préparer l'image."));
   return { blob, type: blob.type, ext: blob.type === "image/webp" ? "webp" : "jpg", width, height };
 }
 
@@ -54,7 +55,7 @@ export async function uploadImages(userId, prepared) {
       .upload(path, img.blob, { contentType: img.type, cacheControl: "31536000", upsert: false });
     if (error) {
       if (uploaded.length) await supabase.storage.from(BUCKET).remove(uploaded.map(u => u.path));
-      throw new Error("L'envoi de l'image a échoué. Réessaie.");
+      throw new Error(t("L'envoi de l'image a échoué. Réessaie."));
     }
     uploaded.push({ path, w: img.width, h: img.height });
   }
@@ -101,8 +102,8 @@ export function fileExt(name) {
 
 // Vérifie un fichier choisi ; renvoie un message d'erreur ou null
 export function checkFile(file) {
-  if (!FILE_TYPES[fileExt(file.name)]) return `« ${file.name} » : format non accepté (PDF, Excel, CSV, Word, PowerPoint, texte).`;
-  if (file.size > MAX_FILE_BYTES) return `« ${file.name} » : 10 Mo maximum.`;
+  if (!FILE_TYPES[fileExt(file.name)]) return t("« {name} » : format non accepté (PDF, Excel, CSV, Word, PowerPoint, texte).", { name: file.name });
+  if (file.size > MAX_FILE_BYTES) return t("« {name} » : 10 Mo maximum.", { name: file.name });
   return null;
 }
 
@@ -118,7 +119,7 @@ export async function uploadFiles(userId, files) {
       .upload(path, body, { contentType: FILE_TYPES[ext], cacheControl: "31536000", upsert: false });
     if (error) {
       if (uploaded.length) await supabase.storage.from(FILE_BUCKET).remove(uploaded.map(u => u.path));
-      throw new Error(`L'envoi de « ${file.name} » a échoué. Réessaie.`);
+      throw new Error(t("L'envoi de « {name} » a échoué. Réessaie.", { name: file.name }));
     }
     uploaded.push({ path, name: file.name.slice(0, 120), size: file.size });
   }
@@ -140,6 +141,6 @@ export function fileUrl(file) {
 
 export function formatSize(bytes) {
   if (!bytes) return "";
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} Ko`;
-  return `${(bytes / 1024 / 1024).toFixed(1).replace(".", ",")} Mo`;
+  if (bytes < 1024 * 1024) return t("{n} Ko", { n: Math.max(1, Math.round(bytes / 1024)) });
+  return t("{n} Mo", { n: (bytes / 1024 / 1024).toFixed(1).replace(".", LANG === "en" ? "." : ",") });
 }

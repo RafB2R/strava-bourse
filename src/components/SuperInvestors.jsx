@@ -4,6 +4,7 @@ import { useDetailView } from "../useDetailView";
 import { resolveAsset } from "../attachments";
 import { detailFor } from "../indices";
 import { fetchSuperInvestors } from "../superInvestors";
+import { t, LOCALE } from "../i18n";
 
 // Super Investors : positions déclarées à la SEC (formulaire 13F), lues par /api/superinvestors.
 // Mise à jour automatique : l'API relit la dernière déclaration (cache 12 h).
@@ -32,8 +33,8 @@ async function fetchInvestor(cik) {
   return cache.get(cik);
 }
 
-const fmtPct = n => (n > 0 && n < 0.1 ? "< 0,1 %" : `${n.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %`);
-const fmtDate = d => new Date(`${d}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+const fmtPct = n => (n > 0 && n < 0.1 ? t("< 0,1 %") : `${n.toLocaleString(LOCALE, { maximumFractionDigits: 1 })} %`);
+const fmtDate = d => new Date(`${d}T12:00:00`).toLocaleDateString(LOCALE, { day: "numeric", month: "long", year: "numeric" });
 
 // Nom de la déclaration → recherche de la valeur (« Berkshire Hathaway Inc Del » → « Berkshire Hathaway »)
 const searchName = name => name.replace(/\b(inc|corp|co|ltd|plc|del|new|com|cl [a-z]|class [a-z]|hldgs?|holdings?|group|sa|nv|ag|se|lp|llc)\b\.?/gi, " ").replace(/\s+/g, " ").trim() || name;
@@ -83,16 +84,16 @@ export default function SuperInvestors({ T, onViewProfile }) {
   return (
     <div>
       <div style={{ fontSize: 13, color: T.textFaint, marginBottom: 16, lineHeight: 1.6 }}>
-        Les positions des grands investisseurs, d'après leurs déclarations publiques à la SEC (formulaire 13F).
-        Mises à jour automatiquement chaque trimestre ; actions cotées aux États-Unis uniquement, publiées jusqu'à 45 jours après la fin du trimestre.
+        {t("Les positions des grands investisseurs, d'après leurs déclarations publiques à la SEC (formulaire 13F).")}
+        {" "}{t("Mises à jour automatiquement chaque trimestre ; actions cotées aux États-Unis uniquement, publiées jusqu'à 45 jours après la fin du trimestre.")}
       </div>
       {SUPER_INVESTORS.map(inv => (
-        <button key={inv.cik} onClick={() => open(inv)} aria-label={`Voir le portefeuille de ${inv.name}`}
+        <button key={inv.cik} onClick={() => open(inv)} aria-label={t("Voir le portefeuille de {name}", { name: inv.name })}
           style={{ display: "flex", gap: 14, alignItems: "center", width: "100%", textAlign: "left", background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "14px 16px", marginBottom: 10, cursor: "pointer", fontFamily: "inherit", boxShadow: T.cardShadow }}>
           <span style={{ width: 48, height: 48, borderRadius: 14, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>{inv.icon}</span>
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: "block", fontSize: 15, fontWeight: 700, color: T.text }}>{inv.name}</span>
-            <span style={{ display: "block", fontSize: 13, color: T.textMuted, marginTop: 2 }}>{inv.firm} · {inv.style}</span>
+            <span style={{ display: "block", fontSize: 13, color: T.textMuted, marginTop: 2 }}>{inv.firm} · {t(inv.style)}</span>
             <InvestorSummary cik={inv.cik} T={T} />
           </span>
         </button>
@@ -112,7 +113,7 @@ function InvestorSummary({ cik, T }) {
   if (!data) return null;
   return (
     <span style={{ display: "block", fontSize: 12, color: T.accent, fontWeight: 600, marginTop: 4 }}>
-      {data.positions.length} position{data.positions.length > 1 ? "s" : ""} · au {fmtDate(data.period)}
+      {t(data.positions.length > 1 ? "{n} positions · au {date}" : "{n} position · au {date}", { n: data.positions.length, date: fmtDate(data.period) })}
     </span>
   );
 }
@@ -149,7 +150,7 @@ function InvestorDetail({ investor, T, onBack }) {
     setTimeout(() => setLooking(cur => (cur === `!${name}` ? null : cur)), 2500);
   }
 
-  const lookLabel = name => (looking === name ? "Recherche…" : looking === `!${name}` ? `${name} · fiche introuvable` : name);
+  const lookLabel = name => (looking === name ? t("Recherche…") : looking === `!${name}` ? t("{name} · fiche introuvable", { name }) : name);
 
   if (asset) return <IndexDetail index={detailFor(asset)} T={T} backLabel={`← ${investor.name}`} onBack={closeAsset} />;
 
@@ -163,35 +164,35 @@ function InvestorDetail({ investor, T, onBack }) {
 
   return (
     <div>
-      <button onClick={onBack} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13, padding: 0, marginBottom: 14, fontFamily: "inherit" }}>← Légendes</button>
+      <button onClick={onBack} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13, padding: 0, marginBottom: 14, fontFamily: "inherit" }}>{t("← Légendes")}</button>
       <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 16 }}>
         <span style={{ width: 56, height: 56, borderRadius: 16, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>{investor.icon}</span>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 18, fontWeight: 800, color: T.text }}>{investor.name}</div>
-          <div style={{ fontSize: 13, color: T.textMuted, marginTop: 2 }}>{investor.firm} · {investor.style}</div>
-          {data && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 4 }}>Positions au {fmtDate(data.period)} · déclarées le {fmtDate(data.filed)}</div>}
+          <div style={{ fontSize: 13, color: T.textMuted, marginTop: 2 }}>{investor.firm} · {t(investor.style)}</div>
+          {data && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 4 }}>{t("Positions au {period} · déclarées le {filed}", { period: fmtDate(data.period), filed: fmtDate(data.filed) })}</div>}
         </div>
       </div>
 
-      {!ready && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>Chargement de la dernière déclaration…</div>}
-      {error && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>Déclaration indisponible pour le moment. Réessaie plus tard.</div>}
+      {!ready && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>{t("Chargement de la dernière déclaration…")}</div>}
+      {error && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>{t("Déclaration indisponible pour le moment. Réessaie plus tard.")}</div>}
 
       {data && (
         <>
           {stale && (
             <div style={{ fontSize: 12, color: T.textMuted, background: T.bgSubtle, borderRadius: 10, padding: "8px 12px", marginBottom: 12, lineHeight: 1.5 }}>
-              Aucune nouvelle déclaration depuis le {fmtDate(data.filed)} : ce gestionnaire a peut-être cessé de déclarer ses positions.
+              {t("Aucune nouvelle déclaration depuis le {date} : ce gestionnaire a peut-être cessé de déclarer ses positions.", { date: fmtDate(data.filed) })}
             </div>
           )}
           <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            <button onClick={() => setTab("portefeuille")} style={tabBtn("portefeuille")}>Portefeuille · {data.positions.length}</button>
-            <button onClick={() => setTab("mouvements")} style={tabBtn("mouvements")}>Mouvements{data.moves.length ? ` · ${data.moves.length}` : ""}</button>
+            <button onClick={() => setTab("portefeuille")} style={tabBtn("portefeuille")}>{t("Portefeuille")} · {data.positions.length}</button>
+            <button onClick={() => setTab("mouvements")} style={tabBtn("mouvements")}>{t("Mouvements")}{data.moves.length ? ` · ${data.moves.length}` : ""}</button>
           </div>
 
           {tab === "portefeuille" && (
             <div style={{ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "4px 12px", boxShadow: T.cardShadow }}>
               {shown.map((p, i) => (
-                <button key={p.cusip} onClick={() => openPosition(p.name)} aria-label={`Voir la fiche ${p.name}`} style={{ ...row, borderTop: i === 0 ? "none" : row.borderTop }}>
+                <button key={p.cusip} onClick={() => openPosition(p.name)} aria-label={t("Voir la fiche {name}", { name: p.name })} style={{ ...row, borderTop: i === 0 ? "none" : row.borderTop }}>
                   <span style={{ width: 22, fontSize: 12, color: T.textFaint, textAlign: "right", flexShrink: 0 }}>{i + 1}</span>
                   <span style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{lookLabel(p.name)}</span>
@@ -204,7 +205,7 @@ function InvestorDetail({ investor, T, onBack }) {
               ))}
               {data.positions.length > 20 && (
                 <button onClick={() => setShowAll(v => !v)} style={{ ...row, justifyContent: "center", fontSize: 13, color: T.accent, fontWeight: 600 }}>
-                  {showAll ? "Voir moins" : `Voir les ${data.positions.length} positions`}
+                  {showAll ? t("Voir moins") : t("Voir les {n} positions", { n: data.positions.length })}
                 </button>
               )}
             </div>
@@ -212,10 +213,10 @@ function InvestorDetail({ investor, T, onBack }) {
 
           {tab === "mouvements" && (
             <div>
-              {!data.previousPeriod && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1.5rem" }}>Pas de déclaration précédente pour comparer.</div>}
-              {data.previousPeriod && data.moves.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1.5rem" }}>Aucun changement depuis le {fmtDate(data.previousPeriod)}.</div>}
+              {!data.previousPeriod && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1.5rem" }}>{t("Pas de déclaration précédente pour comparer.")}</div>}
+              {data.previousPeriod && data.moves.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1.5rem" }}>{t("Aucun changement depuis le {date}.", { date: fmtDate(data.previousPeriod) })}</div>}
               {data.previousPeriod && data.moves.length > 0 && (
-                <div style={{ fontSize: 12, color: T.textFaint, marginBottom: 10 }}>Par rapport aux positions du {fmtDate(data.previousPeriod)} · en % du portefeuille</div>
+                <div style={{ fontSize: 12, color: T.textFaint, marginBottom: 10 }}>{t("Par rapport aux positions du {date} · en % du portefeuille", { date: fmtDate(data.previousPeriod) })}</div>
               )}
               {Object.entries(MOVES).map(([type, meta]) => {
                 const list = data.moves.filter(m => m.type === type);
@@ -223,12 +224,12 @@ function InvestorDetail({ investor, T, onBack }) {
                 const color = meta.color === "red" ? T.red : T.up;
                 return (
                   <div key={type} style={{ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "10px 12px 4px", marginBottom: 12, boxShadow: T.cardShadow }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color, marginBottom: 4 }}>{meta.label} · {list.length}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color, marginBottom: 4 }}>{t(meta.label)} · {list.length}</div>
                     {list.map(m => (
-                      <button key={m.cusip} onClick={() => openPosition(m.name)} aria-label={`Voir la fiche ${m.name}`} style={row}>
+                      <button key={m.cusip} onClick={() => openPosition(m.name)} aria-label={t("Voir la fiche {name}", { name: m.name })} style={row}>
                         <span style={{ flex: 1, minWidth: 0 }}>
                           <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{lookLabel(m.name)}</span>
-                          {m.sharesChange != null && <span style={{ display: "block", fontSize: 11, color: T.textFaint, marginTop: 2 }}>{m.sharesChange > 0 ? "+" : ""}{m.sharesChange} % d'actions</span>}
+                          {m.sharesChange != null && <span style={{ display: "block", fontSize: 11, color: T.textFaint, marginTop: 2 }}>{t("{value} % d'actions", { value: `${m.sharesChange > 0 ? "+" : ""}${m.sharesChange}` })}</span>}
                         </span>
                         <span style={{ fontSize: 13, fontWeight: 700, color, flexShrink: 0 }}>{fmtPct(m.before)} → {fmtPct(m.after)}</span>
                       </button>
@@ -241,11 +242,11 @@ function InvestorDetail({ investor, T, onBack }) {
 
           {data.options > 0 && (
             <div style={{ fontSize: 12, color: T.textFaint, marginTop: 10 }}>
-              + {data.options} ligne{data.options > 1 ? "s" : ""} d'options (put / call) non affichée{data.options > 1 ? "s" : ""}.
+              {t(data.options > 1 ? "+ {n} lignes d'options (put / call) non affichées." : "+ {n} ligne d'options (put / call) non affichée.", { n: data.options })}
             </div>
           )}
           <div style={{ fontSize: 11, color: T.textFaint, marginTop: 14, lineHeight: 1.5 }}>
-            Source : déclaration 13F de {data.filer} à la SEC. Positions longues en actions cotées aux États-Unis uniquement ; pas de liquidités, ventes à découvert ni actifs hors États-Unis.
+            {t("Source : déclaration 13F de {filer} à la SEC. Positions longues en actions cotées aux États-Unis uniquement ; pas de liquidités, ventes à découvert ni actifs hors États-Unis.", { filer: data.filer })}
           </div>
         </>
       )}

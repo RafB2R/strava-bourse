@@ -1,6 +1,7 @@
 // Trades publiés dans le fil : uniquement des faits, en % (jamais de montant).
+import { t, LANG } from "./i18n";
 
-const fmt = v => String(Math.round(v * 10) / 10).replace(".", ",");
+const fmt = v => String(Math.round(v * 10) / 10).replace(".", LANG === "en" ? "." : ",");
 
 // Changement de poids d'une position : renforcement ou allègement, null si inchangé
 export function tradeActivity(label, before, after) {
@@ -14,12 +15,16 @@ export function tradeActivity(label, before, after) {
 // Textes du fil pour un trade ; null pour un ancien trade sans détail (texte générique)
 export function tradeTexts(type, d = {}) {
   if (!d.label || d.variation === undefined) return null;
-  const verb = { renforcement: "a renforcé", allegement: "a allégé", vente: "a soldé" }[type];
-  if (!verb) return null;
+  const sentence = {
+    renforcement: () => t("a renforcé {label}", { label: d.label }),
+    allegement: () => t("a allégé {label}", { label: d.label }),
+    vente: () => t("a soldé {label}", { label: d.label }),
+  }[type];
+  if (!sentence) return null;
   return {
-    sentence: `${verb} ${d.label}`,
-    stat: `${d.variation > 0 ? "+" : "−"}${fmt(Math.abs(d.variation))} % de la position`,
-    detail: `${fmt(d.avant)} % → ${fmt(d.apres)} % du portefeuille`,
+    sentence: sentence(),
+    stat: t("{x} % de la position", { x: `${d.variation > 0 ? "+" : "−"}${fmt(Math.abs(d.variation))}` }),
+    detail: t("{a} % → {b} % du portefeuille", { a: fmt(d.avant), b: fmt(d.apres) }),
   };
 }
 
@@ -31,10 +36,10 @@ export function tradeTexts(type, d = {}) {
 // via Powens. Les anciens mouvements, sans source, ont tous été saisis à la main.
 // Les Super Investors, eux, sont alimentés par leurs déclarations 13F à la SEC.
 export const tradeSource = data => (data?.source === "sec13f"
-  ? { icon: "🏛️", label: "Déclaration 13F (SEC)", title: "D'après la déclaration publique du gérant à la SEC" }
+  ? { icon: "🏛️", label: t("Déclaration 13F (SEC)"), title: t("D'après la déclaration publique du gérant à la SEC") }
   : data?.source === "powens"
-  ? { icon: "🔗", label: "Synchronisé (Powens)", title: "Importé automatiquement depuis les opérations du compte" }
-  : { icon: "✋", label: "Ajouté manuellement", title: "Saisi à la main par l'investisseur" });
+  ? { icon: "🔗", label: t("Synchronisé (Powens)"), title: t("Importé automatiquement depuis les opérations du compte") }
+  : { icon: "✋", label: t("Ajouté manuellement"), title: t("Saisi à la main par l'investisseur") });
 
 // declaration_13f : mouvements du trimestre d'un Super Investor, regroupés en une seule carte
 export const TRADE_TYPES = ["new_position", "renforcement", "allegement", "vente", "suppression_position", "versement", "retrait", "rebalancement", "declaration_13f"];
