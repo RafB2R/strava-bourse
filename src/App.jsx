@@ -374,7 +374,7 @@ export default function App() {
                 {profile.full_name[0]}
               </div>
               <button onClick={() => goToTab("profil")} title="Mon profil" style={{ flex: 1, minWidth: 0, textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.full_name}</button>
-              <button onClick={handleLogout} style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center" }} title="Déconnexion"><Icon name="logout" size={16} /></button>
+              <button onClick={handleLogout} aria-label="Déconnexion" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center" }} title="Déconnexion"><Icon name="logout" size={16} /></button>
             </div>
           )}
         </div>
@@ -427,7 +427,7 @@ export default function App() {
             {profile?.full_name && <div style={{ fontSize: 12, color: T.textMuted, marginTop: 1 }}>{getGreeting(profile.full_name)}</div>}
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <button onClick={toggleTheme} style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "6px 10px", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", color: T.textMuted }}>
+            <button onClick={toggleTheme} aria-label={themeKey === "dark" ? "Passer en mode clair" : "Passer en mode sombre"} style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "6px 10px", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", color: T.textMuted }}>
               <Icon name={themeKey === "dark" ? "sun" : "moon"} size={16} />
             </button>
             <Notifications session={session} T={T} onOpen={openNotification} />

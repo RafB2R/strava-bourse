@@ -659,7 +659,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
                 </div>
                 <div style={{ fontSize: 11, color: T.textFaint, flex: 1 }}>{timeAgo(c.created_at)}</div>
                 {(c.user_id === userId || canDeleteAll) && (
-                  <button onClick={() => onDelete(c.id)} title="Supprimer" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, padding: 0, display: "inline-flex", alignItems: "center" }}><Icon name="close" size={12} /></button>
+                  <button onClick={() => onDelete(c.id)} title="Supprimer" aria-label="Supprimer le commentaire" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, padding: 0, display: "inline-flex", alignItems: "center" }}><Icon name="close" size={12} /></button>
                 )}
               </div>
               <div style={{ fontSize: 13, color: T.text, marginTop: 2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
@@ -683,7 +683,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
             maxLength={1000}
             style={{ flex: 1, padding: "7px 10px", fontSize: 13, borderRadius: 8, border: `0.5px solid ${T.border}`, background: T.bgCard, color: T.text, fontFamily: "inherit" }}
           />
-          <button onMouseDown={e => e.preventDefault()} onClick={onAdd} style={{ ...btnAct, padding: "7px 12px" }}><Icon name="enter" size={14} /></button>
+          <button onMouseDown={e => e.preventDefault()} onClick={onAdd} aria-label="Envoyer le commentaire" title="Envoyer" style={{ ...btnAct, padding: "7px 12px" }}><Icon name="enter" size={14} /></button>
         </div>
       </div>
     );
@@ -983,7 +983,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
                     {meta.stat && <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 500, background: meta.tagBg, color: meta.tagColor }}>{meta.stat}</span>}
                     {TRADE_TYPES.includes(activity.type) && (() => {
                       const src = tradeSource(activity.data);
-                      return <span title={src.title} style={{ fontSize: 11, color: T.textFaint }}>{src.icon} {src.label}</span>;
+                      return <span title={src.title} style={{ fontSize: 11, color: T.textFaint, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon emoji={src.icon} size={12} />{src.label}</span>;
                     })()}
                   </div>
                 )}

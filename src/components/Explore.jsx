@@ -220,7 +220,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
       <div style={{ position: "relative", marginBottom: 20 }}>
         <input style={{ ...inp(T), paddingLeft: 40 }} placeholder="Rechercher un investisseur, un club, une valeur, un #hashtag…" autoFocus={initialSection === "amis"} value={query} onChange={e => setQuery(e.target.value)} />
         <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, color: T.textFaint, display: "flex" }}><Icon name="search" size={16} /></span>
-        {query && <button onClick={() => setQuery("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 14, display: "flex" }}><Icon name="close" size={14} /></button>}
+        {query && <button onClick={() => setQuery("")} aria-label="Effacer la recherche" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 14, display: "flex" }}><Icon name="close" size={14} /></button>}
       </div>
 
       {/* Résultats de recherche */}

@@ -167,7 +167,7 @@ function IncomeSection({ entry, stats, form, T, btnSm, onChange, onAdd, onDelete
         <div key={i.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0", fontSize: 12, color: T.textMuted }}>
           <span style={{ flex: 1 }}>{new Date(i.received_at).toLocaleDateString("fr-FR")}</span>
           <span style={{ color: T.text, fontWeight: 500 }}>{formatEur2(i.amount)}</span>
-          <button onClick={() => onDelete(i.id)} title="Supprimer ce versement" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, padding: 0, display: "inline-flex" }}><Icon name="close" size={13} /></button>
+          <button onClick={() => onDelete(i.id)} title="Supprimer ce versement" aria-label="Supprimer ce versement" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, padding: 0, display: "inline-flex" }}><Icon name="close" size={13} /></button>
         </div>
       ))}
       {list.length > 5 && <div style={{ fontSize: 11, color: T.textFaint }}>+ {list.length - 5} versement{list.length - 5 > 1 ? "s" : ""} plus ancien{list.length - 5 > 1 ? "s" : ""}</div>}
