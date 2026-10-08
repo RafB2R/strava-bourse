@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { t } from "./i18n";
 
 // Photos de profil : bucket public « avatars », une seule image par membre
 // (<id du membre>/avatar). Pas de colonne en base : l'adresse se déduit de l'id,
@@ -31,7 +32,7 @@ function changed(userId) {
 async function squareImage(file) {
   let bitmap;
   try { bitmap = await createImageBitmap(file, { imageOrientation: "from-image" }); }
-  catch { throw new Error("Format d'image non reconnu."); }
+  catch { throw new Error(t("Format d'image non reconnu.")); }
   const side = Math.min(bitmap.width, bitmap.height);
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = Math.min(SIDE, side);
@@ -43,22 +44,22 @@ async function squareImage(file) {
   const toBlob = type => new Promise(r => canvas.toBlob(r, type, 0.85));
   let blob = await toBlob("image/webp");
   if (!blob || blob.type !== "image/webp") blob = await toBlob("image/jpeg");
-  if (!blob) throw new Error("Impossible de préparer l'image.");
+  if (!blob) throw new Error(t("Impossible de préparer l'image."));
   return blob;
 }
 
 export async function uploadAvatar(userId, file) {
-  if (!file?.type?.startsWith("image/")) throw new Error("Choisis une image.");
+  if (!file?.type?.startsWith("image/")) throw new Error(t("Choisis une image."));
   const blob = await squareImage(file);
   const { error } = await supabase.storage.from(BUCKET)
     .upload(`${userId}/avatar`, new Blob([blob], { type: blob.type }), { contentType: blob.type, cacheControl: "3600", upsert: true });
-  if (error) throw new Error("L'envoi de la photo a échoué. Réessaie.");
+  if (error) throw new Error(t("L'envoi de la photo a échoué. Réessaie."));
   changed(userId);
 }
 
 export async function removeAvatar(userId) {
   const { error } = await supabase.storage.from(BUCKET).remove([`${userId}/avatar`]);
-  if (error) throw new Error("Impossible de retirer la photo.");
+  if (error) throw new Error(t("Impossible de retirer la photo."));
   missing.add(userId);
   versions[userId] = Date.now();
   listeners.forEach(fn => fn(userId));

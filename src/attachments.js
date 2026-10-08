@@ -1,11 +1,12 @@
 // Pièces jointes « marché » des posts : valeur citée, graphique, répartition du portefeuille
 import { supabase } from "./supabase";
+import { t } from "./i18n";
 
 export const CHART_PERIODS = [
   { id: "1mo", label: "1M" },
   { id: "6mo", label: "6M" },
-  { id: "1y", label: "1A" },
-  { id: "5y", label: "5A" },
+  { id: "1y", label: t("1A") },
+  { id: "5y", label: t("5A") },
 ];
 
 const SYMBOL = /^[A-Za-z0-9.^=-]{1,20}$/;

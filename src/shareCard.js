@@ -1,9 +1,10 @@
 // Dessin de la card de partage du portefeuille (canvas), aux couleurs de la marque.
 // Aucune somme en euros : uniquement des pourcentages, la série, les badges et le score.
+import { t, LANG } from "./i18n";
 
 export const SHARE_FORMATS = {
   story: { width: 1080, height: 1920, label: "Story", hint: "Instagram" },
-  square: { width: 1080, height: 1080, label: "Carré", hint: "X, WhatsApp" },
+  square: { width: 1080, height: 1080, label: t("Carré"), hint: "X, WhatsApp" },
 };
 
 const C = {
@@ -42,7 +43,7 @@ function fit(ctx, text, maxWidth) {
   return t.trimEnd() + "…";
 }
 
-const fmtPct = (v, digits = 1) => `${v >= 0 ? "+" : ""}${v.toFixed(digits).replace(".", ",")} %`;
+const fmtPct = (v, digits = 1) => t("{v} %", { v: `${v >= 0 ? "+" : ""}${v.toFixed(digits).replace(".", LANG === "en" ? "." : ",")}` });
 
 /**
  * data : {
@@ -82,7 +83,7 @@ export function drawShareCard(canvas, data, { format = "story", showPerf = true,
   ctx.fillStyle = C.accent;
   ctx.fillText("rio", pad + veW, y);
   font(ctx, story ? 30 : 26, 600);
-  const tag = "MON PORTEFEUILLE";
+  const tag = t("MON PORTEFEUILLE");
   const tagW = ctx.measureText(tag).width + 40;
   ctx.fillStyle = "rgba(159,225,203,0.14)";
   roundRect(ctx, W - pad - tagW, y - (story ? 42 : 36), tagW, story ? 56 : 48, 28);
@@ -94,7 +95,7 @@ export function drawShareCard(canvas, data, { format = "story", showPerf = true,
   y += story ? 130 : 96;
   font(ctx, story ? 76 : 60, 800);
   ctx.fillStyle = C.text;
-  ctx.fillText(fit(ctx, data.name || "Investisseur Verio", inner), pad, y);
+  ctx.fillText(fit(ctx, data.name || t("Investisseur Verio"), inner), pad, y);
   if (data.username) {
     y += story ? 58 : 46;
     font(ctx, story ? 40 : 32, 400);
@@ -107,7 +108,7 @@ export function drawShareCard(canvas, data, { format = "story", showPerf = true,
     y += story ? 120 : 104;
     font(ctx, story ? 36 : 30, 500);
     ctx.fillStyle = C.muted;
-    ctx.fillText("Performance totale", pad, y);
+    ctx.fillText(t("Performance totale"), pad, y);
     y += story ? 170 : 124;
     font(ctx, story ? 180 : 132, 800);
     ctx.fillStyle = data.perf >= 0 ? C.accent : C.red;
@@ -117,7 +118,7 @@ export function drawShareCard(canvas, data, { format = "story", showPerf = true,
   // Tuiles : série, badges, diversification
   y += story ? 90 : 64;
   const tiles = [
-    { icon: "🔥", value: `${data.streak || 0} mois`, label: "d'affilée" },
+    { icon: "🔥", value: t("{n} mois", { n: data.streak || 0 }), label: t("d'affilée") },
     { icon: "🏅", value: `${data.badges || 0}`, label: data.badges > 1 ? "badges" : "badge" },
     { icon: "📊", value: `${data.diversif || 0}/100`, label: "diversification" },
   ];
@@ -182,7 +183,7 @@ export function drawShareCard(canvas, data, { format = "story", showPerf = true,
       ctx.arc(lx + 10, ly - 10, 10, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = C.muted;
-      const pctText = `${Math.round(a.pct)} %`;
+      const pctText = t("{v} %", { v: Math.round(a.pct) });
       ctx.fillText(fit(ctx, a.label, colW - 150), lx + 34, ly);
       ctx.fillStyle = C.text;
       ctx.fillText(pctText, lx + colW - 40 - ctx.measureText(pctText).width, ly);
@@ -201,7 +202,7 @@ export function drawShareCard(canvas, data, { format = "story", showPerf = true,
     if (fitting.length > 0) {
       font(ctx, story ? 34 : 28, 700);
       ctx.fillStyle = C.text;
-      ctx.fillText("Principales positions", pad, y);
+      ctx.fillText(t("Principales positions"), pad, y);
       y += story ? 30 : 22;
       fitting.forEach((p, i) => {
         const ry = y + i * rowH;
@@ -214,7 +215,7 @@ export function drawShareCard(canvas, data, { format = "story", showPerf = true,
         ctx.fill();
         const textY = ry + rowH / 2 + (story ? 12 : 10);
         font(ctx, story ? 32 : 26, 600);
-        const right = [`${Math.round(p.pct)} %`];
+        const right = [t("{v} %", { v: Math.round(p.pct) })];
         if (showPerf && p.perf !== null && p.perf !== undefined) right.unshift(fmtPct(p.perf));
         const rightText = right.join("   ");
         const rightW = ctx.measureText(rightText).width;
@@ -236,10 +237,10 @@ export function drawShareCard(canvas, data, { format = "story", showPerf = true,
   ctx.stroke();
   font(ctx, story ? 34 : 28, 600);
   ctx.fillStyle = C.text;
-  ctx.fillText("Investir long terme, ensemble.", pad, fy);
+  ctx.fillText(t("Investir long terme, ensemble."), pad, fy);
   font(ctx, story ? 28 : 23, 400);
   ctx.fillStyle = C.faint;
-  ctx.fillText("Montants toujours privés", pad, fy + (story ? 46 : 36));
+  ctx.fillText(t("Montants toujours privés"), pad, fy + (story ? 46 : 36));
   if (data.domain) {
     font(ctx, story ? 34 : 28, 700);
     ctx.fillStyle = C.accent;
@@ -250,8 +251,8 @@ export function drawShareCard(canvas, data, { format = "story", showPerf = true,
 
 export function shareText(data, { showPerf = true } = {}) {
   const parts = [];
-  if (showPerf && data.perf !== null && data.perf !== undefined) parts.push(`${fmtPct(data.perf)} de performance`);
-  if (data.streak > 0) parts.push(`🔥 ${data.streak} mois d'affilée`);
-  const head = parts.length ? `Mon portefeuille sur Verio : ${parts.join(" · ")}.` : "Je construis mon patrimoine sur Verio.";
-  return `${head} Investir long terme, ensemble 👉`;
+  if (showPerf && data.perf !== null && data.perf !== undefined) parts.push(t("{v} de performance", { v: fmtPct(data.perf) }));
+  if (data.streak > 0) parts.push(data.streak === 1 ? t("🔥 1 mois d'affilée") : t("🔥 {n} mois d'affilée", { n: data.streak }));
+  const head = parts.length ? t("Mon portefeuille sur Verio : {parts}.", { parts: parts.join(" · ") }) : t("Je construis mon patrimoine sur Verio.");
+  return t("{head} Investir long terme, ensemble 👉", { head });
 }

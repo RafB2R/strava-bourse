@@ -3,78 +3,79 @@
 // sync_my_badges() (supabase/migrations/20261005000002_badges_serveur.sql),
 // qui est seule à attribuer les badges.
 import { supabase } from "./supabase";
+import { t } from "./i18n";
 
 // metric : clé de l'objet metrics renvoyé par sync_my_badges()
 export const BADGE_CATEGORIES = [
   {
-    id: "dca", icon: "🔥", name: "Régularité", desc: "Investir chaque mois, sans exception.",
-    metric: "streak", unit: "mois",
+    id: "dca", icon: "🔥", name: t("Régularité"), desc: t("Investir chaque mois, sans exception."),
+    metric: "streak", unit: t("mois"),
     levels: [
-      { medal: "🥉", name: "Premiers pas", desc: "3 mois d'affilée avec un investissement", target: 3 },
-      { medal: "🥈", name: "Investisseur régulier", desc: "12 mois d'affilée", target: 12 },
-      { medal: "🥇", name: "Discipline exemplaire", desc: "3 ans d'affilée", target: 36 },
-      { medal: "💎", name: "Légende du DCA", desc: "10 ans d'affilée", target: 120 },
+      { medal: "🥉", name: t("Premiers pas"), desc: t("3 mois d'affilée avec un investissement"), target: 3 },
+      { medal: "🥈", name: t("Investisseur régulier"), desc: t("12 mois d'affilée"), target: 12 },
+      { medal: "🥇", name: t("Discipline exemplaire"), desc: t("3 ans d'affilée"), target: 36 },
+      { medal: "💎", name: t("Légende du DCA"), desc: t("10 ans d'affilée"), target: 120 },
     ],
   },
   {
-    id: "milestones", icon: "📅", name: "Milestones", desc: "Le temps est ton meilleur allié.",
-    metric: "years", unit: "ans",
+    id: "milestones", icon: "📅", name: "Milestones", desc: t("Le temps est ton meilleur allié."),
+    metric: "years", unit: t("ans"),
     levels: [
-      { medal: "🥉", name: "1 an investisseur", desc: "Investisseur depuis 1 an", target: 1 },
-      { medal: "🥈", name: "5 ans investisseur", desc: "Investisseur depuis 5 ans", target: 5 },
-      { medal: "🥇", name: "10 ans investisseur", desc: "Investisseur depuis 10 ans", target: 10 },
-      { medal: "💎", name: "Compounder", desc: "25 ans d'investissement — le badge le plus rare", target: 25 },
+      { medal: "🥉", name: t("1 an investisseur"), desc: t("Investisseur depuis 1 an"), target: 1 },
+      { medal: "🥈", name: t("5 ans investisseur"), desc: t("Investisseur depuis 5 ans"), target: 5 },
+      { medal: "🥇", name: t("10 ans investisseur"), desc: t("Investisseur depuis 10 ans"), target: 10 },
+      { medal: "💎", name: "Compounder", desc: t("25 ans d'investissement — le badge le plus rare"), target: 25 },
     ],
   },
   {
-    id: "builder", icon: "🏛️", name: "Builder", desc: "Construis un vrai portefeuille, brique par brique.",
+    id: "builder", icon: "🏛️", name: "Builder", desc: t("Construis un vrai portefeuille, brique par brique."),
     metric: "positions", unit: "positions",
     levels: [
-      { medal: "🥉", name: "Premier portefeuille", desc: "1re position ajoutée", target: 1 },
-      { medal: "🥈", name: "En construction", desc: "10 positions", target: 10 },
-      { medal: "🥇", name: "Architecte", desc: "50 positions", target: 50 },
-      { medal: "💎", name: "Master Builder", desc: "100 positions", target: 100 },
+      { medal: "🥉", name: t("Premier portefeuille"), desc: t("1re position ajoutée"), target: 1 },
+      { medal: "🥈", name: t("En construction"), desc: t("10 positions"), target: 10 },
+      { medal: "🥇", name: t("Architecte"), desc: t("50 positions"), target: 50 },
+      { medal: "💎", name: "Master Builder", desc: t("100 positions"), target: 100 },
     ],
   },
   {
-    id: "explorer", icon: "🌍", name: "Explorer", desc: "Découvre les marchés du monde entier.",
+    id: "explorer", icon: "🌍", name: "Explorer", desc: t("Découvre les marchés du monde entier."),
     metric: "types", unit: "types",
     levels: [
-      { medal: "🥉", name: "Premier actif", desc: "Un premier type d'actif (ETF, action…)", target: 1 },
-      { medal: "🥈", name: "Diversifié", desc: "3 types d'actifs différents", target: 3 },
-      { medal: "🥇", name: "Global Investor", desc: "5 types d'actifs différents", target: 5 },
-      { medal: "💎", name: "Portefeuille mondial", desc: "8 types d'actifs ou plus", target: 8 },
+      { medal: "🥉", name: t("Premier actif"), desc: t("Un premier type d'actif (ETF, action…)"), target: 1 },
+      { medal: "🥈", name: t("Diversifié"), desc: t("3 types d'actifs différents"), target: 3 },
+      { medal: "🥇", name: "Global Investor", desc: t("5 types d'actifs différents"), target: 5 },
+      { medal: "💎", name: t("Portefeuille mondial"), desc: t("8 types d'actifs ou plus"), target: 8 },
     ],
   },
   {
-    id: "diversification", icon: "📊", name: "Diversification", desc: "Ne jamais mettre tous ses œufs dans le même panier.",
+    id: "diversification", icon: "📊", name: "Diversification", desc: t("Ne jamais mettre tous ses œufs dans le même panier."),
     metric: "positions", unit: "positions",
     levels: [
-      { medal: "🥉", name: "Premiers pas", desc: "3 positions différentes", target: 3 },
-      { medal: "🥈", name: "Équilibré", desc: "5 positions différentes", target: 5 },
-      { medal: "🥇", name: "Bien réparti", desc: "8 positions différentes", target: 8 },
-      { medal: "💎", name: "Portefeuille complet", desc: "10 positions ou plus", target: 10 },
+      { medal: "🥉", name: t("Premiers pas"), desc: t("3 positions différentes"), target: 3 },
+      { medal: "🥈", name: t("Équilibré"), desc: t("5 positions différentes"), target: 5 },
+      { medal: "🥇", name: t("Bien réparti"), desc: t("8 positions différentes"), target: 8 },
+      { medal: "💎", name: t("Portefeuille complet"), desc: t("10 positions ou plus"), target: 10 },
     ],
   },
   {
-    id: "climber", icon: "🏔️", name: "Climber", desc: "La progression, pas le montant.",
+    id: "climber", icon: "🏔️", name: "Climber", desc: t("La progression, pas le montant."),
     metric: "perf", unit: "%",
     levels: [
-      { medal: "🥉", name: "Premiers gains", desc: "+10 % de performance totale", target: 10 },
-      { medal: "🥈", name: "En route", desc: "+50 % de performance totale", target: 50 },
-      { medal: "🥇", name: "Double mise", desc: "+100 % de performance totale", target: 100 },
-      { medal: "💎", name: "x10", desc: "+1000 % de performance totale", target: 1000 },
+      { medal: "🥉", name: t("Premiers gains"), desc: t("+10 % de performance totale"), target: 10 },
+      { medal: "🥈", name: t("En route"), desc: t("+50 % de performance totale"), target: 50 },
+      { medal: "🥇", name: t("Double mise"), desc: t("+100 % de performance totale"), target: 100 },
+      { medal: "💎", name: "x10", desc: t("+1000 % de performance totale"), target: 1000 },
     ],
   },
 ];
 
 // soon : pas encore attribuable, affiché comme « bientôt »
 export const HIDDEN_BADGES = [
-  { id: "birthday", icon: "🎂", name: "Birthday Investor", desc: "Investir le jour de ton anniversaire" },
-  { id: "xmas", icon: "🎄", name: "Christmas Investor", desc: "Investi le 25 décembre", soon: true },
-  { id: "never_panic", icon: "🧘", name: "Never Panic", desc: "Traverser un bear market sans toucher son allocation", soon: true },
-  { id: "diamond_hands", icon: "💎", name: "Diamond Hands", desc: "Garder une position plus de 10 ans", soon: true },
-  { id: "monday", icon: "📆", name: "Monday Investor", desc: "Investir chaque premier lundi du mois pendant un an", soon: true },
+  { id: "birthday", icon: "🎂", name: "Birthday Investor", desc: t("Investir le jour de ton anniversaire") },
+  { id: "xmas", icon: "🎄", name: "Christmas Investor", desc: t("Investi le 25 décembre"), soon: true },
+  { id: "never_panic", icon: "🧘", name: "Never Panic", desc: t("Traverser un bear market sans toucher son allocation"), soon: true },
+  { id: "diamond_hands", icon: "💎", name: "Diamond Hands", desc: t("Garder une position plus de 10 ans"), soon: true },
+  { id: "monday", icon: "📆", name: "Monday Investor", desc: t("Investir chaque premier lundi du mois pendant un an"), soon: true },
 ];
 
 export const EMPTY_METRICS = { positions: 0, types: 0, perf: null, clubs: 0, years: null, streak: 0 };
@@ -82,7 +83,7 @@ export const EMPTY_METRICS = { positions: 0, types: 0, perf: null, clubs: 0, yea
 // Nom lisible d'un badge à partir de son identifiant ("builder_🥈", "birthday"…)
 export function getBadgeInfo(badgeId) {
   const hidden = HIDDEN_BADGES.find(b => b.id === badgeId);
-  if (hidden) return { icon: hidden.icon, medal: hidden.icon, name: hidden.name, category: "Badge secret" };
+  if (hidden) return { icon: hidden.icon, medal: hidden.icon, name: hidden.name, category: t("Badge secret") };
   const [catId, medal] = String(badgeId).split("_");
   const cat = BADGE_CATEGORIES.find(c => c.id === catId);
   const level = cat?.levels.find(l => l.medal === medal);

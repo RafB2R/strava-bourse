@@ -1,6 +1,7 @@
 // Messagerie privée entre amis (supabase/migrations/20261009000001_messagerie.sql)
 import { supabase } from "./supabase";
 import { fileExt, fileMime } from "./media";
+import { t, LOCALE } from "./i18n";
 
 export async function fetchConversations() {
   const { data } = await supabase.rpc("my_conversations");
@@ -68,10 +69,10 @@ export async function fetchFriends(userId) {
 // Heure si aujourd'hui, jour de la semaine si < 7 jours, sinon date courte
 export function shortTime(date) {
   const d = new Date(date), now = new Date();
-  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
   const days = (now - d) / 86400000;
-  if (days < 7) return d.toLocaleDateString("fr-FR", { weekday: "short" });
-  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  if (days < 7) return d.toLocaleDateString(LOCALE, { weekday: "short" });
+  return d.toLocaleDateString(LOCALE, { day: "numeric", month: "short" });
 }
 
 // ---- Images des messages : bucket privé « message-media », un dossier par conversation ----
@@ -84,7 +85,7 @@ export async function uploadMessageImages(conversationId, prepared) {
     const path = `${conversationId}/${crypto.randomUUID()}.${img.ext}`;
     const { error } = await supabase.storage.from(MESSAGE_BUCKET)
       .upload(path, img.blob, { contentType: img.type, cacheControl: "3600", upsert: false });
-    if (error) throw new Error("L'envoi de l'image a échoué. Réessaie.");
+    if (error) throw new Error(t("L'envoi de l'image a échoué. Réessaie."));
     uploaded.push({ path, w: img.width, h: img.height });
   }
   return uploaded;
@@ -106,7 +107,7 @@ export async function uploadMessageFiles(conversationId, files) {
     const path = `${conversationId}/${crypto.randomUUID()}.${fileExt(file.name)}`;
     const body = new Blob([file], { type: fileMime(file.name) });
     const { error } = await supabase.storage.from(MESSAGE_BUCKET).upload(path, body, { contentType: fileMime(file.name), upsert: false });
-    if (error) throw new Error(`L'envoi de « ${file.name} » a échoué. Réessaie.`);
+    if (error) throw new Error(t("L'envoi de « {name} » a échoué. Réessaie.", { name: file.name }));
     uploaded.push({ path, name: file.name.slice(0, 120), size: file.size });
   }
   return uploaded;

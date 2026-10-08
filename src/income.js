@@ -1,5 +1,6 @@
 // Revenus des positions (dividendes, coupons) et rendements sur 12 mois glissants.
 import { supabase } from "./supabase";
+import { t, LANG } from "./i18n";
 
 const DAY = 24 * 3600 * 1000;
 
@@ -62,7 +63,7 @@ export function incomeStats(entries, incomes, today = new Date()) {
   };
 }
 
-export const fmtYield = v => (v === null || v === undefined ? "—" : `${v.toFixed(v < 10 ? 2 : 1).replace(".", ",")} %`);
+export const fmtYield = v => (v === null || v === undefined ? "—" : t("{v} %", { v: v.toFixed(v < 10 ? 2 : 1).replace(".", LANG === "en" ? "." : ",") }));
 
 // Dividendes versés sur 12 mois par chaque titre, d'après Yahoo (route /api/dividends)
 export async function fetchDividendInfo(isins) {
