@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../supabase";
 import { T, T as TLive } from "../theme";
+import Icon from "./Icon";
 
 const BROKERS = ["Boursorama", "Saxo", "Trade Republic", "Degiro", "Fortuneo", "BinckBank", "Interactive Brokers", "Revolut", "eToro", "Autre"];
 const ACTIFS = ["ETF", "Actions", "Fonds actifs", "Obligations", "Crypto", "Immobilier (SCPI)", "Matières premières"];
@@ -85,7 +86,7 @@ export default function KYC({ session, profile, onComplete, onSkip , T: TProp })
 
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 28, marginBottom: 8 }}>{STEPS[step].emoji}</div>
+          <div style={{ marginBottom: 8, color: T.accent }}><Icon emoji={STEPS[step].emoji} size={28} /></div>
           <div style={{ fontSize: 20, fontWeight: 700, color: T.text, marginBottom: 4 }}>{STEPS[step].title}</div>
           <div style={{ fontSize: 13, color: T.textMuted }}>{STEPS[step].subtitle}</div>
           <div style={{ fontSize: 12, color: T.textFaint, marginTop: 4 }}>Étape {step + 1} / {STEPS.length}</div>
@@ -160,7 +161,7 @@ export default function KYC({ session, profile, onComplete, onSkip , T: TProp })
           {step < STEPS.length - 1 ? (
             <button style={btn(T)} onClick={() => setStep(s => s + 1)}>Continuer →</button>
           ) : (
-            <button style={btn(T)} onClick={save} disabled={saving}>{saving ? "Enregistrement…" : "Terminer ✓"}</button>
+            <button style={btn(T)} onClick={save} disabled={saving}>{saving ? "Enregistrement…" : <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>Terminer <Icon name="check" size={14} /></span>}</button>
           )}
         </div>
       </div>

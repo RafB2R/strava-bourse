@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Icon from "./components/Icon";
 
 // Adaptation au téléphone : les styles en ligne décrivent la version ordinateur,
 // ces règles les remplacent sous 640 px de large.
@@ -21,6 +22,15 @@ const RESPONSIVE_CSS = `
 }
 `;
 
+// Icône de trait dans une pastille teintée (accent de la landing)
+function LpIcon({ name, size = 20, box = 40, style }) {
+  return (
+    <div style={{ width: box, height: box, borderRadius: 12, background: "rgba(159,225,203,0.08)", border: "0.5px solid rgba(159,225,203,0.15)", color: "#9FE1CB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, ...style }}>
+      <Icon name={name} size={size} />
+    </div>
+  );
+}
+
 function ResponsiveStyle() {
   return <style>{RESPONSIVE_CSS}</style>;
 }
@@ -39,16 +49,16 @@ function FooterLinks({ onPage }) {
 // Nos engagements, à la place d'un témoignage (pas de faux avis)
 function Commitments({ className = "", style }) {
   const items = [
-    ["🔒", "Tes montants ne sont jamais visibles : seulement des pourcentages."],
-    ["✉️", "Tes messages privés ne sont lisibles que par toi et ton ami."],
-    ["🧭", "Pas de conseils d'achat : chacun reste maître de ses choix."],
+    ["lock", "Tes montants ne sont jamais visibles : seulement des pourcentages."],
+    ["mail", "Tes messages privés ne sont lisibles que par toi et ton ami."],
+    ["compass", "Pas de conseils d'achat : chacun reste maître de ses choix."],
   ];
   return (
     <div className={`lp-card ${className}`} style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 28, ...style }}>
       <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 14 }}>Nos engagements</div>
       {items.map(([icon, text]) => (
         <div key={text} style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 10 }}>
-          <span style={{ fontSize: 16 }}>{icon}</span>
+          <Icon name={icon} size={16} style={{ color: "#9FE1CB", marginTop: 3 }} />
           <span style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>{text}</span>
         </div>
       ))}
@@ -87,12 +97,12 @@ function Nav({ onStart, onPage, onHome }) {
 
 function Fonctionnalites({ onStart, onPage, onHome }) {
   const features = [
-    { icon: "📊", title: "Tout ton portefeuille au même endroit", desc: "Ajoute tes positions, quel que soit ton courtier : Boursorama, Trade Republic, Degiro, assurance vie… Verio calcule ta performance, ta répartition et tes dividendes à venir.", tag: "Portefeuille" },
-    { icon: "⚡", title: "Fil d'activités", desc: "Les mouvements de tes amis apparaissent dans ton fil : nouvelle position, renforcement, allègement, toujours en pourcentage. Publie aussi tes analyses, photos et sondages.", tag: "Social" },
-    { icon: "🏅", title: "Badges de discipline", desc: "12 mois d'affilée d'investissement, 10 ans d'ancienneté, un portefeuille diversifié… Des récompenses qui mesurent ce qui compte vraiment : la constance, pas la chance.", tag: "Gamification" },
-    { icon: "🏛️", title: "Clubs thématiques", desc: "Rejoins des communautés d'investisseurs qui partagent ta stratégie, ou crée la tienne : ETF Monde, Dividendes, PEA… Chaque club a ses discussions et son classement.", tag: "Communauté" },
-    { icon: "👥", title: "Comparaison entre amis", desc: "Compare ta performance, ta diversification et ta régularité avec tes proches. Les montants restent toujours privés : seuls les pourcentages sont visibles.", tag: "Social" },
-    { icon: "📈", title: "Marchés et revenus", desc: "Les grands indices, les secteurs et les taux d'État en un coup d'œil, et le calendrier des dividendes que ton portefeuille devrait te verser.", tag: "Analyse" },
+    { icon: "pie", title: "Tout ton portefeuille au même endroit", desc: "Ajoute tes positions, quel que soit ton courtier : Boursorama, Trade Republic, Degiro, assurance vie… Verio calcule ta performance, ta répartition et tes dividendes à venir.", tag: "Portefeuille" },
+    { icon: "zap", title: "Fil d'activités", desc: "Les mouvements de tes amis apparaissent dans ton fil : nouvelle position, renforcement, allègement, toujours en pourcentage. Publie aussi tes analyses, photos et sondages.", tag: "Social" },
+    { icon: "award", title: "Badges de discipline", desc: "12 mois d'affilée d'investissement, 10 ans d'ancienneté, un portefeuille diversifié… Des récompenses qui mesurent ce qui compte vraiment : la constance, pas la chance.", tag: "Gamification" },
+    { icon: "landmark", title: "Clubs thématiques", desc: "Rejoins des communautés d'investisseurs qui partagent ta stratégie, ou crée la tienne : ETF Monde, Dividendes, PEA… Chaque club a ses discussions et son classement.", tag: "Communauté" },
+    { icon: "users", title: "Comparaison entre amis", desc: "Compare ta performance, ta diversification et ta régularité avec tes proches. Les montants restent toujours privés : seuls les pourcentages sont visibles.", tag: "Social" },
+    { icon: "line", title: "Marchés et revenus", desc: "Les grands indices, les secteurs et les taux d'État en un coup d'œil, et le calendrier des dividendes que ton portefeuille devrait te verser.", tag: "Analyse" },
   ];
 
   return (
@@ -108,7 +118,7 @@ function Fonctionnalites({ onStart, onPage, onHome }) {
           {features.map(f => (
             <div key={f.title} className="lp-card" style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 24 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <div style={{ fontSize: 22 }}>{f.icon}</div>
+                <LpIcon name={f.icon} size={18} box={36} />
                 <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: "rgba(159,225,203,0.08)", color: "#9FE1CB" }}>{f.tag}</span>
               </div>
               <div style={{ fontSize: 14, fontWeight: 600, color: "#fff", marginBottom: 8 }}>{f.title}</div>
@@ -128,20 +138,20 @@ function Fonctionnalites({ onStart, onPage, onHome }) {
 
 function Communaute({ onStart, onPage, onHome }) {
   const values = [
-    { icon: "🧘", title: "Long terme avant tout", desc: "Verio est fait pour les investisseurs qui pensent en années, pas en heures. Pas de signaux d'achat, pas de course au trading. Juste ton parcours." },
-    { icon: "🤝", title: "Une communauté, pas une compétition", desc: "On ne compare pas les patrimoines — on compare les habitudes. Quelqu'un qui investit 100 € par mois avec discipline est plus inspirant qu'un coup de chance à 50 000 €." },
-    { icon: "🔒", title: "Tes montants restent privés", desc: "Personne ne verra jamais combien tu investis. Seulement tes performances en pourcentage. Parce que l'argent, c'est personnel." },
-    { icon: "📣", title: "Pas de fake gurus", desc: "Pas de screeners de trades, pas de '+400% ce mois'. Verio récompense la régularité et la discipline — pas la spéculation." },
+    { icon: "leaf", title: "Long terme avant tout", desc: "Verio est fait pour les investisseurs qui pensent en années, pas en heures. Pas de signaux d'achat, pas de course au trading. Juste ton parcours." },
+    { icon: "handshake", title: "Une communauté, pas une compétition", desc: "On ne compare pas les patrimoines — on compare les habitudes. Quelqu'un qui investit 100 € par mois avec discipline est plus inspirant qu'un coup de chance à 50 000 €." },
+    { icon: "lock", title: "Tes montants restent privés", desc: "Personne ne verra jamais combien tu investis. Seulement tes performances en pourcentage. Parce que l'argent, c'est personnel." },
+    { icon: "megaphone", title: "Pas de fake gurus", desc: "Pas de screeners de trades, pas de '+400% ce mois'. Verio récompense la régularité et la discipline — pas la spéculation." },
   ];
 
   // Thèmes de clubs possibles (aucun chiffre d'audience : Verio démarre)
   const clubs = [
-    { icon: "📊", name: "ETF Monde", members: "Investir passivement" },
-    { icon: "💰", name: "Dividendes", members: "Revenus réguliers" },
-    { icon: "📈", name: "Value Investing", members: "Sociétés sous-cotées" },
-    { icon: "🏠", name: "SCPI & Immo", members: "Pierre-papier" },
-    { icon: "💼", name: "PEA", members: "Fiscalité française" },
-    { icon: "₿", name: "Bitcoin", members: "Long terme" },
+    { icon: "globe", name: "ETF Monde", members: "Investir passivement" },
+    { icon: "coins", name: "Dividendes", members: "Revenus réguliers" },
+    { icon: "up", name: "Value Investing", members: "Sociétés sous-cotées" },
+    { icon: "home", name: "SCPI & Immo", members: "Pierre-papier" },
+    { icon: "briefcase", name: "PEA", members: "Fiscalité française" },
+    { icon: "bitcoin", name: "Bitcoin", members: "Long terme" },
   ];
 
   return (
@@ -156,7 +166,7 @@ function Communaute({ onStart, onPage, onHome }) {
         <div className="lp-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 56 }}>
           {values.map(v => (
             <div key={v.title} className="lp-card" style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 24 }}>
-              <div style={{ fontSize: 24, marginBottom: 12 }}>{v.icon}</div>
+              <LpIcon name={v.icon} style={{ marginBottom: 14 }} />
               <div style={{ fontSize: 14, fontWeight: 600, color: "#fff", marginBottom: 8 }}>{v.title}</div>
               <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", lineHeight: 1.6 }}>{v.desc}</div>
             </div>
@@ -167,7 +177,7 @@ function Communaute({ onStart, onPage, onHome }) {
         <div className="lp-grid3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 56 }}>
           {clubs.map(c => (
             <div key={c.name} style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "16px 14px", textAlign: "center" }}>
-              <div style={{ fontSize: 24, marginBottom: 8 }}>{c.icon}</div>
+              <LpIcon name={c.icon} size={18} box={36} style={{ margin: "0 auto 10px" }} />
               <div style={{ fontSize: 13, fontWeight: 600, color: "#fff", marginBottom: 4 }}>{c.name}</div>
               <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>{c.members}</div>
             </div>
@@ -230,13 +240,13 @@ export default function Landing({ onStart }) {
 
       <div className="lp-pad lp-grid" style={{ padding: "0 48px 80px", maxWidth: 700, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         {[
-          { icon: "📊", title: "Suis ta progression", text: "Toutes tes positions, tous courtiers confondus. Ta performance, ta répartition, tes dividendes." },
-          { icon: "🏆", title: "Reste discipliné", text: "Séries d'investissement mensuel, badges, moments clés. Investir comme une habitude." },
-          { icon: "👥", title: "Progresse avec les autres", text: "Ajoute tes amis, rejoins des clubs, partage ton parcours. Grandis ensemble." },
-          { icon: "📈", title: "Au-delà des rendements", text: "La constance compte plus que la performance. Mesure ta discipline, pas juste tes gains." },
+          { icon: "chart", title: "Suis ta progression", text: "Toutes tes positions, tous courtiers confondus. Ta performance, ta répartition, tes dividendes." },
+          { icon: "trophy", title: "Reste discipliné", text: "Séries d'investissement mensuel, badges, moments clés. Investir comme une habitude." },
+          { icon: "users", title: "Progresse avec les autres", text: "Ajoute tes amis, rejoins des clubs, partage ton parcours. Grandis ensemble." },
+          { icon: "up", title: "Au-delà des rendements", text: "La constance compte plus que la performance. Mesure ta discipline, pas juste tes gains." },
         ].map(f => (
           <div key={f.title} className="lp-card" style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 28 }}>
-            <div style={{ fontSize: 22, marginBottom: 14 }}>{f.icon}</div>
+            <LpIcon name={f.icon} style={{ marginBottom: 16 }} />
             <div style={{ fontSize: 15, fontWeight: 600, color: "#fff", marginBottom: 8 }}>{f.title}</div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", lineHeight: 1.6 }}>{f.text}</div>
           </div>

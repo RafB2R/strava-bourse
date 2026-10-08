@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
 import Avatar from "./Avatar";
+import Icon from "./Icon";
 
 const FILTERS = [
-  { id: "performance", label: "📈 Performance" },
-  { id: "regularite", label: "🔥 Régularité" },
-  { id: "diversification", label: "🌍 Diversification" },
-  { id: "contribution", label: "🤝 Contribution" },
-  { id: "badges", label: "🏅 Badges" },
+  { id: "performance", label: "Performance", icon: "up" },
+  { id: "regularite", label: "Régularité", icon: "flame" },
+  { id: "diversification", label: "Diversification", icon: "globe" },
+  { id: "contribution", label: "Contribution", icon: "handshake" },
+  { id: "badges", label: "Badges", icon: "award" },
 ];
 
 
@@ -67,23 +68,23 @@ export default function Classements({ session , T: TProp }) {
   const rankIcon = i => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
 
   function getValue(u) {
-    if (filter === "performance") return { val: u.perf !== null ? `${u.perf >= 0 ? "+" : ""}${u.perf.toFixed(1)}%` : "—", color: u.perf === null ? T.textFaint : u.perf >= 0 ? T.accent : T.red };
-    if (filter === "regularite") return { val: u.streak > 0 ? `🔥 ${u.streak} mois` : "—", color: T.yellow };
+    if (filter === "performance") return { val: u.perf !== null ? `${u.perf >= 0 ? "+" : ""}${u.perf.toFixed(1)}%` : "—", color: u.perf === null ? T.textFaint : u.perf >= 0 ? T.up : T.red };
+    if (filter === "regularite") return { val: u.streak > 0 ? `${u.streak} mois` : "—", icon: u.streak > 0 ? "flame" : null, color: T.yellow };
     if (filter === "diversification") return { val: `${u.scoreDiversif}/100`, color: u.scoreDiversif >= 70 ? T.accent : u.scoreDiversif >= 40 ? T.yellow : T.red };
-    if (filter === "contribution") return { val: u.contribution > 0 ? `💬 ${u.contribution}` : "—", color: T.purple };
-    if (filter === "badges") return { val: `🏅 ${u.nbBadges}`, color: T.gold };
+    if (filter === "contribution") return { val: u.contribution > 0 ? `${u.contribution}` : "—", icon: u.contribution > 0 ? "comment" : null, color: T.purple };
+    if (filter === "badges") return { val: `${u.nbBadges}`, icon: "award", color: T.gold };
     return { val: "—", color: T.textFaint };
   }
 
   return (
     <div>
-      <div style={{ fontSize: 13, color: T.textFaint, marginBottom: 14 }}>🏆 Classements Verio</div>
+      <div style={{ fontSize: 13, color: T.textFaint, marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}><Icon name="trophy" size={14} />Classements Verio</div>
 
       {/* Scope */}
       <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-        {[["amis", "👥 Amis"], ["global", "🌍 Global"]].map(([id, label]) => (
-          <button key={id} onClick={() => { if (id !== scope) { setLoading(true); setScope(id); } }} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${scope === id ? T.accent : T.border}`, background: scope === id ? T.accentBg : "none", color: scope === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
-            {label}
+        {[["amis", "Amis", "users"], ["global", "Global", "globe"]].map(([id, label, icon]) => (
+          <button key={id} onClick={() => { if (id !== scope) { setLoading(true); setScope(id); } }} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${scope === id ? T.accent : T.border}`, background: scope === id ? T.accentBg : "none", color: scope === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <Icon name={icon} size={14} />{label}
           </button>
         ))}
       </div>
@@ -91,8 +92,8 @@ export default function Classements({ session , T: TProp }) {
       {/* Filtres */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
         {FILTERS.map(f => (
-          <button key={f.id} onClick={() => setFilter(f.id)} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filter === f.id ? T.accent : T.border}`, background: filter === f.id ? T.accentBg : "none", color: filter === f.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
-            {f.label}
+          <button key={f.id} onClick={() => setFilter(f.id)} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filter === f.id ? T.accent : T.border}`, background: filter === f.id ? T.accentBg : "none", color: filter === f.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <Icon name={f.icon} size={13} />{f.label}
           </button>
         ))}
       </div>
@@ -102,12 +103,12 @@ export default function Classements({ session , T: TProp }) {
 
         {!loading && users.length === 0 && (
           <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1.5rem" }}>
-            {scope === "amis" ? "Ajoute des amis pour te comparer 🙂" : "Aucun utilisateur trouvé"}
+            {scope === "amis" ? "Ajoute des amis pour te comparer" : "Aucun utilisateur trouvé"}
           </div>
         )}
 
         {sorted.map((u, i) => {
-          const { val, color } = getValue(u);
+          const { val, icon, color } = getValue(u);
           return (
             <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}`, background: u.isMe ? T.accentBg : "none", borderRadius: 8, paddingLeft: u.isMe ? 8 : 0 }}>
               <div style={{ fontSize: 18, minWidth: 28, textAlign: "center" }}>
@@ -124,7 +125,7 @@ export default function Classements({ session , T: TProp }) {
                   {u.city && <span>{u.city}</span>}
                 </div>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 600, color, textAlign: "right" }}>{val}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color, textAlign: "right", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>{icon && <Icon name={icon} size={14} />}{val}</div>
             </div>
           );
         })}

@@ -11,6 +11,7 @@ import { supabase } from "../supabase";
 import { syncBadges } from "../badges";
 import { T as TLive } from "../theme";
 import Avatar from "./Avatar";
+import Icon from "./Icon";
 
 const card = (T) => ({ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 });
 const inp = (T) => ({ width: "100%", padding: "10px 14px", fontSize: 14, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: T.text, fontFamily: "inherit", display: "block" });
@@ -27,6 +28,14 @@ const CATEGORIES = {
   "💰 Patrimoine & Stratégie": ["DCA Long Terme","PEA","Assurance Vie","Retraite / PER","Fiscalité","Débutants"],
   "₿ Crypto": ["Bitcoin","Altcoins","DeFi","NFT & Web3"],
 };
+
+// La catégorie d'un club garde son emoji en base (« 📈 Actions ») : on l'affiche en icône
+const CatIcon = ({ cat, size = 14 }) => {
+  const e = (cat || "👥").split(" ")[0];
+  return e === "₿" ? <Icon name="bitcoin" size={size} /> : <Icon emoji={e} size={size} />;
+};
+const catName = (cat) => cat.split(" ").slice(1).join(" ");
+const chip = { display: "inline-flex", alignItems: "center", gap: 5 };
 
 // Amis, demandes en attente, mes clubs et tous les clubs avec leur nombre de membres
 async function fetchExploreContext(userId) {
@@ -210,8 +219,8 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
       {/* Barre de recherche */}
       <div style={{ position: "relative", marginBottom: 20 }}>
         <input style={{ ...inp(T), paddingLeft: 40 }} placeholder="Rechercher un investisseur, un club, une valeur, un #hashtag…" autoFocus={initialSection === "amis"} value={query} onChange={e => setQuery(e.target.value)} />
-        <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, color: T.textFaint }}>🔍</span>
-        {query && <button onClick={() => setQuery("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 14 }}>✕</button>}
+        <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, color: T.textFaint, display: "flex" }}><Icon name="search" size={16} /></span>
+        {query && <button onClick={() => setQuery("")} aria-label="Effacer la recherche" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 14, display: "flex" }}><Icon name="close" size={14} /></button>}
       </div>
 
       {/* Résultats de recherche */}
@@ -223,9 +232,9 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
       ) : query.length >= 2 ? (
         <div>
           <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-            {[["users", "👤 Investisseurs"], ["clubs", "🏛️ Clubs"], ["assets", "📈 Valeurs"]].map(([id, label]) => (
-              <button key={id} onClick={() => setSearchTab(id)} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${searchTab === id ? T.accent : T.border}`, background: searchTab === id ? T.accentBg : "none", color: searchTab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
-                {label}
+            {[["users", "user", "Investisseurs"], ["clubs", "landmark", "Clubs"], ["assets", "up", "Valeurs"]].map(([id, icon, label]) => (
+              <button key={id} onClick={() => setSearchTab(id)} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${searchTab === id ? T.accent : T.border}`, background: searchTab === id ? T.accentBg : "none", color: searchTab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...chip }}>
+                <Icon name={icon} size={13} />{label}
               </button>
             ))}
           </div>
@@ -238,12 +247,12 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                 ? <div style={{ width: 40, height: 40, borderRadius: 12, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{superIcons[u.id]}</div>
                 : <Avatar userId={u.id} name={u.full_name} size={40} />}
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}{superIcons[u.id] && <span style={{ marginLeft: 8, padding: "1px 7px", borderRadius: 999, fontSize: 10, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold }}>🏆 Légende</span>}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}{superIcons[u.id] && <span style={{ marginLeft: 8, padding: "1px 7px", borderRadius: 999, fontSize: 10, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold, display: "inline-flex", alignItems: "center", gap: 4, verticalAlign: "middle" }}><Icon name="trophy" size={11} />Légende</span>}</div>
                 <div style={{ fontSize: 12, color: T.textMuted }}>@{u.username}{u.city ? ` · ${u.city}` : ""}{u.strategy ? ` · ${u.strategy}` : ""}</div>
-                {u.streak_mois > 0 && <div style={{ fontSize: 11, color: T.yellow, marginTop: 2 }}>🔥 {u.streak_mois} mois</div>}
+                {u.streak_mois > 0 && <div style={{ fontSize: 11, color: T.yellow, marginTop: 2, ...chip, gap: 4 }}><Icon name="flame" size={12} />{u.streak_mois} mois</div>}
               </div>
               {superIcons[u.id] ? null
-                : friendIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.accent }}>✓ Ami</span>
+                : friendIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.accent, ...chip, gap: 4 }}><Icon name="check" size={13} />Ami</span>
                 : pendingIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.textFaint }}>En attente</span>
                 : <button onClick={e => { e.stopPropagation(); sendRequest(u.id); }} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>+ Suivre</button>}
             </div>
@@ -263,12 +272,12 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
 
           {!loading && searchTab === "clubs" && clubs.map(club => (
             <div key={club.id} onClick={() => setSelectedClub(club)} style={{ ...card(T), display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}><CatIcon cat={club.category} size={18} /></div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{club.name}</div>
                 <div style={{ fontSize: 12, color: T.textMuted }}>{club.subcategory}</div>
               </div>
-              {myClubIds.includes(club.id) ? <span style={{ fontSize: 12, color: T.accent }}>✓ Membre</span>
+              {myClubIds.includes(club.id) ? <span style={{ fontSize: 12, color: T.accent, ...chip, gap: 4 }}><Icon name="check" size={13} />Membre</span>
                 : <button onClick={e => { e.stopPropagation(); joinClub(club.id); }} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>Rejoindre</button>}
             </div>
           ))}
@@ -281,9 +290,9 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
         <>
           {/* Onglets Marchés / Clubs / Super Investors */}
           <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
-            {[["marches", "🌍 Marchés"], ["clubs", "🏛️ Clubs"], ["super", "🏆 Légendes"]].map(([id, label]) => (
-              <button key={id} onClick={() => { setSection(id); setFilterCat('Tous'); }} style={{ padding: "7px 14px", borderRadius: 999, fontSize: 13, border: `0.5px solid ${section === id ? T.accent : T.border}`, background: section === id ? T.accentBg : "none", color: section === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
-                {label}
+            {[["marches", "globe", "Marchés"], ["clubs", "landmark", "Clubs"], ["super", "trophy", "Légendes"]].map(([id, icon, label]) => (
+              <button key={id} onClick={() => { setSection(id); setFilterCat('Tous'); }} style={{ padding: "7px 14px", borderRadius: 999, fontSize: 13, border: `0.5px solid ${section === id ? T.accent : T.border}`, background: section === id ? T.accentBg : "none", color: section === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", ...chip, gap: 6 }}>
+                <Icon name={icon} size={14} />{label}
               </button>
             ))}
           </div>
@@ -312,8 +321,8 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
               <div style={{ marginBottom: 14 }}>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {[["Tous","Tous"],["📈 Actions","Actions"],["📊 ETF","ETF"],["🏦 Fonds","Fonds"],["📉 Obligations","Oblig."],["🏠 Immobilier","Immo"],["💰 Patrimoine & Stratégie","Stratégie"],["₿ Crypto","Crypto"]].map(([key,label]) => (
-                    <button key={key} onClick={() => setFilterCat(key)} style={{ padding: "5px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filterCat === key ? T.accent : T.border}`, background: filterCat === key ? T.accentBg : "none", color: filterCat === key ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
-                      {label}
+                    <button key={key} onClick={() => setFilterCat(key)} style={{ padding: "5px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filterCat === key ? T.accent : T.border}`, background: filterCat === key ? T.accentBg : "none", color: filterCat === key ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", ...chip }}>
+                      {key !== "Tous" && <CatIcon cat={key} size={13} />}{label}
                     </button>
                   ))}
                 </div>
@@ -327,7 +336,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                   <textarea style={{ ...inp(T), height: 60, resize: "none", marginBottom: 10 }} placeholder="Description (optionnel)" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
                     {Object.keys(CATEGORIES).map(cat => (
-                      <button key={cat} onClick={() => setForm({ ...form, category: cat, subcategory: "" })} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${form.category === cat ? T.accent : T.border}`, background: form.category === cat ? T.accentBg : "none", color: form.category === cat ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{cat}</button>
+                      <button key={cat} onClick={() => setForm({ ...form, category: cat, subcategory: "" })} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${form.category === cat ? T.accent : T.border}`, background: form.category === cat ? T.accentBg : "none", color: form.category === cat ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...chip }}><CatIcon cat={cat} size={13} />{catName(cat)}</button>
                     ))}
                   </div>
                   {form.category && (
@@ -337,7 +346,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                       ))}
                     </div>
                   )}
-                  {error && <div style={{ fontSize: 13, color: T.red, marginBottom: 8 }}>⚠️ {error}</div>}
+                  {error && <div style={{ fontSize: 13, color: T.red, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}><Icon name="warning" size={14} />{error}</div>}
                   <button onClick={createClub} disabled={saving} style={{ background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>{saving ? "Création…" : "Créer"}</button>
                 </div>
               )}
@@ -346,7 +355,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                 <>
                   {contextLoaded && myClubs.length === 0 && (
                     <div style={{ ...card(T), textAlign: "center", padding: "2rem 1rem" }}>
-                      <div style={{ fontSize: 28, marginBottom: 8 }}>👥</div>
+                      <div style={{ marginBottom: 8, color: T.textFaint, display: "flex", justifyContent: "center" }}><Icon name="users" size={28} /></div>
                       <div style={{ fontSize: 14, fontWeight: 600, color: T.text, marginBottom: 6 }}>Tu n'as rejoint aucun club</div>
                       <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 14 }}>Échange avec des investisseurs qui partagent ta stratégie.</div>
                       <button onClick={() => setClubView("decouvrir")} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>Découvrir les clubs</button>
@@ -358,15 +367,15 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                     return (
                       <div key={club.id} onClick={() => setSelectedClub(club)} style={{ ...card(T), cursor: "pointer", padding: "1rem 1.25rem" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{(club.category || "👥").split(" ")[0]}</div>
+                          <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}><CatIcon cat={club.category} size={20} /></div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                               <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{club.name}</span>
-                              <span style={{ fontSize: 11, color: T.textFaint, flexShrink: 0 }}>👥 {n} membre{n > 1 ? "s" : ""}</span>
+                              <span style={{ fontSize: 11, color: T.textFaint, flexShrink: 0, ...chip, gap: 4 }}><Icon name="users" size={12} />{n} membre{n > 1 ? "s" : ""}</span>
                             </div>
                             <div style={{ fontSize: 12, color: T.textMuted, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {last
-                                ? <>💬 <b style={{ fontWeight: 600 }}>{last.author?.full_name?.split(" ")[0] || "Un membre"}</b> : {last.content} <span style={{ color: T.textFaint }}>· {timeAgo(last.created_at)}</span></>
+                                ? <><Icon name="comment" size={12} style={{ marginRight: 4 }} /><b style={{ fontWeight: 600 }}>{last.author?.full_name?.split(" ")[0] || "Un membre"}</b> : {last.content} <span style={{ color: T.textFaint }}>· {timeAgo(last.created_at)}</span></>
                                 : <span style={{ color: T.textFaint }}>Pas encore de discussion — lance la première !</span>}
                             </div>
                           </div>
@@ -378,18 +387,18 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                 </>
               )}
 
-              {activeClubView === "decouvrir" && filteredClubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}>Aucun club — crée le premier ! 🚀</div>}
+              {activeClubView === "decouvrir" && filteredClubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}><span style={{ ...chip, gap: 6 }}>Aucun club — crée le premier ! <Icon name="rocket" size={14} /></span></div>}
 
               {activeClubView === "decouvrir" && filteredClubs.map(club => (
                 <div key={club.id} onClick={() => setSelectedClub(club)} style={{ ...card(T), cursor: "pointer" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}><CatIcon cat={club.category} size={20} /></div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 4 }}>{club.name}</div>
                       <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
                         <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{club.subcategory}</span>
-                        <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted }}>👥 {memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
-                        {myClubIds.includes(club.id) && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>✓ Membre</span>}
+                        <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted, ...chip, gap: 4 }}><Icon name="users" size={11} />{memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
+                        {myClubIds.includes(club.id) && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent, ...chip, gap: 4 }}><Icon name="check" size={11} />Membre</span>}
                       </div>
                       {club.description && <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5 }}>{club.description}</div>}
                     </div>

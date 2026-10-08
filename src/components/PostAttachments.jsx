@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { CHART_PERIODS, searchAssets, fetchQuote, myAllocation, cleanAsset, cleanAllocation } from "../attachments";
 import { fetchChart, fmtChange } from "../indices";
+import Icon from "./Icon";
 
 // Pièces jointes « marché » d'un post : valeur citée (avec ou sans graphique), répartition en %
 
@@ -57,7 +58,7 @@ export function AssetCard({ asset: raw, T, onOpen }) {
           {quote ? (
             <>
               <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{fmtPrice(quote.price, asset.type === "Indice" ? null : quote.currency)}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: up ? T.accent : T.red }}>{fmtChange(quote.change)} auj.</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: up ? T.up : T.red }}>{fmtChange(quote.change)} auj.</div>
             </>
           ) : <div style={{ fontSize: 12, color: T.textFaint }}>Cours…</div>}
         </div>
@@ -65,10 +66,10 @@ export function AssetCard({ asset: raw, T, onOpen }) {
       {period && (
         chart?.points?.length > 1 ? (
           <>
-            <AreaChart points={chart.points} color={periodUp ? T.accent : T.red} />
+            <AreaChart points={chart.points} color={periodUp ? T.up : T.red} />
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: T.textFaint, marginTop: 4 }}>
               <span>Sur {periodLabel === "1A" ? "1 an" : periodLabel === "5A" ? "5 ans" : periodLabel === "6M" ? "6 mois" : "1 mois"}</span>
-              <span style={{ fontWeight: 700, color: periodUp ? T.accent : T.red }}>{fmtChange(chart.change)}</span>
+              <span style={{ fontWeight: 700, color: periodUp ? T.up : T.red }}>{fmtChange(chart.change)}</span>
             </div>
           </>
         ) : <div style={{ height: 90, marginTop: 10, borderRadius: 8, background: T.bgCard, opacity: 0.6 }} />
@@ -87,8 +88,8 @@ export function AllocationCard({ allocation: raw, T, title }) {
   const colors = ALLOC_COLORS(T);
   return (
     <div style={box(T)}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: T.textMuted, marginBottom: 8 }}>
-        {title || (allocation.mode === "positions" ? "🥧 Ma répartition par position" : "🥧 Ma répartition par classe d'actifs")}
+      <div style={{ fontSize: 12, fontWeight: 700, color: T.textMuted, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+        {title || <><Icon name="pie" size={14} />{allocation.mode === "positions" ? "Ma répartition par position" : "Ma répartition par classe d'actifs"}</>}
       </div>
       <div style={{ display: "flex", height: 12, borderRadius: 999, overflow: "hidden", marginBottom: 10 }}>
         {allocation.rows.map((r, i) => <div key={r.label} title={`${r.label} : ${r.pct} %`} style={{ width: `${r.pct}%`, background: colors[i % colors.length] }} />)}
@@ -107,7 +108,7 @@ export function AllocationCard({ allocation: raw, T, title }) {
 }
 
 const panel = T => ({ marginTop: 8, padding: 10, borderRadius: 10, border: `0.5px solid ${T.border}`, background: T.bgSubtle });
-const closeBtn = T => ({ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12 });
+const closeBtn = T => ({ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, display: "inline-flex", alignItems: "center" });
 
 // Graphique à joindre : recherche de la valeur (nom, ticker ou ISIN) et période
 export function AssetPicker({ T, onPick, onClose }) {
@@ -126,8 +127,8 @@ export function AssetPicker({ T, onPick, onClose }) {
   return (
     <div style={panel(T)}>
       <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
-        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: T.textMuted }}>📈 Joindre un graphique</span>
-        <button onClick={onClose} aria-label="Fermer" style={closeBtn(T)}>✕</button>
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: T.textMuted, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="up" size={14} />Joindre un graphique</span>
+        <button onClick={onClose} aria-label="Fermer" style={closeBtn(T)}><Icon name="close" size={12} /></button>
       </div>
       <input autoFocus value={query} onChange={e => setQuery(e.target.value)} placeholder="TotalEnergies, CW8, FR0000120271…" aria-label="Rechercher une valeur"
         style={{ width: "100%", padding: "8px 10px", fontSize: 13, borderRadius: 8, border: `0.5px solid ${T.border}`, background: T.bgCard, color: T.text, fontFamily: "inherit" }} />
@@ -165,8 +166,8 @@ export function AllocationPicker({ T, onPick, onClose }) {
   return (
     <div style={panel(T)}>
       <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
-        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: T.textMuted }}>🥧 Partager ma répartition <span style={{ fontWeight: 400 }}>· en % uniquement, jamais de montant</span></span>
-        <button onClick={onClose} aria-label="Fermer" style={closeBtn(T)}>✕</button>
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: T.textMuted, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="pie" size={14} />Partager ma répartition <span style={{ fontWeight: 400 }}>· en % uniquement, jamais de montant</span></span>
+        <button onClick={onClose} aria-label="Fermer" style={closeBtn(T)}><Icon name="close" size={12} /></button>
       </div>
       <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
         <button onClick={() => { setRows(null); setMode("classes"); }} style={chip(T, mode === "classes")}>Par classe d'actifs</button>
@@ -188,9 +189,9 @@ export function AllocationPicker({ T, onPick, onClose }) {
 export function AttachedChip({ T, icon, label, onRemove }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, padding: "6px 10px", borderRadius: 8, border: `0.5px solid ${T.accent}`, background: T.accentBg, minWidth: 0 }}>
-      <span>{icon}</span>
+      <span style={{ display: "inline-flex", alignItems: "center", color: T.accent }}>{icon}</span>
       <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
-      <button onClick={onRemove} aria-label="Retirer" style={closeBtn(T)}>✕</button>
+      <button onClick={onRemove} aria-label="Retirer" style={closeBtn(T)}><Icon name="close" size={12} /></button>
     </div>
   );
 }

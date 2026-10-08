@@ -10,6 +10,7 @@ import IndexDetail from "./IndexDetail";
 import { detailFor } from "../indices";
 import { useDetailView } from "../useDetailView";
 import Avatar from "./Avatar";
+import Icon from "./Icon";
 
 // Prévient les membres mentionnés dans un post ou une réponse de club
 async function notifyMentions(tags, myId, data) {
@@ -29,6 +30,16 @@ const CATEGORIES = {
 };
 
 const REACTIONS = ["👍", "🔥", "💡"];
+
+// L'emoji en tête de la catégorie (stockée en base) est affiché comme une icône
+const CAT_ICON_NAMES = { "₿": "bitcoin" };
+const catEmoji = cat => cat?.split(" ")[0];
+const catText = cat => cat?.split(" ").slice(1).join(" ");
+function CatIcon({ category, size = 14 }) {
+  const e = catEmoji(category);
+  return <Icon name={CAT_ICON_NAMES[e]} emoji={e} size={size} />;
+}
+const inl = { display: "inline-flex", alignItems: "center", gap: 5 };
 const PAGE_SIZE = 10;
 
 const card = (T) => ({ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 });
@@ -100,7 +111,7 @@ function Post({ post, session, isMember, onReact, onDelete, onAsset, onProfile }
             {post.author?.username && <span style={{ fontSize: 12, color: T.textFaint }}>@{post.author.username}</span>}
             <span style={{ fontSize: 11, color: T.textFaint }}>{timeAgo(post.created_at)}</span>
             {post.user_id === session.user.id && (
-              <button onClick={() => onDelete(post.id)} style={{ marginLeft: "auto", background: "transparent", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 11, fontFamily: "inherit" }}>✕</button>
+              <button onClick={() => onDelete(post.id)} style={{ marginLeft: "auto", background: "transparent", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 11, fontFamily: "inherit", display: "flex", alignItems: "center" }} aria-label="Supprimer"><Icon name="close" size={13} /></button>
             )}
           </div>
           {post.content?.trim() && (
@@ -114,11 +125,11 @@ function Post({ post, session, isMember, onReact, onDelete, onAsset, onProfile }
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
             {REACTIONS.map(r => (
               <button key={r} onClick={() => isMember && onReact(post.id, r)} style={{ background: myReactions.includes(r) ? T.accentBg : T.bgCard, border: `0.5px solid ${myReactions.includes(r) ? T.accentBorder : T.border}`, borderRadius: 999, padding: "3px 10px", fontSize: 12, color: myReactions.includes(r) ? T.accent : T.textMuted, cursor: isMember ? "pointer" : "default", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
-                {r} {reactionCounts[r] > 0 && <span style={{ fontSize: 11 }}>{reactionCounts[r]}</span>}
+                <Icon emoji={r} size={14} /> {reactionCounts[r] > 0 && <span style={{ fontSize: 11 }}>{reactionCounts[r]}</span>}
               </button>
             ))}
-            <button onClick={toggleReplies} style={{ ...btnSm(T), fontSize: 12, padding: "3px 10px", marginLeft: 4 }}>
-              💬 {post.reply_count > 0 ? `${post.reply_count} réponse${post.reply_count > 1 ? "s" : ""}` : "Répondre"}
+            <button onClick={toggleReplies} style={{ ...btnSm(T), fontSize: 12, padding: "3px 10px", marginLeft: 4, ...inl }}>
+              <Icon name="comment" size={13} /> {post.reply_count > 0 ? `${post.reply_count} réponse${post.reply_count > 1 ? "s" : ""}` : "Répondre"}
             </button>
           </div>
         </div>
@@ -135,7 +146,7 @@ function Post({ post, session, isMember, onReact, onDelete, onAsset, onProfile }
                   <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{reply.author?.full_name}</span>
                   {reply.author?.username && <span style={{ fontSize: 11, color: T.textFaint }}>@{reply.author.username}</span>}
                   <span style={{ fontSize: 11, color: T.textFaint }}>{timeAgo(reply.created_at)}</span>
-                  {reply.user_id === session.user.id && <button onClick={() => deleteReply(reply.id)} style={{ marginLeft: "auto", background: "transparent", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 11, fontFamily: "inherit" }}>✕</button>}
+                  {reply.user_id === session.user.id && <button onClick={() => deleteReply(reply.id)} style={{ marginLeft: "auto", background: "transparent", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 11, fontFamily: "inherit", display: "flex", alignItems: "center" }} aria-label="Supprimer"><Icon name="close" size={12} /></button>}
                 </div>
                 <div style={{ fontSize: 13, color: T.text, lineHeight: 1.5, background: T.bgSubtle, borderRadius: 8, padding: "7px 10px", wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
                   <RichText text={reply.content} tickers={reply.tags?.tickers} mentions={reply.tags?.mentions} T={T} onAsset={onAsset} onProfile={onProfile} />
@@ -148,7 +159,7 @@ function Post({ post, session, isMember, onReact, onDelete, onAsset, onProfile }
               <Avatar userId={session.user.id} name={session.user.email} size={26} />
               <TagField as="input" style={{ ...inp(T), marginBottom: 0, flex: 1, fontSize: 12, padding: "7px 10px" }} placeholder="Répondre… ($ valeur, @ membre)"
                 value={replyInput} onValueChange={setReplyInput} tags={replyTags} onTagsChange={setReplyTags} onSubmit={sendReply} myId={session.user.id} T={T} />
-              <button onClick={sendReply} disabled={sendingReply || !replyInput.trim()} style={{ ...btn(T), padding: "7px 14px", fontSize: 12, flexShrink: 0 }}>↵</button>
+              <button onClick={sendReply} disabled={sendingReply || !replyInput.trim()} style={{ ...btn(T), padding: "7px 14px", fontSize: 12, flexShrink: 0, display: "flex", alignItems: "center" }} aria-label="Envoyer"><Icon name="enter" size={14} /></button>
             </div>
           )}
         </div>
@@ -235,18 +246,18 @@ function ClubRanking({ clubId, session }) {
   return (
     <div>
       <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
-        {[["performance", "📈 Performance"], ["regularite", "🔥 Régularité"], ["badges", "🏅 Badges"]].map(([id, label]) => (
-          <button key={id} onClick={() => setFilter(id)} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filter === id ? T.accent : T.border}`, background: filter === id ? T.accentBg : "none", color: filter === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
-            {label}
+        {[["performance", "up", "Performance"], ["regularite", "flame", "Régularité"], ["badges", "award", "Badges"]].map(([id, icon, label]) => (
+          <button key={id} onClick={() => setFilter(id)} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filter === id ? T.accent : T.border}`, background: filter === id ? T.accentBg : "none", color: filter === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...inl }}>
+            <Icon name={icon} size={13} />{label}
           </button>
         ))}
       </div>
       {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>Chargement…</div>}
       {!loading && sorted.map((m, i) => {
         const val = filter === "performance" ? (m.perf !== null ? `${m.perf >= 0 ? "+" : ""}${m.perf.toFixed(1)}%` : "—")
-          : filter === "regularite" ? (m.streak > 0 ? `🔥 ${m.streak} mois` : "—")
-          : `🏅 ${m.nbBadges}`;
-        const color = filter === "performance" ? (m.perf === null ? T.textFaint : m.perf >= 0 ? T.accent : T.red) : filter === "regularite" ? T.yellow : T.gold;
+          : filter === "regularite" ? (m.streak > 0 ? <span style={inl}><Icon name="flame" size={14} />{m.streak} mois</span> : "—")
+          : <span style={inl}><Icon name="award" size={14} />{m.nbBadges}</span>;
+        const color = filter === "performance" ? (m.perf === null ? T.textFaint : m.perf >= 0 ? T.up : T.red) : filter === "regularite" ? T.yellow : T.gold;
         return (
           <div key={m.user_id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}` }}>
             <div style={{ fontSize: 16, minWidth: 28, textAlign: "center" }}>
@@ -398,12 +409,12 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
 
       <div style={card(T)}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 12, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}><CatIcon category={club.category} size={22} /></div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: T.text, marginBottom: 4 }}>{club.name}</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{club.subcategory}</span>
-              <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted }}>👥 {memberCount} membre{memberCount > 1 ? "s" : ""}</span>
+              <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted, ...inl, gap: 4 }}><Icon name="users" size={12} />{memberCount} membre{memberCount > 1 ? "s" : ""}</span>
             </div>
             {club.description && <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5, marginTop: 6 }}>{club.description}</div>}
           </div>
@@ -413,9 +424,9 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
 
       {/* Onglets */}
       <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-        {[["discussion", "💬 Discussion"], ["classement", "🏆 Classement"]].map(([id, label]) => (
-          <button key={id} onClick={() => setClubTab(id)} style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, border: `0.5px solid ${clubTab === id ? T.accent : T.border}`, background: clubTab === id ? T.accentBg : "none", color: clubTab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
-            {label}
+        {[["discussion", "comment", "Discussion"], ["classement", "trophy", "Classement"]].map(([id, icon, label]) => (
+          <button key={id} onClick={() => setClubTab(id)} style={{ padding: "6px 14px", borderRadius: 999, fontSize: 13, border: `0.5px solid ${clubTab === id ? T.accent : T.border}`, background: clubTab === id ? T.accentBg : "none", color: clubTab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...inl, gap: 6 }}>
+            <Icon name={icon} size={14} />{label}
           </button>
         ))}
       </div>
@@ -443,9 +454,9 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
                 <input ref={imageInput} type="file" accept={ACCEPT_ATTR} multiple hidden onChange={e => { addImages(e.target.files); e.target.value = ""; }} />
                 <input ref={fileInput} type="file" accept={FILE_ACCEPT_ATTR} multiple hidden onChange={e => { addFiles(e.target.files); e.target.value = ""; }} />
                 <button onClick={() => imageInput.current?.click()} disabled={postImages.length + preparing >= MAX_IMAGES}
-                  style={{ background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 36 }} aria-label="Photo"><span style={{ fontSize: 18 }} aria-hidden="true">🖼️</span><span className="tool-label">Photo</span></button>
+                  style={{ background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 36 }} aria-label="Photo"><Icon name="image" size={18} /><span className="tool-label">Photo</span></button>
                 <button onClick={() => fileInput.current?.click()} disabled={postFiles.length >= MAX_FILES} title="PDF, Excel, Word, PowerPoint, CSV · 10 Mo max"
-                  style={{ background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 36 }} aria-label="Fichier"><span style={{ fontSize: 18 }} aria-hidden="true">📎</span><span className="tool-label">Fichier</span></button>
+                  style={{ background: "none", border: "none", borderRadius: 8, padding: "5px 8px", fontSize: 13, fontWeight: 600, color: T.purple, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, minHeight: 36 }} aria-label="Fichier"><Icon name="clip" size={18} /><span className="tool-label">Fichier</span></button>
                 <span style={{ flex: 1 }} />
                 <button style={{ ...btn(T), padding: "8px 20px", opacity: canPost ? 1 : 0.5 }} onClick={sendPost} disabled={!canPost}>{sending ? "Publication…" : "Publier"}</button>
               </div>
@@ -456,14 +467,14 @@ function ClubDetail({ club, session, onBack, isMember, onJoin, onLeave, memberCo
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>{total} post{total > 1 ? "s" : ""}</div>
             <div style={{ display: "flex", gap: 6 }}>
-              {[["date", "🕐 Récents"], ["popularite", "🔥 Populaires"]].map(([id, label]) => (
-                <button key={id} onClick={() => { if (id !== sort) { setLoading(true); setSort(id); setPage(1); } }} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${sort === id ? T.accent : T.border}`, background: sort === id ? T.accentBg : "none", color: sort === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{label}</button>
+              {[["date", "clock", "Récents"], ["popularite", "flame", "Populaires"]].map(([id, icon, label]) => (
+                <button key={id} onClick={() => { if (id !== sort) { setLoading(true); setSort(id); setPage(1); } }} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${sort === id ? T.accent : T.border}`, background: sort === id ? T.accentBg : "none", color: sort === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...inl }}><Icon name={icon} size={12} />{label}</button>
               ))}
             </div>
           </div>
 
           {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>Chargement…</div>}
-          {!loading && posts.length === 0 && <div style={{ ...card(T), textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>Aucun post encore — lance la discussion ! 🚀</div>}
+          {!loading && posts.length === 0 && <div style={{ ...card(T), textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>Aucun post encore — lance la discussion !</div>}
           {posts.map(post => (
             <Post key={post.id} post={post} session={session} isMember={isMember} onReact={handleReact} onDelete={deletePost}
               onAsset={showAsset} onProfile={id => onViewProfile?.(id)} />
@@ -583,8 +594,8 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
     <div>
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         {["explorer", "mes-clubs"].map(v => (
-          <button key={v} onClick={() => setView(v)} style={{ padding: "7px 16px", borderRadius: 999, fontSize: 13, border: `0.5px solid ${view === v ? T.accent : T.border}`, background: view === v ? T.accentBg : "none", color: view === v ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
-            {v === "explorer" ? "🔍 Explorer" : `👥 Mes clubs (${myClubs.length})`}
+          <button key={v} onClick={() => setView(v)} style={{ padding: "7px 16px", borderRadius: 999, fontSize: 13, border: `0.5px solid ${view === v ? T.accent : T.border}`, background: view === v ? T.accentBg : "none", color: view === v ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...inl, gap: 6 }}>
+            <Icon name={v === "explorer" ? "search" : "users"} size={14} />{v === "explorer" ? "Explorer" : `Mes clubs (${myClubs.length})`}
           </button>
         ))}
         <button onClick={() => setShowForm(!showForm)} style={{ ...btn(T), marginLeft: "auto", padding: "7px 16px" }}>
@@ -602,7 +613,7 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
           <span style={lbl(T)}>Catégorie principale</span>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
             {Object.keys(CATEGORIES).map(cat => (
-              <button key={cat} onClick={() => setForm({ ...form, category: cat, subcategory: "" })} style={{ padding: "5px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${form.category === cat ? T.accent : T.border}`, background: form.category === cat ? T.accentBg : "none", color: form.category === cat ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>{cat}</button>
+              <button key={cat} onClick={() => setForm({ ...form, category: cat, subcategory: "" })} style={{ padding: "5px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${form.category === cat ? T.accent : T.border}`, background: form.category === cat ? T.accentBg : "none", color: form.category === cat ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...inl }}><CatIcon category={cat} size={13} />{catText(cat)}</button>
             ))}
           </div>
           {form.category && (
@@ -615,18 +626,18 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
               </div>
             </>
           )}
-          {error && <div style={{ fontSize: 13, color: T.red, marginBottom: 10 }}>⚠️ {error}</div>}
+          {error && <div style={{ fontSize: 13, color: T.red, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}><Icon name="warning" size={14} />{error}</div>}
           <button style={btn(T)} onClick={createClub} disabled={saving}>{saving ? "Création…" : "Créer le club"}</button>
         </div>
       )}
 
       {!showForm && view === "explorer" && (
         <>
-          <input style={{ ...inp(T), marginBottom: 12 }} placeholder="🔍 Rechercher un club par nom…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+          <input style={{ ...inp(T), marginBottom: 12 }} placeholder="Rechercher un club par nom…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
             {categories.map(cat => (
-              <button key={cat} onClick={() => { setFilterCat(cat); setFilterSub("Tous"); }} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filterCat === cat ? T.accent : T.border}`, background: filterCat === cat ? T.accentBg : "none", color: filterCat === cat ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
-                {cat === "Tous" ? "Tous" : cat.split(" ").slice(1).join(" ")}
+              <button key={cat} onClick={() => { setFilterCat(cat); setFilterSub("Tous"); }} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filterCat === cat ? T.accent : T.border}`, background: filterCat === cat ? T.accentBg : "none", color: filterCat === cat ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", ...inl }}>
+                {cat !== "Tous" && <CatIcon category={cat} size={13} />}{cat === "Tous" ? "Tous" : catText(cat)}
               </button>
             ))}
           </div>
@@ -641,19 +652,19 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
           {filterCat === "Tous" && <div style={{ marginBottom: 16 }} />}
           {searchQuery && <div style={{ fontSize: 12, color: T.textFaint, marginBottom: 12 }}>{filteredClubs.length} résultat{filteredClubs.length > 1 ? "s" : ""} pour "{searchQuery}"</div>}
           {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem" }}>Chargement…</div>}
-          {!loading && filteredClubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}>{searchQuery ? `Aucun club pour "${searchQuery}"` : "Aucun club — crée le premier ! 🚀"}</div>}
+          {!loading && filteredClubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}>{searchQuery ? `Aucun club pour "${searchQuery}"` : "Aucun club — crée le premier !"}</div>}
           {filteredClubs.map(club => (
             <div key={club.id} style={{ ...card(T), cursor: "pointer" }} onClick={() => setSelectedClub(club)}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}><CatIcon category={club.category} size={20} /></div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 4 }}>
                     {highlight(club.name, searchQuery, T.accent)}
                   </div>
                   <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
                     <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{club.subcategory}</span>
-                    <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted }}>👥 {memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
-                    {myClubs.includes(club.id) && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>✓ Membre</span>}
+                    <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted, ...inl, gap: 4 }}><Icon name="users" size={12} />{memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
+                    {myClubs.includes(club.id) && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent, ...inl, gap: 4 }}><Icon name="check" size={11} />Membre</span>}
                   </div>
                   {club.description && <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5 }}>{club.description}</div>}
                 </div>
@@ -666,16 +677,16 @@ export default function Clubs({ session, initialClub = null, onBack = null , T: 
 
       {view === "mes-clubs" && !showForm && (
         <>
-          {myClubsData.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}>Tu n'as rejoint aucun club 🙂</div>}
+          {myClubsData.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}>Tu n'as rejoint aucun club</div>}
           {myClubsData.map(club => (
             <div key={club.id} style={{ ...card(T), cursor: "pointer" }} onClick={() => setSelectedClub(club)}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{club.category.split(" ")[0]}</div>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}><CatIcon category={club.category} size={20} /></div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{club.name}</div>
                   <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
                     <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{club.subcategory}</span>
-                    <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted }}>👥 {memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
+                    <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted, ...inl, gap: 4 }}><Icon name="users" size={12} />{memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
                   </div>
                 </div>
                 <div style={{ fontSize: 18, color: T.textFaint }}>›</div>

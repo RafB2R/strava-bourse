@@ -11,6 +11,7 @@ import { fetchSuperInvestor, setFollowing, quarterLabel } from "../superInvestor
 import NewsList from "./NewsList";
 import Comparison from "./Comparison";
 import Avatar from "./Avatar";
+import Icon from "./Icon";
 
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
 // Colonnes visibles par les autres membres : jamais prix_achat ni nombre_parts
@@ -50,7 +51,7 @@ function PerfHistory({ T, card }) {
         ))}
       </div>
       <div style={{ flex: 1, minHeight: 110, borderRadius: 10, border: `0.5px dashed ${T.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: 12, textAlign: "center" }}>
-        <div style={{ fontSize: 13, color: T.textMuted }}>📈 Courbe en cours de construction</div>
+        <div style={{ fontSize: 13, color: T.textMuted, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="up" size={14} />Courbe en cours de construction</div>
         <div style={{ fontSize: 11, color: T.textFaint }}>La performance {label} se construira jour après jour</div>
       </div>
     </div>
@@ -173,7 +174,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   const [resolving, setResolving] = useState(null);   // { id, error }
   const [isFriend, setIsFriend] = useState(false);
   const [isPending, setIsPending] = useState(false);
-  // Sur mobile, la comparaison s'ouvre sous « ⚖️ Comparer » (sur ordinateur : colonne de droite)
+  // Sur mobile, la comparaison s'ouvre sous « Comparer » (sur ordinateur : colonne de droite)
   const [isMobile] = useState(() => window.innerWidth <= 900);
   const [showCompare, setShowCompare] = useState(false);
   const [superInv, setSuperInv] = useState(null);     // Super Investor (null pour un membre)
@@ -278,25 +279,25 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
               {profile.username ? `@${profile.username}` : ""}{superInv ? `${profile.username ? " · " : ""}${superInv.firm}` : profile.city ? ` · ${profile.city}` : ""}
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {superInv && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold }}>🏆 Légende</span>}
+              {superInv && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="trophy" size={12} />Légende</span>}
               {profile.strategy && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{profile.strategy}</span>}
-              {profile.streak_mois > 0 && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: "rgba(240,203,123,0.1)", color: T.yellow }}>🔥 {profile.streak_mois} mois</span>}
+              {profile.streak_mois > 0 && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: "rgba(240,203,123,0.1)", color: T.yellow, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="flame" size={12} />{profile.streak_mois} mois</span>}
               {profile.investing_since && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted }}>Depuis {profile.investing_since}</span>}
             </div>
           </div>
           {superInv ? (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
             <button onClick={toggleFollow} disabled={followBusy} aria-pressed={superInv.following}
-              style={{ ...btnSm, ...(superInv.following ? { color: T.accent, borderColor: T.accentBorder, background: T.accentBg } : { borderColor: T.accent, background: T.accent, color: T.onAccent, fontWeight: 700 }) }}>
-              {superInv.following ? "Suivi ✓" : "+ Suivre"}
+              style={{ ...btnSm, display: "inline-flex", alignItems: "center", gap: 5, ...(superInv.following ? { color: T.accent, borderColor: T.accentBorder, background: T.accentBg } : { borderColor: T.accent, background: T.accent, color: T.onAccent, fontWeight: 700 }) }}>
+              {superInv.following ? <>Suivi <Icon name="check" size={13} /></> : "+ Suivre"}
             </button>
             {followError && <span role="alert" style={{ fontSize: 11, color: T.red, maxWidth: 140, textAlign: "right" }}>{followError}</span>}
             </div>
           ) : userId !== session.user.id && (
             isFriend ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-                <span style={{ fontSize: 12, color: T.accent }}>✓ Ami</span>
-                {onMessage && <button onClick={() => onMessage(userId)} style={{ ...btnSm, borderColor: T.accent, color: T.accent }}>✉️ Message</button>}
+                <span style={{ fontSize: 12, color: T.accent, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="check" size={13} />Ami</span>
+                {onMessage && <button onClick={() => onMessage(userId)} style={{ ...btnSm, borderColor: T.accent, color: T.accent, display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="mail" size={13} />Message</button>}
                 {confirmDisconnect ? (
                   <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
                     <span style={{ fontSize: 11, color: T.textMuted }}>Se déconnecter ?</span>
@@ -336,7 +337,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
           {[
             ["Positions", entries.length, T.text],
-            ["Perf. depuis l'achat", perfGlobale !== null ? `${perfGlobale >= 0 ? "+" : ""}${perfGlobale.toFixed(1)}%` : "—", perfGlobale !== null ? (perfGlobale >= 0 ? T.accent : T.red) : T.textFaint],
+            ["Perf. depuis l'achat", perfGlobale !== null ? `${perfGlobale >= 0 ? "+" : ""}${perfGlobale.toFixed(1)}%` : "—", perfGlobale !== null ? (perfGlobale >= 0 ? T.up : T.red) : T.textFaint],
             ["Badges", badges.length, T.text],
           ].map(([label, val, color]) => {
             // La case Badges ouvre la vitrine des badges (il n'y a plus d'onglet Badges)
@@ -361,8 +362,8 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       {isMobile && userId !== myId && (
         <div style={{ marginBottom: 12 }}>
           <button onClick={() => setShowCompare(v => !v)} aria-expanded={showCompare}
-            style={{ ...btnSm, width: "100%", padding: "9px 12px", fontSize: 13, fontWeight: 600, ...(showCompare ? { borderColor: T.accent, color: T.accent, background: T.accentBg } : {}) }}>
-            ⚖️ {showCompare ? "Masquer la comparaison" : "Comparer avec moi"}
+            style={{ ...btnSm, width: "100%", padding: "9px 12px", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, ...(showCompare ? { borderColor: T.accent, color: T.accent, background: T.accentBg } : {}) }}>
+            <Icon name="scale" size={14} />{showCompare ? "Masquer la comparaison" : "Comparer avec moi"}
           </button>
           {showCompare && (
             <div style={{ ...card, marginTop: 8 }}>
@@ -411,7 +412,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 13, color: T.textMuted }}>{e.percentage}%</div>
-                  {e.performance !== null && <div style={{ fontSize: 12, fontWeight: 600, color: e.performance >= 0 ? T.accent : T.red }}>{e.performance >= 0 ? "+" : ""}{Number(e.performance).toFixed(1)}%</div>}
+                  {e.performance !== null && <div style={{ fontSize: 12, fontWeight: 600, color: e.performance >= 0 ? T.up : T.red }}>{e.performance >= 0 ? "+" : ""}{Number(e.performance).toFixed(1)}%</div>}
                 </div>
               </button>
               {resolving?.id === e.id && resolving.error && <div role="alert" style={{ fontSize: 12, color: T.red, paddingBottom: 8 }}>{resolving.error}</div>}
@@ -426,7 +427,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
           </div>
           {superInv?.last_period && (
             <div style={{ fontSize: 11, color: T.textFaint, lineHeight: 1.5, margin: "-4px 4px 12px" }}>
-              🏛️ D'après sa déclaration 13F à la SEC : positions au {new Date(`${superInv.last_period}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}, mises à jour automatiquement chaque trimestre. Actions cotées aux États-Unis uniquement.
+              <Icon name="landmark" size={12} style={{ marginRight: 4 }} />D'après sa déclaration 13F à la SEC : positions au {new Date(`${superInv.last_period}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}, mises à jour automatiquement chaque trimestre. Actions cotées aux États-Unis uniquement.
             </div>
           )}
         </div>
@@ -444,7 +445,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       {/* Vitrine des badges, ouverte depuis la case « Badges » du haut */}
       {tab === "badges" && (
         <div>
-          <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", margin: "4px 0 10px" }}>🏅 Badges débloqués</div>
+          <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", margin: "4px 0 10px", display: "flex", alignItems: "center", gap: 6 }}><Icon name="award" size={13} />Badges débloqués</div>
           {badges.length === 0 && <div style={{ ...card, textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>Aucun badge débloqué</div>}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
             {badges.map(b => {
@@ -453,7 +454,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
                 <div key={b.badge_id} style={{ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 12, padding: "14px 10px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                   <div style={{ fontSize: 22 }}>{info.medal}</div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: T.medals[info.medal] || T.accent, textAlign: "center", lineHeight: 1.3 }}>{info.name}</div>
-                  {info.category && <div style={{ fontSize: 10, color: T.textFaint, textAlign: "center" }}>{info.icon} {info.category}</div>}
+                  {info.category && <div style={{ fontSize: 10, color: T.textFaint, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Icon emoji={info.icon} size={11} />{info.category}</div>}
                 </div>
               );
             })}

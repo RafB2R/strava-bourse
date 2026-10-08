@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import { photoStats, simulate, RISK_FREE } from "../compare";
+import Icon from "./Icon";
 
 // Comparaison « Moi / ce membre » : un bloc sur une période au choix (simulation à
 // répartition actuelle) et un bloc « photo » des positions d'aujourd'hui.
-// Affichée dans la colonne de droite sur ordinateur, et sous « ⚖️ Comparer » sur mobile.
+// Affichée dans la colonne de droite sur ordinateur, et sous « Comparer » sur mobile.
 
 const PERIODS = [["1mo", "1M"], ["3mo", "3M"], ["ytd", "YTD"], ["1y", "1A"], ["5y", "5A"]];
 const pct = v => `${v >= 0 ? "+" : ""}${v.toFixed(1).replace(".", ",")} %`;
@@ -34,9 +35,9 @@ function Row({ label, mine, theirs, format, better, T }) {
   const theyBetter = comparable && !meBetter;
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, padding: "7px 0", borderTop: `0.5px solid ${T.border}`, alignItems: "center" }}>
-      <div style={{ textAlign: "right", fontSize: 13, fontWeight: 700, color: meBetter ? T.accent : T.text }}>{mine != null ? format(mine) : "—"}</div>
+      <div style={{ textAlign: "right", fontSize: 13, fontWeight: 700, color: meBetter ? T.up : T.text }}>{mine != null ? format(mine) : "—"}</div>
       <div style={{ textAlign: "center", fontSize: 10, color: T.textFaint, minWidth: 84 }}>{label}</div>
-      <div style={{ textAlign: "left", fontSize: 13, fontWeight: 700, color: theyBetter ? T.accent : T.text }}>{theirs != null ? format(theirs) : "—"}</div>
+      <div style={{ textAlign: "left", fontSize: 13, fontWeight: 700, color: theyBetter ? T.up : T.text }}>{theirs != null ? format(theirs) : "—"}</div>
     </div>
   );
 }
@@ -69,7 +70,7 @@ export default function Comparison({ myId, theirEntries, theirName, T }) {
   const ready = sim.period === period;
   const photoMine = photoStats(mine), photoTheirs = photoStats(theirEntries);
   const coverage = [ready && sim.mine?.coverage, ready && sim.theirs?.coverage].filter(v => v != null && v !== false);
-  const section = { fontSize: 10, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", margin: "12px 0 6px" };
+  const section = { fontSize: 10, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", margin: "12px 0 6px", display: "flex", alignItems: "center", gap: 5 };
 
   return (
     <div>
@@ -79,7 +80,7 @@ export default function Comparison({ myId, theirEntries, theirName, T }) {
         <div style={{ textAlign: "left", fontSize: 12, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{theirName}</div>
       </div>
 
-      <div style={section}>⏱️ Sur la période</div>
+      <div style={section}><Icon name="timer" size={12} />Sur la période</div>
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }}>
         {PERIODS.map(([id, label]) => (
           <button key={id} onClick={() => setPeriod(id)} aria-pressed={period === id}
@@ -96,7 +97,7 @@ export default function Comparison({ myId, theirEntries, theirName, T }) {
         {coverage.length > 0 && ` Calculée sur ${coverage.join(" % et ")} % des portefeuilles.`} Sharpe avec un taux sans risque de {RISK_FREE} %.
       </div>
 
-      <div style={section}>📸 Positions actuelles</div>
+      <div style={section}><Icon name="camera" size={12} />Positions actuelles</div>
       {PHOTO.map(r => <Row key={r.key} T={T} {...r} mine={photoMine?.[r.key]} theirs={photoTheirs?.[r.key]} />)}
       {SOON.map(label => (
         <div key={label} style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, padding: "7px 0", borderTop: `0.5px solid ${T.border}`, alignItems: "center" }}>

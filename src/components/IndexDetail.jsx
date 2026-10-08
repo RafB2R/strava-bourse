@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { T as TLive } from "../theme";
 import Flag from "./Flag";
+import Icon from "./Icon";
 import { PERIODS, DEFAULT_PERIOD, TOP5_UPDATED, INDICES, fetchChart, fmtChange, periodPhrase } from "../indices";
 import { supabase } from "../supabase";
 import { isFollowingAsset, setFollowingAsset, newsName } from "../assetFollows";
@@ -94,7 +95,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
   const [chart, setChart] = useState(null); // { period, data }
   const [top, setTop] = useState(null); // { period, rows }
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
-  const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" };
+  const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 6 };
 
   useEffect(() => {
     let ignore = false;
@@ -143,7 +144,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
   // Taux : écart en points entre le début et la fin de la période
   const rateDelta = index.isRate && data?.points?.length > 1 ? data.points[data.points.length - 1][1] - data.points[0][1] : null;
   const up = (rateDelta ?? data?.change ?? 0) >= 0;
-  const color = up ? T.accent : T.red;
+  const color = up ? T.up : T.red;
   const periodInfo = PERIODS.find(p => p.id === period);
 
   return (
@@ -160,7 +161,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
               title={follow.on ? "Ne plus suivre" : "Suivre : ses actualités arriveront dans ton fil"}
               style={{ marginLeft: "auto", padding: "5px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
                 ...(follow.on ? { background: T.accentBg, border: `0.5px solid ${T.accentBorder}`, color: T.accent } : { background: T.accent, border: `0.5px solid ${T.accent}`, color: T.onAccent }) }}>
-              {follow.on ? "Suivi ✓" : "+ Suivre"}
+              {follow.on ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>Suivi <Icon name="check" size={13} /></span> : "+ Suivre"}
             </button>
           )}
         </div>
@@ -174,7 +175,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
             </div>
           ))}
         </div>}
-        {index.dividends && <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.6, background: T.accentBg, borderRadius: 10, padding: "10px 12px" }}>💡 {index.dividends}</div>}
+        {index.dividends && <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.6, background: T.accentBg, borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "flex-start", gap: 6 }}><Icon name="idea" size={14} style={{ marginTop: 2 }} /><span>{index.dividends}</span></div>}
       </div>
 
       {/* Graphique */}
@@ -202,11 +203,11 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
       {/* Société : chiffres clés (sur un an) et actualités */}
       {isCompany && facts && (facts.year || facts.ytd) && (
         <div style={card}>
-          <div style={sectionLabel}>📌 Chiffres clés</div>
+          <div style={sectionLabel}><Icon name="pin" size={13} />Chiffres clés</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
             {[
-              ["Depuis le 1er janvier", facts.ytd ? fmtChange(facts.ytd.change) : "—", facts.ytd?.change == null ? T.text : facts.ytd.change >= 0 ? T.accent : T.red],
-              ["Sur 1 an", facts.year ? fmtChange(facts.year.change) : "—", facts.year?.change == null ? T.text : facts.year.change >= 0 ? T.accent : T.red],
+              ["Depuis le 1er janvier", facts.ytd ? fmtChange(facts.ytd.change) : "—", facts.ytd?.change == null ? T.text : facts.ytd.change >= 0 ? T.up : T.red],
+              ["Sur 1 an", facts.year ? fmtChange(facts.year.change) : "—", facts.year?.change == null ? T.text : facts.year.change >= 0 ? T.up : T.red],
               ["Plus haut 1 an", facts.year ? fmtValue(facts.year.high) : "—", T.text],
               ["Plus bas 1 an", facts.year ? fmtValue(facts.year.low) : "—", T.text],
               ["Dividende 12 mois", facts.year?.dividends ? `${fmtPrice(facts.year.dividends)}${facts.year.currency ? ` ${facts.year.currency}` : ""}` : "Aucun", T.text],
@@ -223,14 +224,14 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
       )}
       {isCompany && (
         <div>
-          <div style={{ ...sectionLabel, margin: "4px 4px 8px" }}>📰 Actualités</div>
+          <div style={{ ...sectionLabel, margin: "4px 4px 8px" }}><Icon name="news" size={13} />Actualités</div>
           <NewsList query={`"${newsName(index.name)}"`} T={T} />
         </div>
       )}
 
       {/* Top 5 (indices seulement) */}
       {top5.length > 0 && <div style={card}>
-        <div style={sectionLabel}>🏆 Les poids lourds de l'indice</div>
+        <div style={sectionLabel}><Icon name="trophy" size={13} />Les poids lourds de l'indice</div>
         {top5.map((c, i) => {
           const row = top?.period === period ? top.rows[i] : null;
           const ch = row?.data?.change;
@@ -241,9 +242,9 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{c.name}</div>
                 <div style={{ fontSize: 11, color: T.textFaint }}>{c.symbol}</div>
               </div>
-              {row?.data && <Sparkline points={row.data.points} color={ch >= 0 ? T.accent : T.red} width={72} height={26} />}
+              {row?.data && <Sparkline points={row.data.points} color={ch >= 0 ? T.up : T.red} width={72} height={26} />}
               <div style={{ textAlign: "right", minWidth: 76 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: ch == null ? T.textFaint : ch >= 0 ? T.accent : T.red }}>{row ? fmtChange(ch) : "…"}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: ch == null ? T.textFaint : ch >= 0 ? T.up : T.red }}>{row ? fmtChange(ch) : "…"}</div>
                 <div style={{ fontSize: 10, color: T.textFaint }}>{periodInfo.long}</div>
               </div>
             </div>

@@ -2,10 +2,11 @@ import { useState } from "react";
 import { supabase } from "../supabase";
 import { RichText, TagField } from "./PostText";
 import { finalizeTags } from "../tags";
+import Icon from "./Icon";
 
 // Description de l'auteur sous un mouvement automatique (comme celle d'une course
 // Strava) : visible par tous, modifiable par l'auteur seul.
-// L'édition s'ouvre depuis le bouton « ✏️ Ajouter une description » de la ligne
+// L'édition s'ouvre depuis le bouton « Ajouter une description » de la ligne
 // d'actions (géré par le parent) ou depuis « Modifier » : « editing » et
 // « onEditingChange » sont contrôlés par le parent.
 export default function MovementNote({ activity, isMe, myId, T, onSaved, onAsset, onProfile, editing, onEditingChange }) {
@@ -21,7 +22,7 @@ export default function MovementNote({ activity, isMe, myId, T, onSaved, onAsset
     <div style={{ fontSize: 14, color: T.text, lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
       <RichText text={activity.note} tickers={activity.note_tags?.tickers} mentions={activity.note_tags?.mentions} T={T} onAsset={onAsset} onProfile={onProfile} />
       {isMe && (
-        <button onClick={() => onEditingChange(true)} style={{ marginLeft: 8, background: "none", border: "none", padding: 0, fontSize: 12, color: T.textFaint, cursor: "pointer", fontFamily: "inherit" }}>✏️ Modifier</button>
+        <button onClick={() => onEditingChange(true)} style={{ marginLeft: 8, background: "none", border: "none", padding: 0, fontSize: 12, color: T.textFaint, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 5, verticalAlign: "middle" }}><Icon name="edit" size={12} />Modifier</button>
       )}
     </div>
   );
