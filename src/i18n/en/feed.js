@@ -51,7 +51,7 @@ export default {
   "Découvrir": "Discover",
   "Mon fil": "My feed",
   "Mes valeurs": "My stocks",
-  "Sociétés et indices suivis": "Followed companies and indices",
+  "Sociétés et indices suivis": "Followed companies and indexes",
   "Les actions de ton portefeuille sont suivies automatiquement. Tu peux aussi suivre une société ou un indice depuis sa fiche.": "Stocks in your portfolio are followed automatically. You can also follow a company or an index from its page.",
   "Suivie automatiquement : elle est dans ton portefeuille": "Followed automatically: it's in your portfolio",
   "portefeuille": "portfolio",

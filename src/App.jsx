@@ -292,9 +292,9 @@ export default function App() {
     if (n.type === "moment") return goToTab("feed");
   }
 
-  // Ouvre le profil d'un membre ; son propre nom mène à l'onglet Profil
+  // Ouvre le profil d'un membre ; son propre nom mène à son portefeuille
   function viewProfile(userId) {
-    if (userId === session?.user.id) goToTab("profil");
+    if (userId === session?.user.id) goToTab("portfolio");
     else { setPublicUserId(userId); setCompareData(null); }
     window.scrollTo(0, 0);
   }
