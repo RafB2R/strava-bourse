@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { T as TLive } from "../theme";
 import Flag from "./Flag";
+import Icon from "./Icon";
 import { PERIODS, DEFAULT_PERIOD, TOP5_UPDATED, INDICES, fetchChart, fmtChange, periodPhrase } from "../indices";
 import { supabase } from "../supabase";
 import { isFollowingAsset, setFollowingAsset, newsName } from "../assetFollows";
@@ -94,7 +95,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
   const [chart, setChart] = useState(null); // { period, data }
   const [top, setTop] = useState(null); // { period, rows }
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: "1.25rem", marginBottom: 12 };
-  const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" };
+  const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 6 };
 
   useEffect(() => {
     let ignore = false;
@@ -160,7 +161,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
               title={follow.on ? "Ne plus suivre" : "Suivre : ses actualités arriveront dans ton fil"}
               style={{ marginLeft: "auto", padding: "5px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
                 ...(follow.on ? { background: T.accentBg, border: `0.5px solid ${T.accentBorder}`, color: T.accent } : { background: T.accent, border: `0.5px solid ${T.accent}`, color: T.onAccent }) }}>
-              {follow.on ? "Suivi ✓" : "+ Suivre"}
+              {follow.on ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>Suivi <Icon name="check" size={13} /></span> : "+ Suivre"}
             </button>
           )}
         </div>
@@ -174,7 +175,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
             </div>
           ))}
         </div>}
-        {index.dividends && <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.6, background: T.accentBg, borderRadius: 10, padding: "10px 12px" }}>💡 {index.dividends}</div>}
+        {index.dividends && <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.6, background: T.accentBg, borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "flex-start", gap: 6 }}><Icon name="idea" size={14} style={{ marginTop: 2 }} /><span>{index.dividends}</span></div>}
       </div>
 
       {/* Graphique */}
@@ -202,7 +203,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
       {/* Société : chiffres clés (sur un an) et actualités */}
       {isCompany && facts && (facts.year || facts.ytd) && (
         <div style={card}>
-          <div style={sectionLabel}>📌 Chiffres clés</div>
+          <div style={sectionLabel}><Icon name="pin" size={13} />Chiffres clés</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
             {[
               ["Depuis le 1er janvier", facts.ytd ? fmtChange(facts.ytd.change) : "—", facts.ytd?.change == null ? T.text : facts.ytd.change >= 0 ? T.up : T.red],
@@ -223,14 +224,14 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
       )}
       {isCompany && (
         <div>
-          <div style={{ ...sectionLabel, margin: "4px 4px 8px" }}>📰 Actualités</div>
+          <div style={{ ...sectionLabel, margin: "4px 4px 8px" }}><Icon name="news" size={13} />Actualités</div>
           <NewsList query={`"${newsName(index.name)}"`} T={T} />
         </div>
       )}
 
       {/* Top 5 (indices seulement) */}
       {top5.length > 0 && <div style={card}>
-        <div style={sectionLabel}>🏆 Les poids lourds de l'indice</div>
+        <div style={sectionLabel}><Icon name="trophy" size={13} />Les poids lourds de l'indice</div>
         {top5.map((c, i) => {
           const row = top?.period === period ? top.rows[i] : null;
           const ch = row?.data?.change;

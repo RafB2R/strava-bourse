@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import { avatarColors } from "../theme";
 import Avatar from "./Avatar";
+import Icon from "./Icon";
 
 // Encarts de la colonne de droite (ordinateur), sous les marchés : mes clubs, suggestions d'amis
 
 const box = T => ({ background: T.bgSecondary, border: `1px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: 16, marginBottom: 16 });
-const title = T => ({ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 12 });
+const title = T => ({ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 });
 const linkBtn = T => ({ width: "100%", background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "7px 10px", fontSize: 12, fontWeight: 600, color: T.text, cursor: "pointer", fontFamily: "inherit", marginTop: 12 });
 
 async function fetchMyClubs(userId) {
@@ -32,7 +33,7 @@ export function ClubsWidget({ session, T, onOpenClub, onAllClubs }) {
   if (clubs === null) return null;
   return (
     <div style={box(T)}>
-      <div style={title(T)}>👥 Vos clubs</div>
+      <div style={title(T)}><Icon name="users" size={14} />Vos clubs</div>
       {clubs.length === 0 ? (
         <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5 }}>Rejoins un club pour échanger avec des investisseurs qui partagent ta stratégie.</div>
       ) : (
@@ -76,7 +77,7 @@ export function FriendSuggestions({ session, T, onViewProfile, onFindFriends }) 
   if (list === null) return null;
   return (
     <div style={box(T)}>
-      <div style={title(T)}>🤝 Suggestions d'amis</div>
+      <div style={title(T)}><Icon name="handshake" size={14} />Suggestions d'amis</div>
       {list.length === 0 && (
         <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5 }}>Ajoute des amis ou rejoins des clubs : on te proposera des investisseurs de ton réseau.</div>
       )}
@@ -98,7 +99,7 @@ export function FriendSuggestions({ session, T, onViewProfile, onFindFriends }) 
               {reason && <div style={{ fontSize: 11, color: T.textFaint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{reason}</div>}
               <button onClick={() => sendRequest(s.id)} disabled={!!state}
                 style={{ marginTop: 6, background: state === "sent" ? "none" : T.accentBg, border: `0.5px solid ${T.accent}`, borderRadius: 8, padding: "4px 12px", fontSize: 12, fontWeight: 700, color: T.accent, cursor: state ? "default" : "pointer", fontFamily: "inherit" }}>
-                {state === "sent" ? "✓ Demande envoyée" : state === "sending" ? "…" : "+ Ajouter"}
+                {state === "sent" ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="check" size={13} />Demande envoyée</span> : state === "sending" ? "…" : "+ Ajouter"}
               </button>
             </div>
           </div>

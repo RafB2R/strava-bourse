@@ -5,6 +5,7 @@ import IndexDetail, { Sparkline } from "./IndexDetail";
 import EarningsCalendar from "./EarningsCalendar";
 import { useDetailView } from "../useDetailView";
 import Flag from "./Flag";
+import Icon from "./Icon";
 import { supabase } from "../supabase";
 import { fetchFollowedAssets } from "../assetFollows";
 
@@ -168,7 +169,7 @@ function IndexTile({ index, onOpen, T }) {
 export default function Marches({ T: TProp }) {
   const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
-  const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" };
+  const sectionLabel = { fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" };
   const [lastUpdate, setLastUpdate] = useState(new Date());
   // Fiche ouverte (indice, taux, devise…) ; au retour, on revient au même endroit de la page,
   // et une actualisation la rouvre (symbole gardé dans l'adresse)
@@ -226,12 +227,12 @@ export default function Marches({ T: TProp }) {
 
       {followed.length > 0 && (
         <div style={card}>
-          <div style={sectionLabel}>⭐ Suivis</div>
+          <div style={sectionLabel}><Icon name="star" size={13} />Suivis</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {followed.map(a => (
               <button key={a.symbol} onClick={() => openDetail(INDICES.find(i => i.symbol === a.symbol) || detailFor(a))} aria-label={`Voir la fiche ${a.name}`}
-                style={{ padding: "6px 12px", borderRadius: 999, border: `0.5px solid ${T.border}`, background: T.bgSubtle, fontSize: 12, fontWeight: 600, color: T.text, cursor: "pointer", fontFamily: "inherit" }}>
-                {a.type === "Indice" ? "📈" : "🏢"} {a.name}
+                style={{ padding: "6px 12px", borderRadius: 999, border: `0.5px solid ${T.border}`, background: T.bgSubtle, fontSize: 12, fontWeight: 600, color: T.text, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <Icon name={a.type === "Indice" ? "up" : "building"} size={13} />{a.name}
               </button>
             ))}
           </div>
@@ -240,7 +241,7 @@ export default function Marches({ T: TProp }) {
 
       {/* Indices */}
       <div style={card}>
-        <div style={sectionLabel}>📊 Indices <span style={{ textTransform: "none", letterSpacing: 0 }}>· touche un indice pour le découvrir</span></div>
+        <div style={sectionLabel}><Icon name="chart" size={13} />Indices <span style={{ textTransform: "none", letterSpacing: 0 }}>· touche un indice pour le découvrir</span></div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 8 }}>
           {INDICES.map(idx => <IndexTile key={idx.symbol} index={idx} T={T} onOpen={openDetail} />)}
         </div>
@@ -248,7 +249,7 @@ export default function Marches({ T: TProp }) {
 
       {/* Secteurs */}
       <div style={card}>
-        <div style={sectionLabel}>🏭 Secteurs S&P 500</div>
+        <div style={sectionLabel}><Icon name="factory" size={13} />Secteurs S&P 500</div>
         {loadingSecteurs && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>Chargement…</div>}
         {!loadingSecteurs && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -268,7 +269,7 @@ export default function Marches({ T: TProp }) {
 
       {/* Taux */}
       <div style={card}>
-        <div style={sectionLabel}>🏦 Taux obligataires</div>
+        <div style={sectionLabel}><Icon name="landmark" size={13} />Taux obligataires</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {TAUX.map(t => <QuoteCard key={t.symbol} item={t} T={T} onOpen={openDetail} />)}
           <RateTile country="fr" name="OAT 10 ans" rates={rates} T={T} onOpen={openDetail} />
@@ -278,7 +279,7 @@ export default function Marches({ T: TProp }) {
 
       {/* Forex */}
       <div style={card}>
-        <div style={sectionLabel}>💱 Devises</div>
+        <div style={sectionLabel}><Icon name="exchange" size={13} />Devises</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {FOREX.map(f => <QuoteCard key={f.symbol} item={f} T={T} onOpen={openDetail} />)}
         </div>
@@ -286,7 +287,7 @@ export default function Marches({ T: TProp }) {
 
       {/* Matières premières */}
       <div style={card}>
-        <div style={sectionLabel}>🥇 Matières premières</div>
+        <div style={sectionLabel}><Icon name="coins" size={13} />Matières premières</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {MATIERES.map(m => <QuoteCard key={m.symbol} item={m} T={T} onOpen={openDetail} />)}
         </div>
@@ -294,7 +295,7 @@ export default function Marches({ T: TProp }) {
 
       {/* Crypto */}
       <div style={card}>
-        <div style={sectionLabel}>🪙 Crypto</div>
+        <div style={sectionLabel}><Icon name="bitcoin" size={13} />Crypto</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {CRYPTO.map(c => <QuoteCard key={c.symbol} item={c} T={T} onOpen={openDetail} />)}
         </div>
@@ -302,7 +303,7 @@ export default function Marches({ T: TProp }) {
 
       {/* Résultats d'entreprises : calendrier du mois et liste, chaque entreprise ouvre sa fiche */}
       <div style={card}>
-        <div style={sectionLabel}>📅 Calendrier des résultats</div>
+        <div style={sectionLabel}><Icon name="calendar" size={13} />Calendrier des résultats</div>
         <EarningsCalendar earnings={earnings} loading={loadingEarnings} T={T}
           onOpen={e => openDetail(detailFor({ symbol: e.symbol, name: e.name, type: "Action" }))} />
       </div>
