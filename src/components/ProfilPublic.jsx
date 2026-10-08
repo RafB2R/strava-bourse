@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase, PUBLIC_PROFILE_COLUMNS } from "../supabase";
-import { T as TLive, avatarColors } from "../theme";
+import { T as TLive } from "../theme";
 import { getBadgeInfo } from "../badges";
 import Feed from "./Feed";
 import IndexDetail from "./IndexDetail";
@@ -9,6 +9,7 @@ import { detailFor } from "../indices";
 import { useDetailView } from "../useDetailView";
 import { fetchSuperInvestor, setFollowing, quarterLabel } from "../superInvestors";
 import NewsList from "./NewsList";
+import Avatar from "./Avatar";
 
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
 // Colonnes visibles par les autres membres : jamais prix_achat ni nombre_parts
@@ -28,6 +29,31 @@ function pieData(entries, group) {
   const rest = entries.slice(slices.length).reduce((sum, e) => sum + Number(e.percentage), 0);
   if (rest > 0) slices.push({ label: `Autres (${entries.length - slices.length})`, value: Math.round(rest * 10) / 10, color: "#888" });
   return slices;
+}
+
+// Courbe de performance du portefeuille, période au choix. L'historique n'existe pas
+// encore (comme sur le portefeuille privé) : la courbe se construira jour après jour.
+const PERF_PERIODS = [["1m", "1M", "sur 1 mois"], ["3m", "3M", "sur 3 mois"], ["ytd", "YTD", "depuis le 1er janvier"], ["1y", "1A", "sur 1 an"], ["5y", "5A", "sur 5 ans"], ["max", "Max", "depuis le début"]];
+function PerfHistory({ T, card }) {
+  const [period, setPeriod] = useState("1y");
+  const label = PERF_PERIODS.find(p => p[0] === period)[2];
+  return (
+    <div style={{ ...card, display: "flex", flexDirection: "column" }}>
+      <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Performance</div>
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 12 }}>
+        {PERF_PERIODS.map(([id, short]) => (
+          <button key={id} onClick={() => setPeriod(id)} aria-pressed={period === id}
+            style={{ padding: "4px 10px", borderRadius: 999, fontSize: 12, fontFamily: "inherit", cursor: "pointer", border: `0.5px solid ${period === id ? T.accent : T.border}`, background: period === id ? T.accentBg : "none", color: period === id ? T.accent : T.textMuted, fontWeight: period === id ? 700 : 400 }}>
+            {short}
+          </button>
+        ))}
+      </div>
+      <div style={{ flex: 1, minHeight: 110, borderRadius: 10, border: `0.5px dashed ${T.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: 12, textAlign: "center" }}>
+        <div style={{ fontSize: 13, color: T.textMuted }}>📈 Courbe en cours de construction</div>
+        <div style={{ fontSize: 11, color: T.textFaint }}>La performance {label} se construira jour après jour</div>
+      </div>
+    </div>
+  );
 }
 
 function PieChart({ data, T, count = data.length }) {
@@ -108,11 +134,6 @@ function PieChart({ data, T, count = data.length }) {
   );
 }
 
-function Avatar({ name, size = 60 }) {
-  const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
-  const [bg, color] = avatarColors(name);
-  return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size*0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
-}
 
 // Profil, positions (colonnes publiques), badges et lien d'amitié avec moi
 // (les mouvements sont affichés par le composant du fil, onglet Activité)
@@ -270,7 +291,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
         <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 14 }}>
           {superInv
             ? <div style={{ width: 56, height: 56, borderRadius: 16, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>{superInv.icon}</div>
-            : <Avatar name={profile.full_name} size={56} />}
+            : <Avatar userId={userId} name={profile.full_name} size={56} />}
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 2 }}>{profile.full_name}</div>
             <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 6 }}>
@@ -368,13 +389,18 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       {tab === "holdings" && (
         <div>
           {entries.length > 0 && (
-            <div style={card}>
-              <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Allocation</div>
-              <PieChart
-                T={T}
-                data={pieData(entries, !!superInv)}
-                count={entries.length}
-              />
+            // Courbe de performance puis répartition, côte à côte (l'une sous l'autre sur mobile)
+            <div className="holdings-top" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12, marginBottom: 12 }}>
+              <style>{`@media (max-width: 760px) { .holdings-top { grid-template-columns: minmax(0, 1fr) !important; } }`}</style>
+              <PerfHistory T={T} card={{ ...card, marginBottom: 0 }} />
+              <div style={{ ...card, marginBottom: 0 }}>
+                <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Allocation</div>
+                <PieChart
+                  T={T}
+                  data={pieData(entries, !!superInv)}
+                  count={entries.length}
+                />
+              </div>
             </div>
           )}
           <div style={card}>

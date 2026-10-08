@@ -9,17 +9,13 @@ import Feed from "./Feed";
 import { useDetailView } from "../useDetailView";
 import { supabase } from "../supabase";
 import { syncBadges } from "../badges";
-import { T as TLive, avatarColors } from "../theme";
+import { T as TLive } from "../theme";
+import Avatar from "./Avatar";
 
 const card = (T) => ({ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 });
 const inp = (T) => ({ width: "100%", padding: "10px 14px", fontSize: 14, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: T.text, fontFamily: "inherit", display: "block" });
 const btnSm = (T) => ({ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" });
 
-function Avatar({ name, size = 36 }) {
-  const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0,2) : "?";
-  const [bg, color] = avatarColors(name);
-  return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size*0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
-}
 
 
 const CATEGORIES = {
@@ -240,7 +236,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
             <div key={u.id} onClick={() => onViewProfile && onViewProfile(u.id)} style={{ ...card(T), display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
               {superIcons[u.id]
                 ? <div style={{ width: 40, height: 40, borderRadius: 12, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{superIcons[u.id]}</div>
-                : <Avatar name={u.full_name} size={40} />}
+                : <Avatar userId={u.id} name={u.full_name} size={40} />}
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}{superIcons[u.id] && <span style={{ marginLeft: 8, padding: "1px 7px", borderRadius: 999, fontSize: 10, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold }}>🏆 Super Investor</span>}</div>
                 <div style={{ fontSize: 12, color: T.textMuted }}>@{u.username}{u.city ? ` · ${u.city}` : ""}{u.strategy ? ` · ${u.strategy}` : ""}</div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import { avatarColors } from "../theme";
-import { Avatar } from "./Messages";
+import Avatar from "./Avatar";
 
 // Encarts de la colonne de droite (ordinateur), sous les marchés : mes clubs, suggestions d'amis
 
@@ -88,7 +88,7 @@ export function FriendSuggestions({ session, T, onViewProfile, onFindFriends }) 
         return (
           <div key={s.id} style={{ display: "flex", gap: 10, alignItems: "flex-start", paddingTop: i ? 10 : 0, marginTop: i ? 10 : 0, borderTop: i ? `0.5px solid ${T.border}` : "none" }}>
             <button onClick={() => onViewProfile(s.id)} aria-label={`Voir le profil de ${s.full_name}`} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
-              <Avatar name={s.full_name} size={38} />
+              <Avatar userId={s.id} name={s.full_name} size={38} />
             </button>
             <div style={{ flex: 1, minWidth: 0 }}>
               <button onClick={() => onViewProfile(s.id)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", textAlign: "left", fontSize: 13, fontWeight: 700, color: T.text, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>

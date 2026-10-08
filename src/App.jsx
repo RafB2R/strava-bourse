@@ -15,6 +15,7 @@ const Portfolio = lazy(() => import("./components/Portfolio"));
 const Feed = lazy(() => import("./components/Feed"));
 const Explore = lazy(() => import("./components/Explore"));
 const KYC = lazy(() => import("./components/KYC"));
+const Onboarding = lazy(() => import("./components/Onboarding"));
 const ProfilPublic = lazy(() => import("./components/ProfilPublic"));
 const Messages = lazy(() => import("./components/Messages"));
 const ChatDock = lazy(() => import("./components/ChatDock"));
@@ -168,6 +169,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [showAuth, setShowAuth] = useState(false);
   const [showKYC, setShowKYC] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [themeKey, setThemeKey] = useState(getThemeKey);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth > 900);
   const [zoom, setZoom] = useState(desktopZoom);
@@ -353,7 +355,9 @@ export default function App() {
 
   const content = (
     <Suspense fallback={<div style={{ color: T.textFaint, fontSize: 13, textAlign: "center", padding: "2rem" }}>Chargement…</div>}>
-      {showKYC && <KYC session={session} profile={profile} T={T} onComplete={() => { setShowKYC(false); loadProfile(); }} onSkip={() => setShowKYC(false)} />}
+      {showKYC && <KYC session={session} profile={profile} T={T} onComplete={() => { setShowKYC(false); setShowOnboarding(true); loadProfile(); }} onSkip={() => setShowKYC(false)} />}
+      {/* Après le questionnaire : premiers comptes, sociétés et indices à suivre */}
+      {showOnboarding && <Onboarding session={session} T={T} onDone={() => { setShowOnboarding(false); setNavKey(k => k + 1); }} />}
       {publicUserId ? (
         <ProfilPublic key={publicUserId} userId={publicUserId} session={session} T={T} onMessage={openMessage} onViewProfile={viewProfile} onBack={() => { setPublicUserId(null); setCompareData(null); }} onCompareData={setCompareData} />
       ) : (

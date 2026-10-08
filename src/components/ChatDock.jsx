@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { T as TLive } from "../theme";
-import { Avatar, Thread } from "./Messages";
+import { Thread } from "./Messages";
+import Avatar from "./Avatar";
 import { shortTime, fetchConversations, startConversation, fetchFriends } from "../messages";
 
 const BAR_WIDTH = 300;
@@ -110,7 +111,7 @@ export default function ChatDock({ session, T: TProp, open, onToggle, target, on
                   {friends?.length === 0 && <div style={{ fontSize: 12, color: T.textFaint, padding: 12 }}>Ajoute des amis depuis Explore pour pouvoir leur écrire.</div>}
                   {friends?.map(f => (
                     <button key={f.id} onClick={() => openConversation(f.id)} style={rowBtn}>
-                      <Avatar name={f.full_name} size={30} />
+                      <Avatar userId={f.id} name={f.full_name} size={30} />
                       <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{f.full_name}</span>
                     </button>
                   ))}
@@ -122,7 +123,7 @@ export default function ChatDock({ session, T: TProp, open, onToggle, target, on
                   {conversations?.map(c => (
                     <button key={c.conversation_id} onClick={() => { setActive(c); setMinimized(false); }}
                       style={{ ...rowBtn, background: active?.conversation_id === c.conversation_id ? T.accentBg : "none" }}>
-                      <Avatar name={c.other_name} size={36} />
+                      <Avatar userId={c.other_id} name={c.other_name} size={36} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 6 }}>
                           <span style={{ fontSize: 13, fontWeight: c.unread ? 800 : 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.other_name}</span>

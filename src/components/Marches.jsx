@@ -226,12 +226,12 @@ export default function Marches({ T: TProp }) {
 
       {followed.length > 0 && (
         <div style={card}>
-          <div style={sectionLabel}>⭐ Sociétés suivies</div>
+          <div style={sectionLabel}>⭐ Suivis</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {followed.map(a => (
-              <button key={a.symbol} onClick={() => openDetail(detailFor(a))} aria-label={`Voir la fiche ${a.name}`}
+              <button key={a.symbol} onClick={() => openDetail(INDICES.find(i => i.symbol === a.symbol) || detailFor(a))} aria-label={`Voir la fiche ${a.name}`}
                 style={{ padding: "6px 12px", borderRadius: 999, border: `0.5px solid ${T.border}`, background: T.bgSubtle, fontSize: 12, fontWeight: 600, color: T.text, cursor: "pointer", fontFamily: "inherit" }}>
-                🏢 {a.name}
+                {a.type === "Indice" ? "📈" : "🏢"} {a.name}
               </button>
             ))}
           </div>

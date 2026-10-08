@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { T as TLive } from "../theme";
 import Flag from "./Flag";
-import { PERIODS, DEFAULT_PERIOD, TOP5_UPDATED, fetchChart, fmtChange, periodPhrase } from "../indices";
+import { PERIODS, DEFAULT_PERIOD, TOP5_UPDATED, INDICES, fetchChart, fmtChange, periodPhrase } from "../indices";
 import { supabase } from "../supabase";
 import { isFollowingAsset, setFollowingAsset, newsName } from "../assetFollows";
 import NewsList from "./NewsList";
@@ -106,12 +106,15 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
 
   // Société (action) : on peut la suivre, et la fiche montre ses chiffres clés et ses actualités
   const isCompany = index.type === "Action";
+  // Un indice connu (CAC 40, S&P 500…) se suit aussi : ses actualités arrivent dans le fil
+  const isIndex = INDICES.some(i => i.symbol === index.symbol);
+  const canFollow = isCompany || isIndex;
   const [me, setMe] = useState(null);
   const [follow, setFollow] = useState({ symbol: null, on: false, busy: false, error: "" });
   const [keyFacts, setKeyFacts] = useState(null); // { symbol, year, ytd }
 
   useEffect(() => {
-    if (!isCompany) return;
+    if (!canFollow) return;
     let ignore = false;
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const id = session?.user?.id;
@@ -119,16 +122,16 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
       const on = await isFollowingAsset(id, index.symbol).catch(() => false);
       if (!ignore) { setMe(id); setFollow({ symbol: index.symbol, on, busy: false, error: "" }); }
     });
-    Promise.all([fetchChart(index.symbol, "1y"), fetchChart(index.symbol, "ytd")])
+    if (isCompany) Promise.all([fetchChart(index.symbol, "1y"), fetchChart(index.symbol, "ytd")])
       .then(([year, ytd]) => { if (!ignore) setKeyFacts({ symbol: index.symbol, year, ytd }); });
     return () => { ignore = true; };
-  }, [isCompany, index.symbol]);
+  }, [canFollow, isCompany, index.symbol]);
 
   async function toggleFollow() {
     if (!me || follow.busy) return;
     const next = !follow.on;
     setFollow(f => ({ ...f, on: next, busy: true, error: "" }));
-    const ok = await setFollowingAsset(me, { symbol: index.symbol, name: index.name, type: index.type }, next);
+    const ok = await setFollowingAsset(me, { symbol: index.symbol, name: index.name, type: isIndex ? "Indice" : index.type }, next);
     setFollow(f => ({ ...f, on: ok ? next : !next, busy: false, error: ok ? "" : "Impossible pour le moment." }));
   }
 
@@ -152,9 +155,9 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
           <div style={{ fontSize: 22, fontWeight: 800, color: T.text }}>{index.country && <Flag country={index.country} size={18} />}{index.name}</div>
           <div style={{ fontSize: 13, color: T.textFaint }}>{index.symbol.startsWith("RATE:") ? "BCE · moyenne mensuelle" : index.symbol}{index.type ? ` · ${index.type}` : ""}</div>
-          {isCompany && followReady && (
+          {canFollow && followReady && (
             <button onClick={toggleFollow} disabled={follow.busy} aria-pressed={follow.on}
-              title={follow.on ? "Ne plus suivre cette société" : "Suivre cette société : ses actualités arriveront dans ton fil"}
+              title={follow.on ? "Ne plus suivre" : "Suivre : ses actualités arriveront dans ton fil"}
               style={{ marginLeft: "auto", padding: "5px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
                 ...(follow.on ? { background: T.accentBg, border: `0.5px solid ${T.accentBorder}`, color: T.accent } : { background: T.accent, border: `0.5px solid ${T.accent}`, color: T.onAccent }) }}>
               {follow.on ? "Suivi ✓" : "+ Suivre"}

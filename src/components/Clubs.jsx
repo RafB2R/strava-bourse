@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabase";
 import { syncBadges } from "../badges";
-import { T, T as TLive, avatarColors } from "../theme";
+import { T, T as TLive } from "../theme";
 import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage, uploadImages, removeImages, MAX_FILES, FILE_ACCEPT_ATTR, checkFile, uploadFiles, removeFiles } from "../media";
 import { PostImages, ComposerPreviews, PostFiles, ComposerFiles } from "./PostMedia";
 import { RichText, TickerChips, TagField } from "./PostText";
@@ -9,6 +9,7 @@ import { finalizeTags } from "../tags";
 import IndexDetail from "./IndexDetail";
 import { detailFor } from "../indices";
 import { useDetailView } from "../useDetailView";
+import Avatar from "./Avatar";
 
 // Prévient les membres mentionnés dans un post ou une réponse de club
 async function notifyMentions(tags, myId, data) {
@@ -36,11 +37,6 @@ const btn = (T) => ({ background: T.accent, border: "none", borderRadius: 10, pa
 const btnSm = (T) => ({ background: "transparent", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" });
 const lbl = (T) => ({ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" });
 
-function Avatar({ name, size = 32 }) {
-  const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
-  const [bg, color] = avatarColors(name);
-  return <div style={{ width: size, height: size, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.33, fontWeight: 700, flexShrink: 0 }}>{initials}</div>;
-}
 
 function timeAgo(date) {
   const diff = (Date.now() - new Date(date)) / 1000;
@@ -97,7 +93,7 @@ function Post({ post, session, isMember, onReact, onDelete, onAsset, onProfile }
   return (
     <div style={{ ...card(T), marginBottom: 10 }}>
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-        <Avatar name={post.author?.full_name} size={34} />
+        <Avatar userId={post.user_id} name={post.author?.full_name} size={34} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{post.author?.full_name}</span>
@@ -133,7 +129,7 @@ function Post({ post, session, isMember, onReact, onDelete, onAsset, onProfile }
           {loadingReplies && <div style={{ fontSize: 12, color: T.textFaint, padding: "8px 0" }}>Chargement…</div>}
           {replies.map(reply => (
             <div key={reply.id} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-              <Avatar name={reply.author?.full_name} size={26} />
+              <Avatar userId={reply.user_id} name={reply.author?.full_name} size={26} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{reply.author?.full_name}</span>
@@ -149,7 +145,7 @@ function Post({ post, session, isMember, onReact, onDelete, onAsset, onProfile }
           ))}
           {isMember && (
             <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
-              <Avatar name={session.user.email} size={26} />
+              <Avatar userId={session.user.id} name={session.user.email} size={26} />
               <TagField as="input" style={{ ...inp(T), marginBottom: 0, flex: 1, fontSize: 12, padding: "7px 10px" }} placeholder="Répondre… ($ valeur, @ membre)"
                 value={replyInput} onValueChange={setReplyInput} tags={replyTags} onTagsChange={setReplyTags} onSubmit={sendReply} myId={session.user.id} T={T} />
               <button onClick={sendReply} disabled={sendingReply || !replyInput.trim()} style={{ ...btn(T), padding: "7px 14px", fontSize: 12, flexShrink: 0 }}>↵</button>
@@ -256,7 +252,7 @@ function ClubRanking({ clubId, session }) {
             <div style={{ fontSize: 16, minWidth: 28, textAlign: "center" }}>
               {rankIcon(i) || <span style={{ fontSize: 13, color: T.textFaint }}>{i + 1}</span>}
             </div>
-            <Avatar name={m.name} size={32} />
+            <Avatar userId={m.user_id} name={m.name} size={32} />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: m.isMe ? T.accent : T.text }}>
                 {m.name}{m.isMe && <span style={{ fontSize: 11, color: T.textFaint, marginLeft: 6 }}>· moi</span>}
