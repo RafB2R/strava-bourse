@@ -6,6 +6,7 @@ import { syncBadges } from "./badges";
 import { syncMoments } from "./moments";
 import { fetchUnreadTotal } from "./messages";
 import Notifications from "./components/Notifications";
+import Comparison from "./components/Comparison";
 
 // Écrans chargés à la demande pour alléger le bundle initial
 const Landing = lazy(() => import("./Landing"));
@@ -115,47 +116,14 @@ function MarketWidget({ T }) {
 }
 
 
-const fmtPerf = v => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
 
-function ComparisonRow({ label, mine, theirs, format, T }) {
-  const comparable = mine != null && theirs != null && mine !== theirs;
-  const meBetter = comparable && mine > theirs;
-  const theyBetter = comparable && theirs > mine;
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, padding: "8px 0", borderTop: `0.5px solid ${T.border}`, alignItems: "center" }}>
-      <div style={{ textAlign: "right", fontSize: 13, fontWeight: 700, color: meBetter ? T.accent : T.text }}>
-        {mine != null ? format(mine) : "—"}
-      </div>
-      <div style={{ textAlign: "center", fontSize: 10, color: T.textFaint, minWidth: 70 }}>{label}</div>
-      <div style={{ textAlign: "left", fontSize: 13, fontWeight: 700, color: theyBetter ? T.accent : T.text }}>
-        {theirs != null ? format(theirs) : "—"}
-      </div>
-    </div>
-  );
-}
-
-const COMPARISON_ROWS = [
-  { key: "perf", label: "Perf. totale", format: fmtPerf },
-  { key: "diversif", label: "Diversification", format: v => `${v}/100` },
-  { key: "streak", label: "Régularité", format: v => `${v} mois` },
-  { key: "badges", label: "Badges", format: v => `${v}` },
-];
-
-function ComparisonWidget({ data, T }) {
+// Comparaison avec le profil public ouvert (colonne de droite, sur ordinateur)
+function ComparisonWidget({ data, myId, T }) {
   if (!data) return null;
-  const { profile, mine, theirs } = data;
-
   return (
     <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: 16, marginBottom: 16 }}>
       <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>⚖️ Comparaison</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, marginBottom: 4 }}>
-        <div style={{ textAlign: "right", fontSize: 12, fontWeight: 700, color: T.text }}>Moi</div>
-        <div style={{ minWidth: 70 }} />
-        <div style={{ textAlign: "left", fontSize: 12, fontWeight: 700, color: T.text }}>{profile.full_name?.split(" ")[0]}</div>
-      </div>
-      {COMPARISON_ROWS.map(r => (
-        <ComparisonRow key={r.key} T={T} label={r.label} mine={mine?.[r.key]} theirs={theirs?.[r.key]} format={r.format} />
-      ))}
+      <Comparison key={data.userId} myId={myId} theirEntries={data.entries} theirName={data.profile.full_name?.split(" ")[0]} T={T} />
     </div>
   );
 }
@@ -425,7 +393,7 @@ export default function App() {
       {/* Droite */}
       <div style={{ width: 280, flexShrink: 0, padding: "24px 16px 72px", position: "sticky", top: 0, height: "calc(100vh / var(--verio-zoom, 1))", overflowY: "auto" }}>
         {publicUserId ? (
-          <ComparisonWidget data={compareData} T={T} />
+          <ComparisonWidget data={compareData} myId={session?.user.id} T={T} />
         ) : (
           <>
             <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: 16, marginBottom: 16, position: "relative", zIndex: 50 }}>

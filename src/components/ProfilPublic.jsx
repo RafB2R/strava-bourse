@@ -9,6 +9,7 @@ import { detailFor } from "../indices";
 import { useDetailView } from "../useDetailView";
 import { fetchSuperInvestor, setFollowing, quarterLabel } from "../superInvestors";
 import NewsList from "./NewsList";
+import Comparison from "./Comparison";
 import Avatar from "./Avatar";
 
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
@@ -158,25 +159,6 @@ async function fetchPublicProfile(userId, myId) {
   };
 }
 
-// Stats côte à côte (moi / ce membre) pour le widget de comparaison du desktop
-async function fetchCompareStats(myId, userId) {
-  const { data } = await supabase
-    .from("member_stats")
-    .select("id, perf, score_diversif, streak_mois, nb_badges")
-    .in("id", [myId, userId]);
-  if (!data) return null;
-  const toStats = row => row && {
-    perf: row.perf === null ? null : Number(row.perf),
-    diversif: Number(row.score_diversif),
-    streak: Number(row.streak_mois),
-    badges: Number(row.nb_badges),
-  };
-  return {
-    mine: toStats(data.find(d => d.id === myId)),
-    theirs: toStats(data.find(d => d.id === userId)),
-  };
-}
-
 export default function ProfilPublic({ userId, session, onBack, T: TProp, onCompareData, onMessage, onViewProfile }) {
   const T = TProp || TLive;
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 };
@@ -191,7 +173,9 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   const [resolving, setResolving] = useState(null);   // { id, error }
   const [isFriend, setIsFriend] = useState(false);
   const [isPending, setIsPending] = useState(false);
-  const [compareStats, setCompareStats] = useState(null);
+  // Sur mobile, la comparaison s'ouvre sous « ⚖️ Comparer » (sur ordinateur : colonne de droite)
+  const [isMobile] = useState(() => window.innerWidth <= 900);
+  const [showCompare, setShowCompare] = useState(false);
   const [superInv, setSuperInv] = useState(null);     // Super Investor (null pour un membre)
   const [followBusy, setFollowBusy] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
@@ -215,8 +199,6 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       setIsPending(r.relation === "pending");
       setSuperInv(r.superInv);
       setLoading(false);
-      // Pas de comparaison avec un Super Investor (ni performance, ni badges)
-      if (!r.superInv) fetchCompareStats(myId, userId).then(stats => { if (!ignore && stats) setCompareStats(stats); });
     });
     return () => { ignore = true; };
   }, [userId, myId]);
@@ -260,10 +242,8 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
 
   // Envoyer les données de comparaison vers App
   useEffect(() => {
-    if (profile && compareStats && onCompareData) {
-      onCompareData({ profile, ...compareStats });
-    }
-  }, [profile, compareStats, onCompareData]);
+    if (profile && !loading && onCompareData && userId !== myId) onCompareData({ profile, userId, entries });
+  }, [profile, loading, entries, userId, myId, onCompareData]);
 
   // Nettoyer à la fermeture
   useEffect(() => {
@@ -377,6 +357,20 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
         </div>
         )}
       </div>
+
+      {isMobile && userId !== myId && (
+        <div style={{ marginBottom: 12 }}>
+          <button onClick={() => setShowCompare(v => !v)} aria-expanded={showCompare}
+            style={{ ...btnSm, width: "100%", padding: "9px 12px", fontSize: 13, fontWeight: 600, ...(showCompare ? { borderColor: T.accent, color: T.accent, background: T.accentBg } : {}) }}>
+            ⚖️ {showCompare ? "Masquer la comparaison" : "Comparer avec moi"}
+          </button>
+          {showCompare && (
+            <div style={{ ...card, marginTop: 8 }}>
+              <Comparison myId={myId} theirEntries={entries} theirName={profile.full_name?.split(" ")[0]} T={T} />
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: `0.5px solid ${T.border}` }}>
         {[["holdings", "Holdings"], ["activite", "Activité"], superInv ? ["news", "Actualités"] : ["posts", "Posts"]].map(([id, label]) => (
