@@ -2,13 +2,14 @@ import Avatar from "./Avatar";
 import { RichText, TickerChips } from "./PostText";
 import { PostImages, PostFiles } from "./PostMedia";
 import Icon from "./Icon";
+import { t } from "../i18n";
 
 function timeAgo(date) {
   const diff = (Date.now() - new Date(date)) / 1000;
-  if (diff < 60) return "à l'instant";
-  if (diff < 3600) return `il y a ${Math.floor(diff / 60)} min`;
-  if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`;
-  return `il y a ${Math.floor(diff / 86400)} j`;
+  if (diff < 60) return t("à l'instant");
+  if (diff < 3600) return t("il y a {n} min", { n: Math.floor(diff / 60) });
+  if (diff < 86400) return t("il y a {n}h", { n: Math.floor(diff / 3600) });
+  return t("il y a {n} j", { n: Math.floor(diff / 86400) });
 }
 
 // Post d'un de mes clubs, affiché dans le fil : on le like ici (réaction 👍 du club),
@@ -30,7 +31,7 @@ export default function ClubFeedCard({ post, T, card, btnAct, onOpenClub, onAsse
           <div style={{ fontSize: 12, color: T.textFaint }}>{timeAgo(post.created_at)}</div>
         </div>
         {post.club && (
-          <button onClick={() => onOpenClub?.(post.club)} title={`Ouvrir le club ${post.club.name}`}
+          <button onClick={() => onOpenClub?.(post.club)} title={t("Ouvrir le club {name}", { name: post.club.name })}
             style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: "rgba(175,169,236,0.1)", color: T.purple, border: "none", cursor: "pointer", fontFamily: "inherit", maxWidth: 200, display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
             <Icon name="users" size={12} /><span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{post.club.name}</span>
           </button>
@@ -48,10 +49,10 @@ export default function ClubFeedCard({ post, T, card, btnAct, onOpenClub, onAsse
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <button onClick={onLike} style={{ ...btnAct, ...(liked ? { borderColor: T.accent, color: T.accent } : {}) }}>
-          <Icon name="like" size={14} />{liked ? "Liké" : "Like"}{likes.length > 0 ? ` · ${likes.length}` : ""}
+          <Icon name="like" size={14} />{liked ? t("Liké") : t("Like")}{likes.length > 0 ? ` · ${likes.length}` : ""}
         </button>
-        <button onClick={() => onOpenClub?.(post.club)} title="Lire et écrire les réponses dans le club" style={btnAct}>
-          <Icon name="comment" size={14} />{replies > 0 ? `${replies} réponse${replies > 1 ? "s" : ""}` : "Répondre"}
+        <button onClick={() => onOpenClub?.(post.club)} title={t("Lire et écrire les réponses dans le club")} style={btnAct}>
+          <Icon name="comment" size={14} />{replies > 0 ? (replies > 1 ? t("{n} réponses", { n: replies }) : t("{n} réponse", { n: replies })) : t("Répondre")}
         </button>
       </div>
     </div>

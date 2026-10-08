@@ -3,6 +3,7 @@ import { tagAtCaret, addTag, openHashtag } from "../tags";
 import { supabase } from "../supabase";
 import { searchAssets, fetchQuote } from "../attachments";
 import { fmtChange } from "../indices";
+import { t } from "../i18n";
 
 // Texte d'un post avec valeurs ($TTE.PA) et membres (@pseudo) identifiés, façon Blossom.
 // Seuls les tags choisis dans les suggestions (data.tickers / data.mentions) sont
@@ -27,7 +28,7 @@ export function RichText({ text, tickers = [], mentions = [], T, onAsset, onProf
       if (!/[\s(«"']/.test(before)) continue;
       parts.push(text.slice(last, start));
       parts.push(
-        <button key={start} onClick={() => openHashtag(match[3])} title={`Voir les posts #${match[3]}`}
+        <button key={start} onClick={() => openHashtag(match[3])} title={t("Voir les posts #{tag}", { tag: match[3] })}
           style={{ background: "none", border: "none", padding: 0, font: "inherit", fontWeight: 600, color: T.accent, cursor: "pointer" }}>
           #{match[3]}
         </button>
@@ -122,14 +123,14 @@ export function TagSuggestions({ tag, myId, T, onPick, onItems }) {
   }, [tag, myId, onItems]);
 
   if (!tag) return null;
-  const hint = tag.sign === "$" ? "Tape le nom ou le ticker d'une valeur (ex. $total, $CW8)…" : "Tape le pseudo ou le nom d'un membre…";
+  const hint = tag.sign === "$" ? t("Tape le nom ou le ticker d'une valeur (ex. $total, $CW8)…") : t("Tape le pseudo ou le nom d'un membre…");
   const ready = state.key === key;
   const waiting = tag.sign === "$" && tag.query.length < 2;
   return (
-    <div role="listbox" aria-label={tag.sign === "$" ? "Valeurs" : "Membres"}
+    <div role="listbox" aria-label={tag.sign === "$" ? t("Valeurs") : t("Membres")}
       style={{ marginTop: 6, border: `0.5px solid ${T.border}`, borderRadius: 10, background: T.bgCard, boxShadow: T.cardShadow, overflow: "hidden" }}>
-      {(waiting || !ready) && <div style={{ fontSize: 12, color: T.textFaint, padding: "8px 12px" }}>{waiting ? hint : "Recherche…"}</div>}
-      {ready && !waiting && state.items.length === 0 && <div style={{ fontSize: 12, color: T.textFaint, padding: "8px 12px" }}>Aucun résultat.</div>}
+      {(waiting || !ready) && <div style={{ fontSize: 12, color: T.textFaint, padding: "8px 12px" }}>{waiting ? hint : t("Recherche…")}</div>}
+      {ready && !waiting && state.items.length === 0 && <div style={{ fontSize: 12, color: T.textFaint, padding: "8px 12px" }}>{t("Aucun résultat.")}</div>}
       {ready && !waiting && state.items.map(item => (
         <button key={item.symbol || item.id} role="option" aria-selected="false"
           onMouseDown={e => e.preventDefault()} // garde le curseur dans la zone de texte

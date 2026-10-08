@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
+import { t, LOCALE } from "../i18n";
 
 // Articles de presse récents sur un sujet (Google Actualités, via /api/news).
 // Chaque article s'ouvre dans un nouvel onglet, sur le site du journal.
 const fmtDate = iso => {
   const d = new Date(iso);
   const days = Math.floor((Date.now() - d) / 86400e3);
-  if (days < 1) return "aujourd'hui";
-  if (days < 7) return `il y a ${days} j`;
-  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: days > 300 ? "numeric" : undefined });
+  if (days < 1) return t("aujourd'hui");
+  if (days < 7) return t("il y a {n} j", { n: days });
+  return d.toLocaleDateString(LOCALE, { day: "numeric", month: "short", year: days > 300 ? "numeric" : undefined });
 };
 
 export default function NewsList({ query, T }) {
@@ -23,9 +24,9 @@ export default function NewsList({ query, T }) {
 
   const card = { background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "4px 14px", marginBottom: 12 };
   const empty = text => <div style={{ ...card, textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>{text}</div>;
-  if (state.query !== query) return empty("Chargement des articles…");
-  if (state.error) return empty("Articles indisponibles pour le moment.");
-  if (state.items.length === 0) return empty("Aucun article récent.");
+  if (state.query !== query) return empty(t("Chargement des articles…"));
+  if (state.error) return empty(t("Articles indisponibles pour le moment."));
+  if (state.items.length === 0) return empty(t("Aucun article récent."));
   return (
     <div>
       <div style={card}>
@@ -37,7 +38,7 @@ export default function NewsList({ query, T }) {
           </a>
         ))}
       </div>
-      <div style={{ fontSize: 11, color: T.textFaint, textAlign: "center" }}>Articles récents via Google Actualités</div>
+      <div style={{ fontSize: 11, color: T.textFaint, textAlign: "center" }}>{t("Articles récents via Google Actualités")}</div>
     </div>
   );
 }
