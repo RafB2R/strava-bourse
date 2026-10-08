@@ -38,10 +38,11 @@ export function Sparkline({ points, color, width = 96, height = 32 }) {
 }
 
 // Courbe interactive : survol ou doigt pour lire la date et le cours
-function LineChart({ points, period, color, T, fmt = fmtPrice }) {
+// « base » : clôture de la veille (1J), en pointillé, pour lire la variation du jour
+function LineChart({ points, period, color, T, fmt = fmtPrice, base = null }) {
   const [hover, setHover] = useState(null);
   const W = 600, H = 220, padY = 12;
-  const ys = points.map(p => p[1]);
+  const ys = points.map(p => p[1]).concat(base != null ? [base] : []);
   const min = Math.min(...ys), max = Math.max(...ys), span = max - min || 1;
   const x = i => (i / (points.length - 1)) * W;
   const y = v => H - padY - ((v - min) / span) * (H - padY * 2);
@@ -73,12 +74,14 @@ function LineChart({ points, period, color, T, fmt = fmtPrice }) {
         </defs>
         <path d={area} fill={`url(#${gradId})`} />
         <path d={line} fill="none" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+        {base != null && <line x1="0" x2={W} y1={y(base)} y2={y(base)} stroke={T.textFaint} strokeWidth="1" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />}
         {h && <line x1={x(hover)} x2={x(hover)} y1="0" y2={H} stroke={T.borderStrong} strokeWidth="1" vectorEffect="non-scaling-stroke" />}
       </svg>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: T.textFaint, marginTop: 4 }}>
         <span>{fmtDate(points[0][0], period)}</span>
         <span>{fmtDate(points[points.length - 1][0], period)}</span>
       </div>
+      {base != null && <div style={{ fontSize: 11, color: T.textFaint, marginTop: 4 }}>{t("Pointillés : clôture de la veille ({v})", { v: fmt(base) })}</div>}
     </div>
   );
 }
@@ -91,6 +94,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = t("�
   const periods = index.periods ? PERIODS.filter(p => index.periods.includes(p.id)) : PERIODS;
   const firstPeriod = [initialPeriod, DEFAULT_PERIOD, periods[0]?.id].find(id => periods.some(p => p.id === id));
   const [period, setPeriod] = useState(firstPeriod);
+  const [company, setCompany] = useState(null); // poids lourd ouvert depuis la fiche de l'indice
   const top5 = index.top5 || [];
   const fmtValue = valueFormatter(index);
   const [chart, setChart] = useState(null); // { period, data }
@@ -148,6 +152,8 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = t("�
   const color = up ? T.up : T.red;
   const periodInfo = PERIODS.find(p => p.id === period);
 
+  if (company) return <IndexDetail index={company} T={T} backLabel={`← ${index.name}`} initialPeriod={period} onBack={() => setCompany(null)} />;
+
   return (
     <div>
       <button onClick={onBack} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13, padding: 0, marginBottom: 14, fontFamily: "inherit" }}>{backLabel}</button>
@@ -198,7 +204,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = t("�
         </div>
         {loading && <div style={{ height: 250, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: T.textFaint }}>{t("Chargement…")}</div>}
         {!loading && !data && <div style={{ height: 250, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: T.textFaint }}>{t("Données indisponibles pour le moment.")}</div>}
-        {!loading && data && data.points.length > 1 && <LineChart key={period} points={data.points} period={period} color={color} T={T} fmt={fmtValue} />}
+        {!loading && data && data.points.length > 1 && <LineChart key={period} points={data.points} period={period} color={color} T={T} fmt={fmtValue} base={period === "1d" ? data.previousClose ?? null : null} />}
       </div>
 
       {/* Société : chiffres clés (sur un an) et actualités */}
@@ -237,7 +243,8 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = t("�
           const row = top?.period === period ? top.rows[i] : null;
           const ch = row?.data?.change;
           return (
-            <div key={c.symbol} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}` }}>
+            <button key={c.symbol} onClick={() => { setCompany({ symbol: c.symbol, name: c.name, type: "Action" }); window.scrollTo(0, 0); }} aria-label={t("Ouvrir la fiche de {name}", { name: c.name })}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", width: "100%", background: "none", border: "none", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}`, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
               <div style={{ width: 26, height: 26, borderRadius: 8, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: T.textMuted, flexShrink: 0 }}>{i + 1}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{c.name}</div>
@@ -248,7 +255,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = t("�
                 <div style={{ fontSize: 13, fontWeight: 700, color: ch == null ? T.textFaint : ch >= 0 ? T.up : T.red }}>{row ? fmtChange(ch) : "…"}</div>
                 <div style={{ fontSize: 10, color: T.textFaint }}>{periodInfo.long}</div>
               </div>
-            </div>
+            </button>
           );
         })}
         <div style={{ fontSize: 11, color: T.textFaint, marginTop: 10 }}>{t("Liste indicative des plus gros poids de l'indice, mise à jour en {date}.", { date: TOP5_UPDATED })}</div>

@@ -85,3 +85,15 @@ export async function fetchCompanyNews(myId, { perAsset = 1, days = 3, assets = 
   }));
   return picks.flat();
 }
+
+// Rien choisi à suivre (ni Légende, ni société ou indice choisi soi-même, ni ami) :
+// l'app repropose alors l'écran « Remplis ton fil ». En cas d'erreur, on ne relance pas.
+export async function followsNothing(myId) {
+  const count = q => q.then(({ count: n, error }) => (error ? 1 : n || 0));
+  const counts = await Promise.all([
+    count(supabase.from("asset_follows").select("symbol", { count: "exact", head: true }).eq("user_id", myId).eq("active", true).eq("auto", false)),
+    count(supabase.from("super_investor_follows").select("investor_id", { count: "exact", head: true }).eq("user_id", myId)),
+    count(supabase.from("friendships").select("requester_id", { count: "exact", head: true }).or(`requester_id.eq.${myId},receiver_id.eq.${myId}`)),
+  ]).catch(() => [1]);
+  return counts.every(n => n === 0);
+}

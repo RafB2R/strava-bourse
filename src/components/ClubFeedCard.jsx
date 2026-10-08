@@ -48,7 +48,7 @@ export default function ClubFeedCard({ post, T, card, btnAct, onOpenClub, onAsse
       <PostFiles files={post.files} T={T} />
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <button onClick={onLike} style={{ ...btnAct, ...(liked ? { borderColor: T.accent, color: T.accent } : {}) }}>
+        <button onClick={onLike} style={{ ...btnAct, borderColor: liked ? T.accent : T.border, ...(liked ? { color: T.accent } : {}) }}>
           <Icon name="like" size={14} />{liked ? t("Liké") : t("Like")}{likes.length > 0 ? ` · ${likes.length}` : ""}
         </button>
         <button onClick={() => onOpenClub?.(post.club)} title={t("Lire et écrire les réponses dans le club")} style={btnAct}>

@@ -26,7 +26,7 @@ const RESPONSIVE_CSS = `
 // Icône de trait dans une pastille teintée (accent de la landing)
 function LpIcon({ name, size = 20, box = 40, style }) {
   return (
-    <div style={{ width: box, height: box, borderRadius: 12, background: "rgba(159,225,203,0.08)", border: "0.5px solid rgba(159,225,203,0.15)", color: "#9FE1CB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, ...style }}>
+    <div style={{ width: box, height: box, borderRadius: 12, background: "rgba(255,107,44,0.08)", border: "0.5px solid rgba(255,107,44,0.15)", color: "#FF6B2C", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, ...style }}>
       <Icon name={name} size={size} />
     </div>
   );
@@ -71,7 +71,7 @@ function Commitments({ className = "", style }) {
       <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 14 }}>{t("Nos engagements")}</div>
       {items.map(([icon, text]) => (
         <div key={text} style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 10 }}>
-          <Icon name={icon} size={16} style={{ color: "#9FE1CB", marginTop: 3 }} />
+          <Icon name={icon} size={16} style={{ color: "#FF6B2C", marginTop: 3 }} />
           <span style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>{text}</span>
         </div>
       ))}
@@ -89,11 +89,11 @@ function LandingFooter({ onPage }) {
   );
 }
 
-const dark = { background: "#111318", color: "#f0f0f0", fontFamily: "system-ui, -apple-system, sans-serif", minHeight: "100vh" };
+const dark = { background: "#0D0D0D", color: "#f0f0f0", fontFamily: "Outfit, system-ui, -apple-system, sans-serif", minHeight: "100vh" };
 const navStyle = { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "24px 48px" };
 
 function Logo({ onHome }) {
-  return <div onClick={onHome} style={{ fontSize: 20, fontWeight: 700, color: "#fff", letterSpacing: -0.5, cursor: "pointer" }}>ve<span style={{ color: "#9FE1CB" }}>rio</span></div>;
+  return <div onClick={onHome} style={{ fontSize: 20, fontWeight: 700, color: "#fff", letterSpacing: -0.5, cursor: "pointer" }}>ve<span style={{ color: "#FF6B2C" }}>rio</span></div>;
 }
 
 function Nav({ onStart, onPage, onHome }) {
@@ -103,7 +103,7 @@ function Nav({ onStart, onPage, onHome }) {
       <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
         <span className="lp-navlink" onClick={() => onPage("fonctionnalites")} style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer" }}>{t("Fonctionnalités")}</span>
         <span className="lp-navlink" onClick={() => onPage("communaute")} style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer" }}>{t("Communauté")}</span>
-        <button onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 600, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>{t("Commencer")}</button>
+        <button onClick={onStart} style={{ background: "#FF6B2C", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 600, color: "#0D0D0D", cursor: "pointer", fontFamily: "inherit" }}>{t("Commencer")}</button>
       </div>
     </nav>
   );
@@ -125,7 +125,7 @@ function Fonctionnalites({ onStart, onPage, onHome }) {
       <Nav onStart={onStart} onPage={onPage} onHome={onHome} />
       <div className="lp-pad lp-section" style={{ maxWidth: 700, margin: "0 auto", padding: "60px 48px 100px" }}>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>{t("Ce que Verio propose")}</div>
-        <h1 className="lp-h1-page" style={{ fontSize: 40, fontWeight: 700, letterSpacing: -1.5, color: "#fff", marginBottom: 12, lineHeight: 1.15 }}>{t("Tout ce dont tu as besoin")}<br /><span style={{ color: "#9FE1CB" }}>{t("pour investir mieux.")}</span></h1>
+        <h1 className="lp-h1-page" style={{ fontSize: 40, fontWeight: 700, letterSpacing: -1.5, color: "#fff", marginBottom: 12, lineHeight: 1.15 }}>{t("Tout ce dont tu as besoin")}<br /><span style={{ color: "#FF6B2C" }}>{t("pour investir mieux.")}</span></h1>
         <p style={{ fontSize: 15, color: "rgba(255,255,255,0.4)", marginBottom: 56, lineHeight: 1.7 }}>{t("Verio réunit dans une seule app tout ce qu'il faut pour suivre, comprendre et partager ton parcours d'investisseur.")}</p>
 
         <div className="lp-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -133,7 +133,7 @@ function Fonctionnalites({ onStart, onPage, onHome }) {
             <div key={f.title} className="lp-card" style={{ background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 24 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                 <LpIcon name={f.icon} size={18} box={36} />
-                <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: "rgba(159,225,203,0.08)", color: "#9FE1CB" }}>{f.tag}</span>
+                <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: "rgba(255,107,44,0.08)", color: "#FF6B2C" }}>{f.tag}</span>
               </div>
               <div style={{ fontSize: 14, fontWeight: 600, color: "#fff", marginBottom: 8 }}>{f.title}</div>
               <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", lineHeight: 1.6 }}>{f.desc}</div>
@@ -142,7 +142,7 @@ function Fonctionnalites({ onStart, onPage, onHome }) {
         </div>
 
         <div style={{ marginTop: 56, textAlign: "center" }}>
-          <button className="lp-cta" onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>{t("Commencer gratuitement")}</button>
+          <button className="lp-cta" onClick={onStart} style={{ background: "#FF6B2C", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0D0D0D", cursor: "pointer", fontFamily: "inherit" }}>{t("Commencer gratuitement")}</button>
         </div>
       </div>
       <LandingFooter onPage={onPage} />
@@ -174,7 +174,7 @@ function Communaute({ onStart, onPage, onHome }) {
       <Nav onStart={onStart} onPage={onPage} onHome={onHome} />
       <div className="lp-pad lp-section" style={{ maxWidth: 700, margin: "0 auto", padding: "60px 48px 100px" }}>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 16 }}>{t("Notre état d'esprit")}</div>
-        <h1 className="lp-h1-page" style={{ fontSize: 40, fontWeight: 700, letterSpacing: -1.5, color: "#fff", marginBottom: 12, lineHeight: 1.15 }}>{t("Un club,")}<br /><span style={{ color: "#9FE1CB" }}>{t("pas une app.")}</span></h1>
+        <h1 className="lp-h1-page" style={{ fontSize: 40, fontWeight: 700, letterSpacing: -1.5, color: "#fff", marginBottom: 12, lineHeight: 1.15 }}>{t("Un club,")}<br /><span style={{ color: "#FF6B2C" }}>{t("pas une app.")}</span></h1>
         <p style={{ fontSize: 15, color: "rgba(255,255,255,0.4)", marginBottom: 56, lineHeight: 1.7 }}>{t("Verio c'est l'opposé de WallStreetBets. Pas de hype, pas de spéculation. Une communauté d'investisseurs qui pensent long terme et s'entraident.")}</p>
 
         <div className="lp-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 56 }}>
@@ -201,7 +201,7 @@ function Communaute({ onStart, onPage, onHome }) {
         <Commitments style={{ marginBottom: 48 }} />
 
         <div style={{ textAlign: "center" }}>
-          <button className="lp-cta" onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>{t("Commencer gratuitement")}</button>
+          <button className="lp-cta" onClick={onStart} style={{ background: "#FF6B2C", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0D0D0D", cursor: "pointer", fontFamily: "inherit" }}>{t("Commencer gratuitement")}</button>
         </div>
       </div>
       <LandingFooter onPage={onPage} />
@@ -223,19 +223,19 @@ export default function Landing({ onStart }) {
         <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
           <span className="lp-navlink" onClick={() => setPage("fonctionnalites")} style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer" }}>{t("Fonctionnalités")}</span>
           <span className="lp-navlink" onClick={() => setPage("communaute")} style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer" }}>{t("Communauté")}</span>
-          <button onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 600, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>{t("Commencer")}</button>
+          <button onClick={onStart} style={{ background: "#FF6B2C", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 600, color: "#0D0D0D", cursor: "pointer", fontFamily: "inherit" }}>{t("Commencer")}</button>
         </div>
       </nav>
 
       <div className="lp-pad lp-hero" style={{ textAlign: "center", padding: "100px 48px 80px", maxWidth: 700, margin: "0 auto" }}>
         <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 28 }}>{t("Pour les investisseurs long terme")}</div>
         <h1 className="lp-h1" style={{ fontSize: 56, fontWeight: 700, lineHeight: 1.1, letterSpacing: -2, color: "#fff", marginBottom: 12 }}>
-          {t("Construis ton patrimoine.")}<br /><span style={{ color: "#9FE1CB" }}>{t("Entouré.")}</span>
+          {t("Construis ton patrimoine.")}<br /><span style={{ color: "#FF6B2C" }}>{t("Entouré.")}</span>
         </h1>
         <div className="lp-lead" style={{ fontSize: 18, color: "rgba(255,255,255,0.4)", marginBottom: 12 }}>{t("Investir, c'est un parcours. Pas une course.")}</div>
         <div style={{ fontSize: 15, color: "rgba(255,255,255,0.25)", marginBottom: 48 }}>{t("Suis ton portefeuille, partage ton parcours et progresse avec tes proches et une communauté d'investisseurs qui pensent long terme.")}</div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-          <button className="lp-cta" onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>{t("Commencer gratuitement")}</button>
+          <button className="lp-cta" onClick={onStart} style={{ background: "#FF6B2C", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0D0D0D", cursor: "pointer", fontFamily: "inherit" }}>{t("Commencer gratuitement")}</button>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.2)" }}>{t("Gratuit · Aucune carte requise")}</div>
         </div>
       </div>
@@ -245,7 +245,7 @@ export default function Landing({ onStart }) {
       <div className="lp-pad lp-section" style={{ padding: "80px 48px", maxWidth: 700, margin: "0 auto" }}>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 20 }}>{t("Notre conviction")}</div>
         <h2 className="lp-h2" style={{ fontSize: 36, fontWeight: 700, letterSpacing: -1, color: "#fff", lineHeight: 1.2, marginBottom: 16 }}>
-          {t("Conçu pour les investisseurs,")}<br />{t("pas les")} <span style={{ color: "#9FE1CB" }}>traders.</span>
+          {t("Conçu pour les investisseurs,")}<br />{t("pas les")} <span style={{ color: "#FF6B2C" }}>traders.</span>
         </h2>
         <p style={{ fontSize: 16, color: "rgba(255,255,255,0.4)", lineHeight: 1.8, maxWidth: 500 }}>
           {t("La plupart des apps se concentrent sur les achats et les ventes. Verio se concentre sur la construction d'un patrimoine durable. Parce qu'investir avec succès, ce n'est pas timer le marché — c'est rester investi.")}
@@ -273,7 +273,7 @@ export default function Landing({ onStart }) {
         <h2 className="lp-h2" style={{ fontSize: 32, fontWeight: 700, letterSpacing: -1, color: "#fff", marginBottom: 24, lineHeight: 1.2 }}>{t("Investir n'est pas une compétition.")}<br />{t("C'est une habitude.")}</h2>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 40 }}>
           {[["Discipline", true], ["Patience", true], ["Régularité", true], ["Sans hype", false], ["Progression", true], ["Sans spéculation", false], ["Communauté", true], ["Long terme", true]].map(([w, hi]) => (
-            <span key={w} style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 500, border: `0.5px solid ${hi ? "rgba(159,225,203,0.3)" : "rgba(255,255,255,0.1)"}`, color: hi ? "#9FE1CB" : "rgba(255,255,255,0.45)", background: hi ? "rgba(159,225,203,0.06)" : "none" }}>{t(w)}</span>
+            <span key={w} style={{ padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 500, border: `0.5px solid ${hi ? "rgba(255,107,44,0.3)" : "rgba(255,255,255,0.1)"}`, color: hi ? "#FF6B2C" : "rgba(255,255,255,0.45)", background: hi ? "rgba(255,107,44,0.06)" : "none" }}>{t(w)}</span>
           ))}
         </div>
         <p style={{ fontSize: 14, color: "rgba(255,255,255,0.25)", lineHeight: 1.7 }}>{t("Que tu investisses 100 € ou 100 000 €, tout le monde commence de la même façon. Un investissement à la fois.")}</p>
@@ -284,7 +284,7 @@ export default function Landing({ onStart }) {
       <div className="lp-pad lp-section" style={{ textAlign: "center", padding: "80px 48px 100px" }}>
         <h2 className="lp-h2" style={{ fontSize: 36, fontWeight: 700, letterSpacing: -1, color: "#fff", marginBottom: 12 }}>{t("Prêt à investir autrement ?")}</h2>
         <p style={{ fontSize: 15, color: "rgba(255,255,255,0.35)", marginBottom: 36 }}>{t("Verio démarre : rejoins les premiers membres et invite tes proches.")}</p>
-        <button className="lp-cta" onClick={onStart} style={{ background: "#9FE1CB", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0F6E56", cursor: "pointer", fontFamily: "inherit" }}>{t("Commencer gratuitement")}</button>
+        <button className="lp-cta" onClick={onStart} style={{ background: "#FF6B2C", border: "none", borderRadius: 10, padding: "15px 36px", fontSize: 15, fontWeight: 700, color: "#0D0D0D", cursor: "pointer", fontFamily: "inherit" }}>{t("Commencer gratuitement")}</button>
       </div>
 
       <LandingFooter onPage={setPage} />

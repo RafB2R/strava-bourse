@@ -8,15 +8,16 @@ export const SHARE_FORMATS = {
 };
 
 const C = {
-  bgTop: "#111318",
-  bgBottom: "#0B2A22",
+  bgTop: "#0D0D0D",
+  bgBottom: "#24140C",
   text: "#FFFFFF",
   muted: "rgba(255,255,255,0.68)",
   faint: "rgba(255,255,255,0.45)",
   tile: "rgba(255,255,255,0.06)",
   tileBorder: "rgba(255,255,255,0.10)",
   track: "rgba(255,255,255,0.10)",
-  accent: "#9FE1CB",
+  accent: "#FF6B2C",
+  up: "#3DD68C",
   red: "#F08080",
 };
 const FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
@@ -68,7 +69,7 @@ export function drawShareCard(canvas, data, { format = "story", showPerf = true,
   g.addColorStop(1, C.bgBottom);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = "rgba(159,225,203,0.08)";
+  ctx.fillStyle = "rgba(255,107,44,0.08)";
   ctx.beginPath();
   ctx.arc(W - 40, story ? 260 : 120, story ? 360 : 260, 0, Math.PI * 2);
   ctx.fill();
@@ -85,7 +86,7 @@ export function drawShareCard(canvas, data, { format = "story", showPerf = true,
   font(ctx, story ? 30 : 26, 600);
   const tag = t("MON PORTEFEUILLE");
   const tagW = ctx.measureText(tag).width + 40;
-  ctx.fillStyle = "rgba(159,225,203,0.14)";
+  ctx.fillStyle = "rgba(255,107,44,0.14)";
   roundRect(ctx, W - pad - tagW, y - (story ? 42 : 36), tagW, story ? 56 : 48, 28);
   ctx.fill();
   ctx.fillStyle = C.accent;
@@ -111,7 +112,7 @@ export function drawShareCard(canvas, data, { format = "story", showPerf = true,
     ctx.fillText(t("Performance totale"), pad, y);
     y += story ? 170 : 124;
     font(ctx, story ? 180 : 132, 800);
-    ctx.fillStyle = data.perf >= 0 ? C.accent : C.red;
+    ctx.fillStyle = data.perf >= 0 ? C.up : C.red;
     ctx.fillText(fmtPct(data.perf), pad, y);
   }
 
@@ -210,7 +211,7 @@ export function drawShareCard(canvas, data, { format = "story", showPerf = true,
         ctx.fillStyle = C.tile;
         roundRect(ctx, pad, ry + 12, inner, rowH - 20, 18);
         ctx.fill();
-        ctx.fillStyle = "rgba(159,225,203,0.16)";
+        ctx.fillStyle = "rgba(255,107,44,0.16)";
         roundRect(ctx, pad, ry + 12, Math.max(barW, 36), rowH - 20, 18);
         ctx.fill();
         const textY = ry + rowH / 2 + (story ? 12 : 10);

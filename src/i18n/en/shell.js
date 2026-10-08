@@ -296,4 +296,6 @@ export default {
   "Pas encore de compte ?": "Don't have an account?",
   "Déjà un compte ?": "Already have an account?",
   "S'inscrire": "Sign up",
+  "Choisis des Légendes, sociétés et indices à suivre": "Pick Legends, companies and indices to follow",
+  "Choisir": "Choose",
 };
