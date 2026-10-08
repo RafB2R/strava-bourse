@@ -35,22 +35,25 @@ async function createActivity(userId, type, data) {
   await supabase.from("activities").insert({ user_id: userId, type, data });
 }
 
+// Cours d'une position à partir de son ISIN, via nos propres routes (/api/search puis
+// /api/quote) : l'ancien passage par un proxy public (corsproxy.io) ne répondait plus.
+// Parmi les cotations trouvées, on préfère une place européenne (cours en euros).
+const EURO_PLACES = /\.(PA|DE|F|AS|MI|BR|MC|LS|VI|HE|IR)$/;
+const ISIN_FORMAT = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
+// Message quand le cours n'est pas trouvé : format d'ISIN, ou valeur inconnue
+const isinHint = isin => (ISIN_FORMAT.test(String(isin || "").trim().toUpperCase())
+  ? "⚠️ Cours introuvable pour cet ISIN"
+  : "⚠️ Format d'ISIN invalide : 2 lettres puis 10 caractères (ex. FR0000120271)");
 async function fetchPrixViaISIN(isin) {
+  const code = String(isin || "").trim().toUpperCase();
+  if (!ISIN_FORMAT.test(code)) return null;
   try {
-    const proxy = "https://corsproxy.io/?";
-    const searchUrl = `https://query2.finance.yahoo.com/v1/finance/search?q=${isin}&quotesCount=1&newsCount=0&listsCount=0`;
-    const res = await fetch(proxy + encodeURIComponent(searchUrl));
-    const data = await res.json();
-    const quotes = data?.quotes;
-    if (!quotes || quotes.length === 0) return null;
-    const symbol = quotes[0].symbol;
-    const nom = quotes[0].longname || quotes[0].shortname || symbol;
-    const quoteUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
-    const res2 = await fetch(proxy + encodeURIComponent(quoteUrl));
-    const data2 = await res2.json();
-    const prix = data2?.chart?.result?.[0]?.meta?.regularMarketPrice;
-    if (!prix) return null;
-    return { prix: Math.round(prix * 100) / 100, nom, symbol };
+    const found = await (await fetch(`/api/search?q=${encodeURIComponent(code)}`)).json();
+    if (!Array.isArray(found) || found.length === 0) return null;
+    const best = found.find(r => EURO_PLACES.test(r.symbol)) || found[0];
+    const quote = await (await fetch(`/api/quote?symbol=${encodeURIComponent(best.symbol)}`)).json();
+    if (!(quote?.price > 0)) return null;
+    return { prix: Math.round(quote.price * 100) / 100, nom: best.name, symbol: best.symbol, devise: quote.currency || "EUR", type: best.type };
   } catch { return null; }
 }
 
@@ -493,7 +496,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>ISIN</label>
             <input style={inp} placeholder="ex: LU1681043599" value={form.isin} onChange={e => setForm({ ...form, isin: e.target.value })} />
             {form.isin && (
-              <button type="button" onClick={async () => { setFetchingPrice(true); setPriceHint(null); const r = await fetchPrixViaISIN(form.isin); if (r) { setForm(f => ({ ...f, prix_actuel: r.prix.toString(), label: f.label || r.nom })); setPriceHint(`✅ ${r.nom} — ${r.prix} €`); } else { setPriceHint("⚠️ Prix introuvable"); } setFetchingPrice(false); }} style={{ ...btnSm, width: "100%", textAlign: "center", marginBottom: 10, borderColor: T.accent, color: T.accent }}>
+              <button type="button" onClick={async () => { setFetchingPrice(true); setPriceHint(null); const r = await fetchPrixViaISIN(form.isin); if (r) { setForm(f => ({ ...f, prix_actuel: r.prix.toString(), label: f.label || r.nom, vehicule: f.vehicule === "ETF" && r.type === "Action" ? "Action directe" : f.vehicule })); setPriceHint(`✅ ${r.nom} — ${r.prix} ${r.devise === "EUR" ? "€" : r.devise}`); } else { setPriceHint(isinHint(form.isin)); } setFetchingPrice(false); }} style={{ ...btnSm, width: "100%", textAlign: "center", marginBottom: 10, borderColor: T.accent, color: T.accent }}>
                 {fetchingPrice ? "Recherche…" : "🔍 Récupérer le prix via ISIN"}
               </button>
             )}
@@ -545,7 +548,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>ISIN</label>
             <input style={inp} value={editForm.isin} onChange={e => setEditForm({ ...editForm, isin: e.target.value })} />
             {editForm.isin && (
-              <button type="button" onClick={async () => { setEditFetchingPrice(true); setEditPriceHint(null); const r = await fetchPrixViaISIN(editForm.isin); if (r) { setEditForm(f => ({ ...f, prix_actuel: r.prix.toString() })); setEditPriceHint(`✅ ${r.nom} — ${r.prix} €`); } else { setEditPriceHint("⚠️ Prix introuvable"); } setEditFetchingPrice(false); }} style={{ ...btnSm, width: "100%", textAlign: "center", marginBottom: 10, borderColor: T.accent, color: T.accent }}>
+              <button type="button" onClick={async () => { setEditFetchingPrice(true); setEditPriceHint(null); const r = await fetchPrixViaISIN(editForm.isin); if (r) { setEditForm(f => ({ ...f, prix_actuel: r.prix.toString() })); setEditPriceHint(`✅ ${r.nom} — ${r.prix} ${r.devise === "EUR" ? "€" : r.devise}`); } else { setEditPriceHint(isinHint(editForm.isin)); } setEditFetchingPrice(false); }} style={{ ...btnSm, width: "100%", textAlign: "center", marginBottom: 10, borderColor: T.accent, color: T.accent }}>
                 {editFetchingPrice ? "Recherche…" : "🔍 Mettre à jour le prix via ISIN"}
               </button>
             )}
