@@ -351,7 +351,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
   async function addEntry() {
     setError("");
     if (!form.label.trim()) return setError(t("Donne un nom à cette position."));
-    if (!form.percentage || isNaN(form.percentage)) return setError(t("Entre un pourcentage valide."));
+    if (entries.length && (!form.percentage || isNaN(form.percentage))) return setError(t("Entre un pourcentage valide."));
     // Toujours 100 % : la première position fait 100 %, les suivantes prennent leur
     // poids et les autres s'ajustent en gardant leurs proportions
     const newPct = entries.length ? Number(form.percentage) : 100;
@@ -523,7 +523,10 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
               {EXPOSITIONS.map(v => <option key={v} value={v} style={{ background: T.bgSecondary }}>{t(v)}</option>)}
             </select>
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("% du portefeuille")}</label>
-            <input style={inp} placeholder={t("ex: {example}", { example: "30" })} type="number" value={form.percentage} onChange={e => setForm({ ...form, percentage: e.target.value })} />
+            {/* Première position : 100 % d'office, rien à saisir */}
+            {entries.length
+              ? <input style={inp} placeholder={t("ex: {example}", { example: "30" })} type="number" min="0" max="100" value={form.percentage} onChange={e => setForm({ ...form, percentage: e.target.value })} />
+              : <div style={{ ...inp, color: T.textMuted }}>{t("100 % (première position)")}</div>}
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Nombre de parts")}</label>
             <input style={inp} placeholder={t("ex: {example}", { example: "12.5" })} type="number" value={form.nombre_parts} onChange={e => setForm({ ...form, nombre_parts: e.target.value })} />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>

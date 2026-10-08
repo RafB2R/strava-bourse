@@ -348,4 +348,5 @@ export default {
   "> 1 000 000 €": "> €1,000,000",
   "Fonds actifs": "Active funds",
   "Immobilier (SCPI)": "Real estate (SCPI)",
+  "100 % (première position)": "100% (first position)",
 };
