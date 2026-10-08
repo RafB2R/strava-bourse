@@ -203,7 +203,7 @@ function NewsFeedCard({ item, T, card, onProfile, onAsset, like, onLike, btnAct,
         {article.source && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 4 }}>{article.source}</div>}
       </a>
       <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-        <button onClick={onLike} style={{ ...btnAct, ...(like.mine ? { borderColor: T.accent, color: T.accent } : {}) }}>
+        <button onClick={onLike} style={{ ...btnAct, borderColor: like.mine ? T.accent : T.border, ...(like.mine ? { color: T.accent } : {}) }}>
           <Icon name="like" size={14} />{like.mine ? t("Liké") : t("Like")}{like.count > 0 ? ` · ${like.count}` : ""}
         </button>
         <button onClick={onToggleComments} style={btnAct}><Icon name="comment" size={14} />{commentCount > 0 ? commentCount : t("Commenter")}</button>
@@ -770,7 +770,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
     <div>
       {/* Encadré publier */}
       {!embedded && <div
-        style={{ ...card, marginBottom: 16, ...(dragOver ? { borderColor: T.accent, background: T.accentBg } : {}) }}
+        style={{ ...card, marginBottom: 16, borderColor: dragOver ? T.accent : T.border, ...(dragOver ? { background: T.accentBg } : {}) }}
         onDragOver={e => { if ([...e.dataTransfer.types].includes("Files")) { e.preventDefault(); setDragOver(true); } }}
         onDragLeave={() => setDragOver(false)}
         onDrop={e => { e.preventDefault(); setDragOver(false); addImages(e.dataTransfer.files); }}
@@ -998,7 +998,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
             )}
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-              <button onClick={() => toggleLike(activity)} style={{ ...btnAct, ...(like.mine ? { borderColor: T.accent, color: T.accent } : {}) }}>
+              <button onClick={() => toggleLike(activity)} style={{ ...btnAct, borderColor: like.mine ? T.accent : T.border, ...(like.mine ? { color: T.accent } : {}) }}>
                 <Icon name="like" size={14} />{like.mine ? t("Liké") : t("Like")}{like.count > 0 ? ` · ${like.count}` : ""}
               </button>
               <button onClick={() => toggleComment(activity.id)} style={btnAct}>

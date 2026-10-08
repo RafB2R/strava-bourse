@@ -363,7 +363,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       {isMobile && userId !== myId && (
         <div style={{ marginBottom: 12 }}>
           <button onClick={() => setShowCompare(v => !v)} aria-expanded={showCompare}
-            style={{ ...btnSm, width: "100%", padding: "9px 12px", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, ...(showCompare ? { borderColor: T.accent, color: T.accent, background: T.accentBg } : {}) }}>
+            style={{ ...btnSm, width: "100%", padding: "9px 12px", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, borderColor: showCompare ? T.accent : T.border, ...(showCompare ? { color: T.accent, background: T.accentBg } : {}) }}>
             <Icon name="scale" size={14} />{showCompare ? t("Masquer la comparaison") : t("Comparer avec moi")}
           </button>
           {showCompare && (
@@ -375,7 +375,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       )}
 
       <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: `0.5px solid ${T.border}` }}>
-        {[["holdings", "Holdings"], ["activite", "Activité"], superInv ? ["news", "Actualités"] : ["posts", "Posts"]].map(([id, label]) => (
+        {[["holdings", "Portefeuille"], ["activite", "Activité"], superInv ? ["news", "Actualités"] : ["posts", "Posts"]].map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} style={{ flex: 1, padding: "10px 4px", fontSize: 13, fontWeight: tab === id ? 600 : 400, background: "none", border: "none", borderBottom: `2px solid ${tab === id ? T.accent : "transparent"}`, color: tab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
             {t(label)}
           </button>

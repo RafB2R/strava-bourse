@@ -2,7 +2,7 @@ export const config = { runtime: 'edge' };
 
 // Historique de cours (Yahoo Finance) pour un indice ou une action.
 // GET /api/chart?symbol=^FCHI&period=5y
-// → { symbol, currency, price, points: [[timestamp_ms, cours], ...], change, annualized, high, low }
+// → { symbol, currency, price, points: [[timestamp_ms, cours], ...], change, annualized, high, low, previousClose (1J) }
 // Sur 1 an, aussi les dividendes versés : dividends (par action, 12 mois) et dividendYield (%)
 
 // Pas de temps et durée de cache selon la période
@@ -39,6 +39,8 @@ export function summarizeChart(json, period) {
   const annualized = years >= 0.95 && base > 0 && last > 0 ? (Math.pow(last / base, 1 / years) - 1) * 100 : null;
   const closesOnly = points.map(p => p[1]);
   const out = { currency: meta.currency || null, price: last, points, change, annualized, high: Math.max(...closesOnly), low: Math.min(...closesOnly) };
+  // Sur une journée : clôture de la veille, tracée en pointillé (la courbe part de l'ouverture)
+  if (period === '1d' && base) out.previousClose = base;
   const divs = Object.values(result.events?.dividends || {}).map(d => Number(d.amount)).filter(a => a > 0);
   if (period === '1y') {
     out.dividends = divs.length ? divs.reduce((a, b) => a + b, 0) : 0;

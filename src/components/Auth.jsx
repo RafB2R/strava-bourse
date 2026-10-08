@@ -105,7 +105,7 @@ export default function Auth({ T: TProp }) {
               <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Prénom et nom")}</label>
               <input style={inp(T)} placeholder={t("Raphaël Dupont")} value={fullName} onChange={e => setFullName(e.target.value)} />
               <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Nom d'utilisateur")}</label>
-              <input style={{ ...inp(T), marginBottom: status ? 4 : 12, ...(status?.ok === false ? { borderColor: T.red } : status?.ok ? { borderColor: T.accent } : {}) }}
+              <input style={{ ...inp(T), marginBottom: status ? 4 : 12, borderColor: status?.ok === false ? T.red : status?.ok ? T.accent : T.borderStrong }}
                 placeholder="rafb2r" value={username} autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={21}
                 aria-invalid={status?.ok === false} aria-describedby="username-status"
                 onChange={e => setUsername(e.target.value.replace(/\s/g, ""))} />

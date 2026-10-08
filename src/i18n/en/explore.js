@@ -262,4 +262,6 @@ export default {
   "Tout le mois": "Whole month",
   "Aucune publication suivie ce mois-ci": "No tracked releases this month",
   "BPA estimé": "Est. EPS",
+  "Ouvrir la fiche de {name}": "Open {name}",
+  "Pointillés : clôture de la veille ({v})": "Dotted line: previous close ({v})",
 };
