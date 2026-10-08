@@ -1,4 +1,4 @@
-import { avatarColors } from "../theme";
+import Avatar from "./Avatar";
 import { RichText, TickerChips } from "./PostText";
 import { PostImages, PostFiles } from "./PostMedia";
 
@@ -10,17 +10,17 @@ function timeAgo(date) {
   return `il y a ${Math.floor(diff / 86400)} j`;
 }
 
-// Post d'un de mes clubs, affiché dans le fil. Les réactions et réponses se font
-// dans le club (bouton « Ouvrir dans le club »).
-export default function ClubFeedCard({ post, T, card, btnAct, onOpenClub, onAsset, onProfile }) {
+// Post d'un de mes clubs, affiché dans le fil : on le like ici (réaction 👍 du club),
+// les réponses se lisent et s'écrivent dans le club.
+export default function ClubFeedCard({ post, T, card, btnAct, onOpenClub, onAsset, onProfile, myId, onLike }) {
   const name = post.author?.full_name;
-  const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
-  const [bg, color] = avatarColors(name);
   const replies = post.reply_count || 0;
+  const likes = (post.reactions || []).filter(r => r.type === "👍");
+  const liked = likes.some(r => r.user_id === myId);
   return (
     <div style={card}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-        <div style={{ width: 36, height: 36, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{initials}</div>
+        <Avatar userId={post.user_id} name={name} size={36} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: T.text, cursor: "pointer" }} onClick={() => onProfile?.(post.user_id)}>
             {name}
@@ -46,8 +46,11 @@ export default function ClubFeedCard({ post, T, card, btnAct, onOpenClub, onAsse
       <PostFiles files={post.files} T={T} />
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <button onClick={() => onOpenClub?.(post.club)} style={btnAct}>
-          💬 {replies > 0 ? `${replies} réponse${replies > 1 ? "s" : ""} · ` : ""}Ouvrir dans le club ›
+        <button onClick={onLike} style={{ ...btnAct, ...(liked ? { borderColor: T.accent, color: T.accent } : {}) }}>
+          👍 {liked ? "Liké" : "Like"}{likes.length > 0 ? ` · ${likes.length}` : ""}
+        </button>
+        <button onClick={() => onOpenClub?.(post.club)} title="Lire et écrire les réponses dans le club" style={btnAct}>
+          💬 {replies > 0 ? `${replies} réponse${replies > 1 ? "s" : ""}` : "Répondre"}
         </button>
       </div>
     </div>
