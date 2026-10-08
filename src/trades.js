@@ -44,7 +44,6 @@ export const TRADE_TYPES = ["new_position", "renforcement", "allegement", "vente
 // c'est sortir de l'argent : le reste fait toujours 100 % du portefeuille).
 // others : [{ id, percentage }] → [{ id, percentage }] dont la somme vaut « target »
 // (arrondi au dixième, l'écart d'arrondi est porté par la plus grosse ligne).
-export const FULL = 99.5; // au-delà, le portefeuille est considéré comme réparti à 100 %
 export function rescale(others, target) {
   const sum = others.reduce((s, e) => s + Number(e.percentage), 0);
   if (!others.length || sum <= 0) return [];
