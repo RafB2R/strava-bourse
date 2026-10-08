@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { mediaUrl, fileUrl, fileExt, formatSize } from "../media";
 import { POLL_MAX_OPTIONS, POLL_OPTION_MAX_LENGTH, POLL_DURATIONS, isValidPoll, pollRemaining } from "../polls";
+import Icon from "./Icon";
 
 // Images d'un post : 1 en grand, 2 côte à côte, 3-4 en grille. Clic → plein écran.
 // « compact » : version messagerie (sans marge, coins plus petits) ; img.url remplace l'adresse publique
@@ -45,7 +46,7 @@ function Lightbox({ images, index, onIndex, onClose }) {
     <div role="dialog" aria-modal="true" onClick={onClose}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.88)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <img src={images[index].url} alt="" onClick={e => e.stopPropagation()} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 6 }} />
-      <button onClick={onClose} aria-label="Fermer" style={{ ...nav, top: 16, right: 16, transform: "none" }}>✕</button>
+      <button onClick={onClose} aria-label="Fermer" style={{ ...nav, top: 16, right: 16, transform: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Icon name="close" size={20} /></button>
       {n > 1 && <>
         <button onClick={e => { e.stopPropagation(); onIndex((index - 1 + n) % n); }} aria-label="Image précédente" style={{ ...nav, left: 12 }}>‹</button>
         <button onClick={e => { e.stopPropagation(); onIndex((index + 1) % n); }} aria-label="Image suivante" style={{ ...nav, right: 12 }}>›</button>
@@ -64,14 +65,16 @@ export function ComposerPreviews({ items, onRemove, T }) {
         <div key={it.preview} style={{ position: "relative", width: 84, height: 84, borderRadius: 10, overflow: "hidden", border: `0.5px solid ${T.border}`, background: T.bgSubtle }}>
           <img src={it.preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
           <button onClick={() => onRemove(i)} aria-label="Retirer l'image"
-            style={{ position: "absolute", top: 4, right: 4, width: 22, height: 22, borderRadius: 999, border: "none", background: "rgba(0,0,0,0.65)", color: "#fff", fontSize: 11, cursor: "pointer", lineHeight: 1 }}>✕</button>
+            style={{ position: "absolute", top: 4, right: 4, width: 22, height: 22, borderRadius: 999, border: "none", background: "rgba(0,0,0,0.65)", color: "#fff", fontSize: 11, cursor: "pointer", lineHeight: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0 }}><Icon name="close" size={12} /></button>
         </div>
       ))}
     </div>
   );
 }
 
-const FILE_ICONS = { pdf: "📕", xls: "📗", xlsx: "📗", csv: "📗", doc: "📘", docx: "📘", ppt: "📙", pptx: "📙", txt: "📄" };
+// Couleur de l'icône de fichier selon le type (PDF rouge, tableur vert, Word bleu, PowerPoint orange)
+const FILE_COLORS = { pdf: "red", xls: "up", xlsx: "up", csv: "up", doc: "blue", docx: "blue", ppt: "orange", pptx: "orange" };
+const FileIcon = ({ ext, T, size }) => <Icon name="file" size={size} style={{ color: T[FILE_COLORS[ext]] || T.textMuted }} />;
 
 // Fichiers joints d'un post : nom, taille, ouverture (PDF) ou téléchargement
 // « urls » (messagerie) : adresses signées fournies par l'appelant, à la place des adresses publiques
@@ -85,7 +88,7 @@ export function PostFiles({ files, T, urls = null, compact = false }) {
         return (
           <a key={f.path} href={f.url} target="_blank" rel="noopener noreferrer"
             style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, border: `0.5px solid ${T.border}`, background: T.bgSubtle, textDecoration: "none", minWidth: 0 }}>
-            <span style={{ fontSize: 22 }}>{FILE_ICONS[ext] || "📄"}</span>
+            <FileIcon ext={ext} T={T} size={22} />
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name || `Fichier .${ext}`}</span>
               <span style={{ display: "block", fontSize: 11, color: T.textFaint }}>{ext.toUpperCase()}{f.size ? ` · ${formatSize(f.size)}` : ""}</span>
@@ -105,10 +108,10 @@ export function ComposerFiles({ files, onRemove, T }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
       {files.map((f, i) => (
         <div key={`${f.name}-${i}`} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 8, border: `0.5px solid ${T.border}`, background: T.bgSubtle, minWidth: 0 }}>
-          <span>{FILE_ICONS[fileExt(f.name)] || "📄"}</span>
+          <FileIcon ext={fileExt(f.name)} T={T} size={16} />
           <span style={{ flex: 1, minWidth: 0, fontSize: 12, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
           <span style={{ fontSize: 11, color: T.textFaint }}>{formatSize(f.size)}</span>
-          <button onClick={() => onRemove(i)} aria-label={`Retirer ${f.name}`} style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12 }}>✕</button>
+          <button onClick={() => onRemove(i)} aria-label={`Retirer ${f.name}`} style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, display: "inline-flex", alignItems: "center" }}><Icon name="close" size={12} /></button>
         </div>
       ))}
     </div>
@@ -121,14 +124,14 @@ export function PollEditor({ options, onOptions, days, onDays, onRemove, T }) {
   return (
     <div style={{ marginTop: 8, padding: 10, borderRadius: 10, border: `0.5px solid ${T.border}`, background: T.bgSubtle }}>
       <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
-        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: T.textMuted }}>📊 Sondage <span style={{ fontWeight: 400 }}>· la question est le texte du post</span></span>
-        <button onClick={onRemove} aria-label="Retirer le sondage" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12 }}>✕</button>
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: T.textMuted, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="chart" size={14} />Sondage <span style={{ fontWeight: 400 }}>· la question est le texte du post</span></span>
+        <button onClick={onRemove} aria-label="Retirer le sondage" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, display: "inline-flex", alignItems: "center" }}><Icon name="close" size={12} /></button>
       </div>
       {options.map((o, i) => (
         <div key={i} style={{ display: "flex", gap: 6, marginBottom: 6 }}>
           <input value={o} maxLength={POLL_OPTION_MAX_LENGTH} placeholder={`Choix ${i + 1}${i >= 2 ? " (facultatif)" : ""}`} aria-label={`Choix ${i + 1}`}
             onChange={e => onOptions(options.map((x, j) => (j === i ? e.target.value : x)))} style={input} />
-          {i >= 2 && <button onClick={() => onOptions(options.filter((_, j) => j !== i))} aria-label={`Retirer le choix ${i + 1}`} style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12 }}>✕</button>}
+          {i >= 2 && <button onClick={() => onOptions(options.filter((_, j) => j !== i))} aria-label={`Retirer le choix ${i + 1}`} style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, display: "inline-flex", alignItems: "center" }}><Icon name="close" size={12} /></button>}
         </div>
       ))}
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -183,7 +186,7 @@ export function PollView({ poll, counts, myVote, isAuthor, onVote, T }) {
             <div key={i} style={{ position: "relative", borderRadius: 8, overflow: "hidden", background: T.bgSubtle, border: `0.5px solid ${myVote === i ? T.accent : T.border}` }}>
               <div style={{ position: "absolute", inset: 0, width: `${pct}%`, background: lead || myVote === i ? T.accentBg : "rgba(128,128,128,0.12)" }} />
               <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", fontSize: 13 }}>
-                <span style={{ flex: 1, color: T.text, fontWeight: lead ? 700 : 500 }}>{label}{myVote === i && <span style={{ color: T.accent }}> ✓</span>}</span>
+                <span style={{ flex: 1, color: T.text, fontWeight: lead ? 700 : 500 }}>{label}{myVote === i && <span style={{ color: T.accent, marginLeft: 5 }}><Icon name="check" size={14} /></span>}</span>
                 <span style={{ color: T.text, fontWeight: 700 }}>{pct} %</span>
               </div>
             </div>

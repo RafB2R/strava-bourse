@@ -1,6 +1,7 @@
 import Avatar from "./Avatar";
 import { RichText, TickerChips } from "./PostText";
 import { PostImages, PostFiles } from "./PostMedia";
+import Icon from "./Icon";
 
 function timeAgo(date) {
   const diff = (Date.now() - new Date(date)) / 1000;
@@ -30,8 +31,8 @@ export default function ClubFeedCard({ post, T, card, btnAct, onOpenClub, onAsse
         </div>
         {post.club && (
           <button onClick={() => onOpenClub?.(post.club)} title={`Ouvrir le club ${post.club.name}`}
-            style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: "rgba(175,169,236,0.1)", color: T.purple, border: "none", cursor: "pointer", fontFamily: "inherit", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            👥 {post.club.name}
+            style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: "rgba(175,169,236,0.1)", color: T.purple, border: "none", cursor: "pointer", fontFamily: "inherit", maxWidth: 200, display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
+            <Icon name="users" size={12} /><span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{post.club.name}</span>
           </button>
         )}
       </div>
@@ -47,10 +48,10 @@ export default function ClubFeedCard({ post, T, card, btnAct, onOpenClub, onAsse
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <button onClick={onLike} style={{ ...btnAct, ...(liked ? { borderColor: T.accent, color: T.accent } : {}) }}>
-          👍 {liked ? "Liké" : "Like"}{likes.length > 0 ? ` · ${likes.length}` : ""}
+          <Icon name="like" size={14} />{liked ? "Liké" : "Like"}{likes.length > 0 ? ` · ${likes.length}` : ""}
         </button>
         <button onClick={() => onOpenClub?.(post.club)} title="Lire et écrire les réponses dans le club" style={btnAct}>
-          💬 {replies > 0 ? `${replies} réponse${replies > 1 ? "s" : ""}` : "Répondre"}
+          <Icon name="comment" size={14} />{replies > 0 ? `${replies} réponse${replies > 1 ? "s" : ""}` : "Répondre"}
         </button>
       </div>
     </div>
