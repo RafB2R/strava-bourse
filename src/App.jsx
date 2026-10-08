@@ -9,6 +9,7 @@ import Notifications from "./components/Notifications";
 import Comparison from "./components/Comparison";
 import Icon from "./components/Icon";
 import { t, LANG } from "./i18n";
+import { followsNothing } from "./assetFollows";
 
 // Écrans chargés à la demande pour alléger le bundle initial
 const Landing = lazy(() => import("./Landing"));
@@ -140,6 +141,8 @@ export default function App() {
   const [showAuth, setShowAuth] = useState(false);
   const [showKYC, setShowKYC] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  // Compte sans aucun suivi : bandeau qui repropose « Remplis ton fil » (comme le questionnaire)
+  const [emptyFeed, setEmptyFeed] = useState(false);
   const [themeKey, setThemeKey] = useState(getThemeKey);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth > 900);
   const [zoom, setZoom] = useState(desktopZoom);
@@ -253,6 +256,7 @@ export default function App() {
     supabase.rpc("set_my_lang", { p_lang: LANG }).then(() => {}, () => {});
     const { data } = await supabase.rpc("get_my_profile").maybeSingle();
     setProfile(data);
+    if (data?.kyc_complete && data.id) followsNothing(data.id).then(setEmptyFeed, () => {});
     setLoading(false);
   }
 
@@ -323,13 +327,24 @@ export default function App() {
         {t("Commencer →")}
       </button>
     </div>
+  ) : emptyFeed && !showOnboarding ? (
+    <div style={{ background: T.accentBg, borderBottom: `1px solid ${T.border}`, padding: "10px 24px", display: "flex", alignItems: "center", gap: 12 }}>
+      <Icon name="sparkles" size={18} style={{ color: T.accent }} />
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: T.accent }}>{t("Remplis ton fil")}</div>
+        <div style={{ fontSize: 12, color: T.textMuted }}>{t("Choisis des Légendes, sociétés et indices à suivre")}</div>
+      </div>
+      <button onClick={() => setShowOnboarding(true)} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>
+        {t("Choisir")}
+      </button>
+    </div>
   ) : null;
 
   const content = (
     <Suspense fallback={<div style={{ color: T.textFaint, fontSize: 13, textAlign: "center", padding: "2rem" }}>{t("Chargement…")}</div>}>
       {showKYC && <KYC session={session} profile={profile} T={T} onComplete={() => { setShowKYC(false); setShowOnboarding(true); loadProfile(); }} onSkip={() => setShowKYC(false)} />}
       {/* Après le questionnaire : premiers comptes, sociétés et indices à suivre */}
-      {showOnboarding && <Onboarding session={session} T={T} onDone={() => { setShowOnboarding(false); setNavKey(k => k + 1); }} />}
+      {showOnboarding && <Onboarding session={session} T={T} onDone={() => { setShowOnboarding(false); setNavKey(k => k + 1); if (session) followsNothing(session.user.id).then(setEmptyFeed, () => {}); }} />}
       {publicUserId ? (
         <ProfilPublic key={publicUserId} userId={publicUserId} session={session} T={T} onMessage={openMessage} onViewProfile={viewProfile} onBack={() => { setPublicUserId(null); setCompareData(null); }} onCompareData={setCompareData} />
       ) : (
