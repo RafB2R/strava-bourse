@@ -8,6 +8,8 @@ import { SHOW_PLUS } from "../features";
 import { fetchMyIncome, incomeStats, incomeTypeFor, fmtYield, fetchDividendInfo, dividendForecast } from "../income";
 import ShareCard from "./ShareCard";
 import IndexDetail from "./IndexDetail";
+import Icon from "./Icon";
+import { RefreshCw } from "lucide-react";
 import { resolveAsset } from "../attachments";
 import { detailFor } from "../indices";
 import { useDetailView } from "../useDetailView";
@@ -43,8 +45,8 @@ const EURO_PLACES = /\.(PA|DE|F|AS|MI|BR|MC|LS|VI|HE|IR)$/;
 const ISIN_FORMAT = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/;
 // Message quand le cours n'est pas trouvé : format d'ISIN, ou valeur inconnue
 const isinHint = isin => (ISIN_FORMAT.test(String(isin || "").trim().toUpperCase())
-  ? "⚠️ Cours introuvable pour cet ISIN"
-  : "⚠️ Format d'ISIN invalide : 2 lettres puis 10 caractères (ex. FR0000120271)");
+  ? "Cours introuvable pour cet ISIN"
+  : "Format d'ISIN invalide : 2 lettres puis 10 caractères (ex. FR0000120271)");
 async function fetchPrixViaISIN(isin) {
   const code = String(isin || "").trim().toUpperCase();
   if (!ISIN_FORMAT.test(code)) return null;
@@ -68,7 +70,7 @@ async function fetchMyEntries() {
 function HistoryPlaceholder({ T }) {
   return (
     <div style={{ height: 90, borderRadius: 10, border: `0.5px dashed ${T.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, marginBottom: 10 }}>
-      <div style={{ fontSize: 13, color: T.textMuted }}>📈 Historique disponible bientôt</div>
+      <div style={{ fontSize: 13, color: T.textMuted, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="up" size={14} />Historique disponible bientôt</div>
       <div style={{ fontSize: 11, color: T.textFaint }}>La courbe se construira jour après jour</div>
     </div>
   );
@@ -100,7 +102,7 @@ function DividendDonut({ payers, total, T }) {
 }
 
 function DividendForecast({ forecast, hasIsin, T, card }) {
-  const title = <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>💰 Prévision de dividendes</div>;
+  const title = <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 6 }}><Icon name="coins" size={13} />Prévision de dividendes</div>;
   const note = { fontSize: 12, color: T.textFaint, lineHeight: 1.5 };
   if (!hasIsin) return (
     <div style={card}>{title}<div style={note}>Ajoute l'ISIN de tes positions pour estimer les dividendes que ton portefeuille te verse chaque année.</div></div>
@@ -152,7 +154,7 @@ function IncomeSection({ entry, stats, form, T, btnSm, onChange, onAdd, onDelete
   const inp = { padding: "7px 10px", fontSize: 13, borderRadius: 8, border: `0.5px solid ${T.input.border}`, background: T.input.background, color: T.input.color, fontFamily: "inherit", minWidth: 0 };
   return (
     <div style={{ marginTop: 10, paddingTop: 10, borderTop: `0.5px solid ${T.border}` }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: T.text, marginBottom: 6 }}>💰 {kind}</div>
+      <div style={{ fontSize: 12, fontWeight: 600, color: T.text, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}><Icon name="coins" size={14} />{kind}</div>
       {stats?.total12 > 0 && (
         <>
           <div style={line}><span>Reçu sur 12 mois</span><span style={{ color: T.text, fontWeight: 500 }}>{formatEur2(stats.total12)}</span></div>
@@ -165,7 +167,7 @@ function IncomeSection({ entry, stats, form, T, btnSm, onChange, onAdd, onDelete
         <div key={i.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0", fontSize: 12, color: T.textMuted }}>
           <span style={{ flex: 1 }}>{new Date(i.received_at).toLocaleDateString("fr-FR")}</span>
           <span style={{ color: T.text, fontWeight: 500 }}>{formatEur2(i.amount)}</span>
-          <button onClick={() => onDelete(i.id)} title="Supprimer ce versement" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, padding: 0 }}>✕</button>
+          <button onClick={() => onDelete(i.id)} title="Supprimer ce versement" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, padding: 0, display: "inline-flex" }}><Icon name="close" size={13} /></button>
         </div>
       ))}
       {list.length > 5 && <div style={{ fontSize: 11, color: T.textFaint }}>+ {list.length - 5} versement{list.length - 5 > 1 ? "s" : ""} plus ancien{list.length - 5 > 1 ? "s" : ""}</div>}
@@ -175,7 +177,7 @@ function IncomeSection({ entry, stats, form, T, btnSm, onChange, onAdd, onDelete
         <button onClick={onAdd} style={{ ...btnSm, borderColor: T.accent, color: T.accent }}>+ {kind === "Coupons" ? "Coupon" : "Dividende"}</button>
       </div>
       {form.error && <div style={{ fontSize: 12, color: T.red, marginTop: 6 }}>{form.error}</div>}
-      <div style={{ fontSize: 11, color: T.textFaint, marginTop: 6 }}>🔒 Le montant reste privé : le fil indique seulement « a reçu un {kind === "Coupons" ? "coupon" : "dividende"} ».</div>
+      <div style={{ fontSize: 11, color: T.textFaint, marginTop: 6 }}><Icon name="lock" size={12} style={{ marginRight: 4 }} />Le montant reste privé : le fil indique seulement « a reçu un {kind === "Coupons" ? "coupon" : "dividende"} ».</div>
     </div>
   );
 }
@@ -422,12 +424,12 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
           <div style={{ fontSize: 13, color: T.textMuted }}>Valeur du portefeuille</div>
           <div style={{ display: "flex", gap: 6 }}>
           {entries.length > 0 && (
-            <button onClick={() => setSharing(true)} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>
-              📤 Partager
+            <button onClick={() => setSharing(true)} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 5 }}>
+              <Icon name="share" size={13} />Partager
             </button>
           )}
-          <button onClick={() => refreshAllPrices(entries)} disabled={refreshing || entries.filter(e => e.isin).length === 0} style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "4px 10px", fontSize: 11, color: refreshing ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
-            {refreshing ? "⟳ Mise à jour…" : "⟳ Actualiser"}
+          <button onClick={() => refreshAllPrices(entries)} disabled={refreshing || entries.filter(e => e.isin).length === 0} style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "4px 10px", fontSize: 11, color: refreshing ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <RefreshCw size={12} strokeWidth={1.75} aria-hidden="true" />{refreshing ? "Mise à jour…" : "Actualiser"}
           </button>
           </div>
         </div>
@@ -444,8 +446,8 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
         </div>
         {onViewPublic && (
           <button onClick={onViewPublic} title="Ce que les autres voient de ton portefeuille : en %, jamais de montants"
-            style={{ display: "block", background: "none", border: "none", padding: 0, marginTop: -8, marginBottom: 14, fontSize: 12, fontWeight: 600, color: T.accent, cursor: "pointer", fontFamily: "inherit" }}>
-            👁️ Voir mon profil public
+            style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", padding: 0, marginTop: -8, marginBottom: 14, fontSize: 12, fontWeight: 600, color: T.accent, cursor: "pointer", fontFamily: "inherit" }}>
+            <Icon name="eye" size={14} />Voir mon profil public
           </button>
         )}
         <HistoryPlaceholder T={T} />
@@ -500,11 +502,11 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>ISIN</label>
             <input style={inp} placeholder="ex: LU1681043599" value={form.isin} onChange={e => setForm({ ...form, isin: e.target.value })} />
             {form.isin && (
-              <button type="button" onClick={async () => { setFetchingPrice(true); setPriceHint(null); const r = await fetchPrixViaISIN(form.isin); if (r) { setForm(f => ({ ...f, prix_actuel: r.prix.toString(), label: f.label || r.nom, vehicule: f.vehicule === "ETF" && r.type === "Action" ? "Action directe" : f.vehicule })); setPriceHint(`✅ ${r.nom} — ${r.prix} ${r.devise === "EUR" ? "€" : r.devise}`); } else { setPriceHint(isinHint(form.isin)); } setFetchingPrice(false); }} style={{ ...btnSm, width: "100%", textAlign: "center", marginBottom: 10, borderColor: T.accent, color: T.accent }}>
-                {fetchingPrice ? "Recherche…" : "🔍 Récupérer le prix via ISIN"}
+              <button type="button" onClick={async () => { setFetchingPrice(true); setPriceHint(null); const r = await fetchPrixViaISIN(form.isin); if (r) { setForm(f => ({ ...f, prix_actuel: r.prix.toString(), label: f.label || r.nom, vehicule: f.vehicule === "ETF" && r.type === "Action" ? "Action directe" : f.vehicule })); setPriceHint({ ok: true, text: `${r.nom} — ${r.prix} ${r.devise === "EUR" ? "€" : r.devise}` }); } else { setPriceHint({ ok: false, text: isinHint(form.isin) }); } setFetchingPrice(false); }} style={{ ...btnSm, width: "100%", textAlign: "center", marginBottom: 10, borderColor: T.accent, color: T.accent }}>
+                {fetchingPrice ? "Recherche…" : <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="search" size={14} />Récupérer le prix via ISIN</span>}
               </button>
             )}
-            {priceHint && <div style={{ fontSize: 12, color: priceHint.startsWith("✅") ? T.up : T.red, marginBottom: 10 }}>{priceHint}</div>}
+            {priceHint && <div style={{ fontSize: 12, color: priceHint.ok ? T.up : T.red, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}><Icon name={priceHint.ok ? "ok" : "warning"} size={13} />{priceHint.text}</div>}
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Véhicule</label>
             <select style={{ ...inp, background: T.bgCard }} value={form.vehicule} onChange={e => setForm({ ...form, vehicule: e.target.value })}>
               {VEHICULES.map(t => <option key={t} style={{ background: T.bgSecondary }}>{t}</option>)}
@@ -539,24 +541,24 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
             <div style={{ fontSize: 12, color: T.textFaint, marginBottom: 10 }}>
               {entries.length ? "Tes autres positions seront ajustées pour garder 100 %." : "Ta première position représente 100 % du portefeuille ; les suivantes se répartiront avec elle."}
             </div>
-            {error && <div style={{ fontSize: 13, color: T.red, marginBottom: 10 }}>⚠️ {error}</div>}
+            {error && <div style={{ fontSize: 13, color: T.red, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}><Icon name="warning" size={14} />{error}</div>}
             <button style={btn} onClick={addEntry} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</button>
           </div>
         )}
 
         {editingId && (
           <div style={{ background: T.accentBg, border: `0.5px solid ${T.accentBorder}`, borderRadius: 10, padding: "1rem", marginBottom: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: T.accent }}>✏️ Modifier la position</div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: T.accent, display: "flex", alignItems: "center", gap: 6 }}><Icon name="edit" size={14} />Modifier la position</div>
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Nom</label>
             <input style={inp} value={editForm.label} onChange={e => setEditForm({ ...editForm, label: e.target.value })} />
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>ISIN</label>
             <input style={inp} value={editForm.isin} onChange={e => setEditForm({ ...editForm, isin: e.target.value })} />
             {editForm.isin && (
-              <button type="button" onClick={async () => { setEditFetchingPrice(true); setEditPriceHint(null); const r = await fetchPrixViaISIN(editForm.isin); if (r) { setEditForm(f => ({ ...f, prix_actuel: r.prix.toString() })); setEditPriceHint(`✅ ${r.nom} — ${r.prix} ${r.devise === "EUR" ? "€" : r.devise}`); } else { setEditPriceHint(isinHint(editForm.isin)); } setEditFetchingPrice(false); }} style={{ ...btnSm, width: "100%", textAlign: "center", marginBottom: 10, borderColor: T.accent, color: T.accent }}>
-                {editFetchingPrice ? "Recherche…" : "🔍 Mettre à jour le prix via ISIN"}
+              <button type="button" onClick={async () => { setEditFetchingPrice(true); setEditPriceHint(null); const r = await fetchPrixViaISIN(editForm.isin); if (r) { setEditForm(f => ({ ...f, prix_actuel: r.prix.toString() })); setEditPriceHint({ ok: true, text: `${r.nom} — ${r.prix} ${r.devise === "EUR" ? "€" : r.devise}` }); } else { setEditPriceHint({ ok: false, text: isinHint(editForm.isin) }); } setEditFetchingPrice(false); }} style={{ ...btnSm, width: "100%", textAlign: "center", marginBottom: 10, borderColor: T.accent, color: T.accent }}>
+                {editFetchingPrice ? "Recherche…" : <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="search" size={14} />Mettre à jour le prix via ISIN</span>}
               </button>
             )}
-            {editPriceHint && <div style={{ fontSize: 12, color: editPriceHint.startsWith("✅") ? T.up : T.red, marginBottom: 10 }}>{editPriceHint}</div>}
+            {editPriceHint && <div style={{ fontSize: 12, color: editPriceHint.ok ? T.up : T.red, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}><Icon name={editPriceHint.ok ? "ok" : "warning"} size={13} />{editPriceHint.text}</div>}
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Véhicule</label>
             <select style={{ ...inp, background: T.bgCard }} value={editForm.type} onChange={e => setEditForm({ ...editForm, type: e.target.value })}>
               {VEHICULES.map(t => <option key={t} style={{ background: T.bgSecondary }}>{t}</option>)}
@@ -589,7 +591,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
             {entries.length > 1 && (
               <div style={{ fontSize: 12, color: T.textFaint, marginBottom: 10 }}>Si tu changes le poids, tes autres positions s'ajustent pour garder 100 %.</div>
             )}
-            {editError && <div style={{ fontSize: 13, color: T.red, marginBottom: 10 }}>⚠️ {editError}</div>}
+            {editError && <div style={{ fontSize: 13, color: T.red, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}><Icon name="warning" size={14} />{editError}</div>}
             <div style={{ display: "flex", gap: 8 }}>
               <button style={btn} onClick={updateEntry} disabled={editSaving}>{editSaving ? "Sauvegarde…" : "Sauvegarder"}</button>
               <button style={btnSm} onClick={() => { setEditingId(null); setEditError(""); }}>Annuler</button>
@@ -598,7 +600,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
         )}
 
         {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>Chargement…</div>}
-        {!loading && entries.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1.5rem 0" }}>Aucune position — clique sur "+ Ajouter" 🙂</div>}
+        {!loading && entries.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1.5rem 0" }}>Aucune position — clique sur "+ Ajouter"</div>}
 
         {valeurParPosition.map((e, i) => (
           <div key={e.id}>
@@ -614,7 +616,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
                 {(() => {
                   const fy = forecast.rows.find(r => r.entry.id === e.id)?.yield;
                   const y = fy > 0 ? fy : income.byEntry[e.id]?.yield;
-                  return y > 0 ? <div style={{ fontSize: 11, color: T.yellow }} title="Rendement du dividende sur 12 mois">💰 {fmtYield(y)}</div> : null;
+                  return y > 0 ? <div style={{ fontSize: 11, color: T.yellow, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }} title="Rendement du dividende sur 12 mois"><Icon name="coins" size={12} />{fmtYield(y)}</div> : null;
                 })()}
               </div>
               <div style={{ fontSize: 16, color: T.textFaint, transition: "transform 0.2s", transform: openDetail[e.id] ? "rotate(90deg)" : "none" }}>›</div>
@@ -633,7 +635,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
                 {resolving?.id === e.id && resolving.error && <div role="alert" style={{ fontSize: 12, color: T.red, marginTop: 8 }}>{resolving.error}</div>}
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                   <button onClick={() => openAsset(e)} disabled={resolving?.id === e.id && !resolving.error} style={{ ...btnSm, flex: 1, textAlign: "center", borderColor: T.accent, color: T.accent }}>
-                    {resolving?.id === e.id && !resolving.error ? "Recherche…" : "📈 Voir le cours"}
+                    {resolving?.id === e.id && !resolving.error ? "Recherche…" : <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="up" size={14} />Voir le cours</span>}
                   </button>
                   <button onClick={() => { startEdit(e); setOpenDetail(p => ({ ...p, [e.id]: false })); }} style={{ ...btnSm, flex: 1, textAlign: "center" }}>Modifier</button>
                   <button onClick={() => deleteEntry(e.id)} style={{ ...btnSm, flex: 1, textAlign: "center", borderColor: T.red, color: T.red }}>Supprimer</button>
@@ -651,7 +653,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
       {/* REVENUS */}
       {income.total12 > 0 && (
         <div style={card}>
-          <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>🧾 Dividendes reçus (saisis) · 12 mois</div>
+          <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 6 }}><Icon name="receipt" size={13} />Dividendes reçus (saisis) · 12 mois</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
             {[
               ["Reçus", formatEur2(income.total12), `${income.count12} versement${income.count12 > 1 ? "s" : ""}`],
@@ -672,8 +674,8 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
       {/* PROJECTIONS */}
       {entries.length > 0 && perfGlobale !== null && hasValeur && (
         <div style={card}>
-          <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            📊 Projection
+          <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 6 }}>
+            <Icon name="chart" size={13} />Projection
           </div>
           <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 16, lineHeight: 1.6 }}>
             Si ton portefeuille continue sur cette lancée à <strong style={{ color: T.accent }}>+{Math.min(perfGlobale, 30).toFixed(1)}%/an</strong>
@@ -707,17 +709,17 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
           })}
 
           <div style={{ marginTop: 14, padding: "10px 12px", background: T.bgSubtle, borderRadius: 8, fontSize: 12, color: T.textFaint, lineHeight: 1.6 }}>
-            ⚠️ Projection indicative basée sur ta performance actuelle. Les rendements passés ne préjugent pas des rendements futurs.
+            <Icon name="warning" size={13} style={{ marginRight: 5 }} />Projection indicative basée sur ta performance actuelle. Les rendements passés ne préjugent pas des rendements futurs.
           </div>
 
           {SHOW_PLUS && (
           <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", background: T.accentBg, border: `0.5px solid ${T.accentBorder}`, borderRadius: 10 }}>
-            <span style={{ fontSize: 16 }}>✨</span>
+            <Icon name="sparkles" size={16} style={{ color: T.accent }} />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: T.accent }}>Verio Plus</div>
               <div style={{ fontSize: 12, color: T.textMuted }}>Ajuste le rendement, l'apport mensuel et l'horizon</div>
             </div>
-            <span style={{ fontSize: 11, color: T.accent, fontWeight: 600, padding: "2px 8px", borderRadius: 999, border: `0.5px solid ${T.accentBorder}` }}>🔒</span>
+            <span style={{ fontSize: 11, color: T.accent, fontWeight: 600, padding: "2px 8px", borderRadius: 999, border: `0.5px solid ${T.accentBorder}`, display: "inline-flex" }}><Icon name="lock" size={13} /></span>
           </div>
           )}
         </div>
@@ -735,7 +737,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
             </div>
             <div style={{ background: T.bgSubtle, borderRadius: 10, padding: 14, textAlign: "center" }}>
               <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 6 }}>Profil de risque</div>
-              <div style={{ fontSize: 24, marginBottom: 4 }}>{profilRisque.icon}</div>
+              <div style={{ marginBottom: 4, color: profilRisque.color }}><Icon emoji={profilRisque.icon} size={24} /></div>
               <div style={{ fontSize: 14, fontWeight: 700, color: profilRisque.color }}>{profilRisque.label}</div>
             </div>
           </div>
@@ -770,14 +772,14 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
                 <div style={{ fontSize: 11, color: T.textFaint, marginTop: 2 }}>{m.desc}</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 13 }}>🔒</span>
+                <Icon name="lock" size={13} style={{ color: T.textFaint }} />
                 <span style={{ fontSize: 11, color: T.accent, fontWeight: 500, padding: "2px 8px", borderRadius: 999, border: `0.5px solid ${T.accentBorder}`, background: T.accentBg }}>Plus</span>
               </div>
             </div>
           ))}
 
           <button onClick={() => alert("Verio Plus arrive bientôt ! Tu seras notifié en avant-première.")} style={{ width: "100%", marginTop: 16, padding: "12px", background: T.accent, border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>
-            ✨ Débloquer l'analyse avancée — 9,99 €/mois
+            <Icon name="sparkles" size={16} style={{ marginRight: 6 }} />Débloquer l'analyse avancée — 9,99 €/mois
           </button>
         </div>
       )}

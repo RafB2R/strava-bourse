@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { canPromptInstall, onInstallAvailable, promptInstall, isStandalone, isIosSafari } from "../pwa";
+import { Share } from "lucide-react";
+import Icon from "./Icon";
 
 const DISMISS_KEY = "verio-install-dismissed";
 const DISMISS_DAYS = 30;
@@ -41,7 +43,7 @@ export default function InstallBanner({ T, always = false }) {
         <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>Installe Verio sur ton téléphone</div>
         {ios ? (
           <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.45, marginTop: 2 }}>
-            Touche <b>Partager</b> <span aria-hidden="true">⬆️</span> en bas de Safari, puis <b>« Sur l'écran d'accueil »</b>.
+            Touche <b>Partager</b> <Share size={13} strokeWidth={1.75} aria-hidden="true" style={{ verticalAlign: "-0.15em" }} /> en bas de Safari, puis <b>« Sur l'écran d'accueil »</b>.
           </div>
         ) : (
           <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Une icône sur ton écran d'accueil, en plein écran.</div>
@@ -50,7 +52,7 @@ export default function InstallBanner({ T, always = false }) {
       {!ios && (
         <button onClick={install} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>Installer</button>
       )}
-      {!always && <button onClick={dismiss} aria-label="Fermer" style={{ background: "none", border: "none", color: T.textFaint, fontSize: 14, cursor: "pointer", padding: 4, flexShrink: 0 }}>✕</button>}
+      {!always && <button onClick={dismiss} aria-label="Fermer" style={{ background: "none", border: "none", color: T.textFaint, fontSize: 14, cursor: "pointer", padding: 4, flexShrink: 0, display: "inline-flex" }}><Icon name="close" size={14} /></button>}
     </div>
   );
 }

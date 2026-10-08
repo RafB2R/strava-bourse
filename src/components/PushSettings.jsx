@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Bell, BellOff } from "lucide-react";
 import { pushStatus, enablePush, disablePush } from "../push";
 
 // Encart du Profil : activer les notifications push sur cet appareil
@@ -39,7 +40,7 @@ export default function PushSettings({ T }) {
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, background: T.bgCard, border: `0.5px solid ${on ? T.accent : T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "12px 14px", marginBottom: 16 }}>
-      <span style={{ fontSize: 26, flexShrink: 0 }} aria-hidden="true">{on ? "🔔" : "🔕"}</span>
+      <span style={{ display: "flex", flexShrink: 0, color: on ? T.accent : T.textMuted }} aria-hidden="true">{on ? <Bell size={24} strokeWidth={1.75} /> : <BellOff size={24} strokeWidth={1.75} />}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>Notifications sur ce téléphone</div>
         <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.45, marginTop: 2 }}>{text}</div>

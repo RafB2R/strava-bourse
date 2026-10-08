@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { T as TLive } from "../theme";
 import { BADGE_CATEGORIES, HIDDEN_BADGES, EMPTY_METRICS } from "../badges";
+import Icon from "./Icon";
 
 // Premier palier pas encore gagné et progression vers lui (les badges gagnés sont définitifs)
 function getNextAndProgress(cat, value, isEarned) {
@@ -30,9 +31,9 @@ export default function Badges({ badgeState, T: TProp }) {
   return (
     <div>
       <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-        {[["trophees", `🏅 Trophées (${unlockedTotal})`], ["cachés", "🔮 Cachés"]].map(([id, label]) => (
-          <button key={id} onClick={() => setActiveTab(id)} style={{ padding: "6px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${activeTab === id ? T.accent : T.border}`, background: activeTab === id ? T.accentBg : "none", color: activeTab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
-            {label}
+        {[["trophees", `Trophées (${unlockedTotal})`, "award"], ["cachés", "Cachés", "sparkles"]].map(([id, label, icon]) => (
+          <button key={id} onClick={() => setActiveTab(id)} style={{ padding: "6px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${activeTab === id ? T.accent : T.border}`, background: activeTab === id ? T.accentBg : "none", color: activeTab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <Icon name={icon} size={14} />{label}
           </button>
         ))}
       </div>
@@ -51,7 +52,7 @@ export default function Badges({ badgeState, T: TProp }) {
               <div key={cat.id} onClick={() => toggle(cat.id)} style={{ height: 160, cursor: "pointer", perspective: "800px" }}>
                 <div style={{ position: "relative", width: "100%", height: "100%", transformStyle: "preserve-3d", transition: "transform 0.5s ease", transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)" }}>
                   <div style={{ position: "absolute", inset: 0, borderRadius: 14, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "14px 10px", background: T.bgCard, border: `0.5px solid ${T.border}` }}>
-                    <div style={{ fontSize: 26, marginBottom: 6 }}>{cat.icon}</div>
+                    <div style={{ marginBottom: 6, color: T.accent }}><Icon emoji={cat.icon} size={26} /></div>
                     <div style={{ fontSize: 11, fontWeight: 600, color: T.text, textAlign: "center", lineHeight: 1.3 }}>{cat.name}</div>
                     <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
                       {cat.levels.map(l => <span key={l.medal} style={{ fontSize: 14, opacity: isEarned(l) ? 1 : 0.2 }}>{l.medal}</span>)}
@@ -61,7 +62,7 @@ export default function Badges({ badgeState, T: TProp }) {
                   </div>
 
                   <div style={{ position: "absolute", inset: 0, borderRadius: 14, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: "rotateY(180deg)", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-start", padding: "10px 10px 8px", background: T.bgSecondary, border: `0.5px solid ${T.accentBorder}`, overflow: "hidden" }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: T.accent, textAlign: "center", width: "100%", marginBottom: 8 }}>{cat.icon} {cat.name}</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: T.accent, textAlign: "center", width: "100%", marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}><Icon emoji={cat.icon} size={13} />{cat.name}</div>
                     {cat.levels.map(l => {
                       const done = isEarned(l);
                       return (
@@ -71,7 +72,7 @@ export default function Badges({ badgeState, T: TProp }) {
                             <div style={{ fontSize: 10, fontWeight: 600, color: done ? T.medals[l.medal] : T.textMuted }}>{l.name}</div>
                             <div style={{ fontSize: 9, color: T.textFaint }}>{l.desc}</div>
                           </div>
-                          {done && <span style={{ fontSize: 10, color: T.accent }}>✓</span>}
+                          {done && <Icon name="check" size={12} style={{ color: T.accent }} />}
                         </div>
                       );
                     })}
@@ -104,7 +105,7 @@ export default function Badges({ badgeState, T: TProp }) {
               return (
                 <div key={b.id} style={{ background: T.bgCard, border: `0.5px ${isUnlocked ? "solid" : "dashed"} ${isUnlocked ? T.accentBorder : T.borderStrong}`, borderRadius: 14, padding: "14px 10px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
                   <div style={{ width: 44, height: 44, borderRadius: "50%", background: isUnlocked ? T.accentBg : T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, opacity: isUnlocked ? 1 : 0.6 }}>
-                    {isUnlocked ? b.icon : "🔮"}
+                    <Icon emoji={isUnlocked ? b.icon : "🔮"} size={22} style={{ color: isUnlocked ? T.accent : T.textFaint }} />
                   </div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: isUnlocked ? T.accent : T.textFaint, textAlign: "center", lineHeight: 1.3 }}>
                     {isUnlocked ? b.name : isSoon ? "Bientôt" : "???"}
