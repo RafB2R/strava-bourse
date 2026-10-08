@@ -10,6 +10,8 @@ import Comparison from "./components/Comparison";
 import Icon from "./components/Icon";
 import { t, LANG } from "./i18n";
 import { followsNothing } from "./assetFollows";
+import { fetchSuperInvestors } from "./superInvestors";
+import { setLegendIcons } from "./avatars";
 
 // Écrans chargés à la demande pour alléger le bundle initial
 const Landing = lazy(() => import("./Landing"));
@@ -254,6 +256,8 @@ export default function App() {
     syncMoments();
     // Langue de l'appli, pour écrire les notifications push dans la même langue
     supabase.rpc("set_my_lang", { p_lang: LANG }).then(() => {}, () => {});
+    // Icônes des Légendes, à la place de leurs initiales
+    fetchSuperInvestors().then(list => setLegendIcons(list.map(s => [s.user_id, s.icon])), () => {});
     const { data } = await supabase.rpc("get_my_profile").maybeSingle();
     setProfile(data);
     if (data?.kyc_complete && data.id) followsNothing(data.id).then(setEmptyFeed, () => {});

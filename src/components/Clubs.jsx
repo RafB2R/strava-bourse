@@ -11,6 +11,7 @@ import { detailFor } from "../indices";
 import { useDetailView } from "../useDetailView";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
+import Medal from "./Medal";
 import { t } from "../i18n";
 
 // Prévient les membres mentionnés dans un post ou une réponse de club
@@ -262,7 +263,7 @@ function ClubRanking({ clubId, session }) {
         return (
           <div key={m.user_id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}` }}>
             <div style={{ fontSize: 16, minWidth: 28, textAlign: "center" }}>
-              {rankIcon(i) || <span style={{ fontSize: 13, color: T.textFaint }}>{i + 1}</span>}
+              {rankIcon(i) ? <Medal tier={rankIcon(i)} size={20} T={T} /> : <span style={{ fontSize: 13, color: T.textFaint }}>{i + 1}</span>}
             </div>
             <Avatar userId={m.user_id} name={m.name} size={32} />
             <div style={{ flex: 1 }}>

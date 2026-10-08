@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import IndexDetail from "./IndexDetail";
+import LegendIcon from "./LegendIcon";
 import { useDetailView } from "../useDetailView";
 import { resolveAsset } from "../attachments";
 import { detailFor } from "../indices";
@@ -90,7 +91,7 @@ export default function SuperInvestors({ T, onViewProfile }) {
       {SUPER_INVESTORS.map(inv => (
         <button key={inv.cik} onClick={() => open(inv)} aria-label={t("Voir le portefeuille de {name}", { name: inv.name })}
           style={{ display: "flex", gap: 14, alignItems: "center", width: "100%", textAlign: "left", background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "14px 16px", marginBottom: 10, cursor: "pointer", fontFamily: "inherit", boxShadow: T.cardShadow }}>
-          <span style={{ width: 48, height: 48, borderRadius: 14, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>{inv.icon}</span>
+          <LegendIcon icon={inv.icon} size={48} T={T} />
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: "block", fontSize: 15, fontWeight: 700, color: T.text }}>{inv.name}</span>
             <span style={{ display: "block", fontSize: 13, color: T.textMuted, marginTop: 2 }}>{inv.firm} · {t(inv.style)}</span>
@@ -166,7 +167,7 @@ function InvestorDetail({ investor, T, onBack }) {
     <div>
       <button onClick={onBack} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13, padding: 0, marginBottom: 14, fontFamily: "inherit" }}>{t("← Légendes")}</button>
       <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 16 }}>
-        <span style={{ width: 56, height: 56, borderRadius: 16, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>{investor.icon}</span>
+        <LegendIcon icon={investor.icon} size={56} T={T} />
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 18, fontWeight: 800, color: T.text }}>{investor.name}</div>
           <div style={{ fontSize: 13, color: T.textMuted, marginTop: 2 }}>{investor.firm} · {t(investor.style)}</div>

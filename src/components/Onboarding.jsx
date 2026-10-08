@@ -107,7 +107,7 @@ export default function Onboarding({ session, T: TProp, onDone }) {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {supers.map(s => (
               <button key={s.user_id} onClick={() => toggleSuper(s.user_id)} aria-pressed={followedSupers.has(s.user_id)} title={`${s.firm} · ${s.style}`} style={chip(followedSupers.has(s.user_id))}>
-                {s.icon} {s.profile?.full_name}{followedSupers.has(s.user_id) && <Icon name="check" size={13} style={{ marginLeft: 4 }} />}
+                <Icon emoji={s.icon} size={14} style={{ marginRight: 5 }} />{s.profile?.full_name}{followedSupers.has(s.user_id) && <Icon name="check" size={13} style={{ marginLeft: 4 }} />}
               </button>
             ))}
           </div>

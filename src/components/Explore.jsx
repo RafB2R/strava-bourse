@@ -11,6 +11,7 @@ import { supabase } from "../supabase";
 import { syncBadges } from "../badges";
 import { T as TLive } from "../theme";
 import Avatar from "./Avatar";
+import LegendIcon from "./LegendIcon";
 import Icon from "./Icon";
 import { t } from "../i18n";
 
@@ -245,7 +246,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
           {!loading && searchTab === "users" && users.map(u => (
             <div key={u.id} onClick={() => onViewProfile && onViewProfile(u.id)} style={{ ...card(T), display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
               {superIcons[u.id]
-                ? <div style={{ width: 40, height: 40, borderRadius: 12, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{superIcons[u.id]}</div>
+                ? <LegendIcon icon={superIcons[u.id]} size={40} T={T} />
                 : <Avatar userId={u.id} name={u.full_name} size={40} />}
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}{superIcons[u.id] && <span style={{ marginLeft: 8, padding: "1px 7px", borderRadius: 999, fontSize: 10, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold, display: "inline-flex", alignItems: "center", gap: 4, verticalAlign: "middle" }}><Icon name="trophy" size={11} />{t("Légende")}</span>}</div>

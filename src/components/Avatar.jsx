@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
-import { avatarColors } from "../theme";
-import { avatarUrl, markMissing, onAvatarChange } from "../avatars";
+import { avatarColors, T as TLive } from "../theme";
+import LegendIcon from "./LegendIcon";
+import { avatarUrl, markMissing, onAvatarChange, legendIcon } from "../avatars";
 
 // Avatar d'un membre : sa photo de profil s'il en a mis une, sinon ses initiales.
 export default function Avatar({ userId, name, size = 36 }) {
   const [, refresh] = useState(0);
   useEffect(() => onAvatarChange(id => { if (id === userId) refresh(n => n + 1); }), [userId]);
+  const legend = legendIcon(userId);
+  if (legend) return <LegendIcon icon={legend} size={size} T={TLive} />;
   const url = avatarUrl(userId);
   const initials = name ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
   const [bg, color] = avatarColors(name);
