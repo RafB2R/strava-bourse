@@ -8,7 +8,7 @@ import { fetchUnreadTotal } from "./messages";
 import Notifications from "./components/Notifications";
 import Comparison from "./components/Comparison";
 import Icon from "./components/Icon";
-import { t } from "./i18n";
+import { t, LANG } from "./i18n";
 
 // Écrans chargés à la demande pour alléger le bundle initial
 const Landing = lazy(() => import("./Landing"));
@@ -249,6 +249,8 @@ export default function App() {
     // Badges et moments liés au temps (ancienneté, série, anniversaires) : dès la connexion
     syncBadges();
     syncMoments();
+    // Langue de l'appli, pour écrire les notifications push dans la même langue
+    supabase.rpc("set_my_lang", { p_lang: LANG }).then(() => {}, () => {});
     const { data } = await supabase.rpc("get_my_profile").maybeSingle();
     setProfile(data);
     setLoading(false);

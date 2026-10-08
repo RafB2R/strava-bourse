@@ -68,7 +68,7 @@ self.addEventListener("fetch", event => {
 
 // ---- Notifications push (envoyées par /api/push) ----
 self.addEventListener("push", event => {
-  let data = {};
+  let data;
   try { data = event.data ? event.data.json() : {}; } catch { data = { body: event.data?.text() }; }
   event.waitUntil(self.registration.showNotification(data.title || "Verio", {
     body: data.body || "",

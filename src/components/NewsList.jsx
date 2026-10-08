@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { t, LOCALE } from "../i18n";
+import { t, LANG, LOCALE } from "../i18n";
 
 // Articles de presse récents sur un sujet (Google Actualités, via /api/news).
 // Chaque article s'ouvre dans un nouvel onglet, sur le site du journal.
@@ -15,7 +15,7 @@ export default function NewsList({ query, T }) {
   const [state, setState] = useState({ query: null, items: [], error: false });
   useEffect(() => {
     let ignore = false;
-    fetch(`/api/news?q=${encodeURIComponent(query)}`)
+    fetch(`/api/news?q=${encodeURIComponent(query)}&lang=${LANG}`)
       .then(r => r.json())
       .then(items => { if (!ignore) setState({ query, items: Array.isArray(items) ? items : [], error: !Array.isArray(items) }); })
       .catch(() => { if (!ignore) setState({ query, items: [], error: true }); });
