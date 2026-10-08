@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { canPromptInstall, onInstallAvailable, promptInstall, isStandalone, isIosSafari } from "../pwa";
 import { Share } from "lucide-react";
 import Icon from "./Icon";
+import { t } from "../i18n";
 
 const DISMISS_KEY = "verio-install-dismissed";
 const DISMISS_DAYS = 30;
@@ -37,22 +38,22 @@ export default function InstallBanner({ T, always = false }) {
   }
 
   return (
-    <div role="region" aria-label="Installer l'application" style={{ display: "flex", alignItems: "center", gap: 12, background: T.bgCard, border: `0.5px solid ${T.accent}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "12px 14px", marginBottom: 16 }}>
+    <div role="region" aria-label={t("Installer l'application")} style={{ display: "flex", alignItems: "center", gap: 12, background: T.bgCard, border: `0.5px solid ${T.accent}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "12px 14px", marginBottom: 16 }}>
       <img src="/icons/icon-192.png" alt="" width={40} height={40} style={{ borderRadius: 10, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>Installe Verio sur ton téléphone</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{t("Installe Verio sur ton téléphone")}</div>
         {ios ? (
           <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.45, marginTop: 2 }}>
-            Touche <b>Partager</b> <Share size={13} strokeWidth={1.75} aria-hidden="true" style={{ verticalAlign: "-0.15em" }} /> en bas de Safari, puis <b>« Sur l'écran d'accueil »</b>.
+            {t("Touche")} <b>{t("Partager")}</b> <Share size={13} strokeWidth={1.75} aria-hidden="true" style={{ verticalAlign: "-0.15em" }} /> {t("en bas de Safari, puis")} <b>{t("« Sur l'écran d'accueil »")}</b>.
           </div>
         ) : (
-          <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Une icône sur ton écran d'accueil, en plein écran.</div>
+          <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>{t("Une icône sur ton écran d'accueil, en plein écran.")}</div>
         )}
       </div>
       {!ios && (
-        <button onClick={install} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>Installer</button>
+        <button onClick={install} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>{t("Installer")}</button>
       )}
-      {!always && <button onClick={dismiss} aria-label="Fermer" style={{ background: "none", border: "none", color: T.textFaint, fontSize: 14, cursor: "pointer", padding: 4, flexShrink: 0, display: "inline-flex" }}><Icon name="close" size={14} /></button>}
+      {!always && <button onClick={dismiss} aria-label={t("Fermer")} style={{ background: "none", border: "none", color: T.textFaint, fontSize: 14, cursor: "pointer", padding: 4, flexShrink: 0, display: "inline-flex" }}><Icon name="close" size={14} /></button>}
     </div>
   );
 }

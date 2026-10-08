@@ -12,6 +12,7 @@ import NewsList from "./NewsList";
 import Comparison from "./Comparison";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
+import { t, LOCALE } from "../i18n";
 
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
 // Colonnes visibles par les autres membres : jamais prix_achat ni nombre_parts
@@ -29,7 +30,7 @@ const POSITION_COLORS = [
 function pieData(entries, group) {
   const slices = entries.slice(0, group && entries.length > 10 ? 9 : entries.length).map((e, i) => ({ label: e.label, value: Number(e.percentage), color: POSITION_COLORS[i % POSITION_COLORS.length] }));
   const rest = entries.slice(slices.length).reduce((sum, e) => sum + Number(e.percentage), 0);
-  if (rest > 0) slices.push({ label: `Autres (${entries.length - slices.length})`, value: Math.round(rest * 10) / 10, color: "#888" });
+  if (rest > 0) slices.push({ label: t("Autres ({n})", { n: entries.length - slices.length }), value: Math.round(rest * 10) / 10, color: "#888" });
   return slices;
 }
 
@@ -41,18 +42,18 @@ function PerfHistory({ T, card }) {
   const label = PERF_PERIODS.find(p => p[0] === period)[2];
   return (
     <div style={{ ...card, display: "flex", flexDirection: "column" }}>
-      <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Performance</div>
+      <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Performance")}</div>
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 12 }}>
         {PERF_PERIODS.map(([id, short]) => (
           <button key={id} onClick={() => setPeriod(id)} aria-pressed={period === id}
             style={{ padding: "4px 10px", borderRadius: 999, fontSize: 12, fontFamily: "inherit", cursor: "pointer", border: `0.5px solid ${period === id ? T.accent : T.border}`, background: period === id ? T.accentBg : "none", color: period === id ? T.accent : T.textMuted, fontWeight: period === id ? 700 : 400 }}>
-            {short}
+            {t(short)}
           </button>
         ))}
       </div>
       <div style={{ flex: 1, minHeight: 110, borderRadius: 10, border: `0.5px dashed ${T.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: 12, textAlign: "center" }}>
-        <div style={{ fontSize: 13, color: T.textMuted, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="up" size={14} />Courbe en cours de construction</div>
-        <div style={{ fontSize: 11, color: T.textFaint }}>La performance {label} se construira jour après jour</div>
+        <div style={{ fontSize: 13, color: T.textMuted, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="up" size={14} />{t("Courbe en cours de construction")}</div>
+        <div style={{ fontSize: 11, color: T.textFaint }}>{t("La performance {period} se construira jour après jour", { period: t(label) })}</div>
       </div>
     </div>
   );
@@ -118,7 +119,7 @@ function PieChart({ data, T, count = data.length }) {
           {hov ? `${Math.round(hov.pct * 100)}%` : `${count}`}
         </text>
         <text x={cx} y={cy + 10} textAnchor="middle" fill={T.textFaint} fontSize={9}>
-          {hov ? hov.label.split(" ")[0] : "positions"}
+          {hov ? hov.label.split(" ")[0] : t("positions")}
         </text>
       </svg>
       {/* Légende */}
@@ -211,7 +212,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       .or(`and(requester_id.eq.${myId},receiver_id.eq.${userId}),and(requester_id.eq.${userId},receiver_id.eq.${myId})`)
       .select("id");
     setDisconnecting(false);
-    if (error || !data?.length) { setDisconnectError("Impossible pour le moment."); return; }
+    if (error || !data?.length) { setDisconnectError(t("Impossible pour le moment.")); return; }
     setIsFriend(false); setConfirmDisconnect(false);
   }
 
@@ -232,7 +233,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
     setSuperInv({ ...before, following: next, followers: Math.max(0, before.followers + (next ? 1 : -1)) });
     if (!(await setFollowing(userId, myId, next))) {
       setSuperInv(before);
-      setFollowError("Impossible pour le moment. Réessaie plus tard.");
+      setFollowError(t("Impossible pour le moment. Réessaie plus tard."));
     }
     setFollowBusy(false);
   }
@@ -255,18 +256,18 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
   async function openAsset(entry) {
     setResolving({ id: entry.id, error: null });
     const asset = await resolveAsset({ label: entry.label });
-    if (!asset) { setResolving({ id: entry.id, error: "Cours introuvable pour cette position." }); return; }
+    if (!asset) { setResolving({ id: entry.id, error: t("Cours introuvable pour cette position.") }); return; }
     setResolving(null);
     showAssetView({ ...asset, name: entry.label || asset.name });
   }
 
-  if (assetView) return <IndexDetail index={detailFor(assetView)} T={T} backLabel={`← ${profile?.full_name || "Profil"}`} onBack={closeAssetView} />;
-  if (loading) return <div style={{ textAlign: "center", padding: "3rem", color: T.textFaint, fontSize: 13 }}>Chargement…</div>;
-  if (!profile) return <div style={{ textAlign: "center", padding: "3rem", color: T.textFaint, fontSize: 13 }}>Profil introuvable</div>;
+  if (assetView) return <IndexDetail index={detailFor(assetView)} T={T} backLabel={`← ${profile?.full_name || t("Profil")}`} onBack={closeAssetView} />;
+  if (loading) return <div style={{ textAlign: "center", padding: "3rem", color: T.textFaint, fontSize: 13 }}>{t("Chargement…")}</div>;
+  if (!profile) return <div style={{ textAlign: "center", padding: "3rem", color: T.textFaint, fontSize: 13 }}>{t("Profil introuvable")}</div>;
 
   return (
     <div>
-      <button onClick={onBack} style={{ ...btnSm, marginBottom: 16 }}>← Retour</button>
+      <button onClick={onBack} style={{ ...btnSm, marginBottom: 16 }}>← {t("Retour")}</button>
 
       <div style={card}>
         <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 14 }}>
@@ -279,42 +280,42 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
               {profile.username ? `@${profile.username}` : ""}{superInv ? `${profile.username ? " · " : ""}${superInv.firm}` : profile.city ? ` · ${profile.city}` : ""}
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {superInv && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="trophy" size={12} />Légende</span>}
-              {profile.strategy && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{profile.strategy}</span>}
-              {profile.streak_mois > 0 && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: "rgba(240,203,123,0.1)", color: T.yellow, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="flame" size={12} />{profile.streak_mois} mois</span>}
-              {profile.investing_since && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted }}>Depuis {profile.investing_since}</span>}
+              {superInv && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="trophy" size={12} />{t("Légende")}</span>}
+              {profile.strategy && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{t(profile.strategy)}</span>}
+              {profile.streak_mois > 0 && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: "rgba(240,203,123,0.1)", color: T.yellow, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="flame" size={12} />{t("{n} mois", { n: profile.streak_mois })}</span>}
+              {profile.investing_since && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted }}>{t("Depuis {year}", { year: profile.investing_since })}</span>}
             </div>
           </div>
           {superInv ? (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
             <button onClick={toggleFollow} disabled={followBusy} aria-pressed={superInv.following}
               style={{ ...btnSm, display: "inline-flex", alignItems: "center", gap: 5, ...(superInv.following ? { color: T.accent, borderColor: T.accentBorder, background: T.accentBg } : { borderColor: T.accent, background: T.accent, color: T.onAccent, fontWeight: 700 }) }}>
-              {superInv.following ? <>Suivi <Icon name="check" size={13} /></> : "+ Suivre"}
+              {superInv.following ? <>{t("Suivi")} <Icon name="check" size={13} /></> : `+ ${t("Suivre")}`}
             </button>
             {followError && <span role="alert" style={{ fontSize: 11, color: T.red, maxWidth: 140, textAlign: "right" }}>{followError}</span>}
             </div>
           ) : userId !== session.user.id && (
             isFriend ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-                <span style={{ fontSize: 12, color: T.accent, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="check" size={13} />Ami</span>
-                {onMessage && <button onClick={() => onMessage(userId)} style={{ ...btnSm, borderColor: T.accent, color: T.accent, display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="mail" size={13} />Message</button>}
+                <span style={{ fontSize: 12, color: T.accent, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="check" size={13} />{t("Ami")}</span>
+                {onMessage && <button onClick={() => onMessage(userId)} style={{ ...btnSm, borderColor: T.accent, color: T.accent, display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="mail" size={13} />{t("Message")}</button>}
                 {confirmDisconnect ? (
                   <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                    <span style={{ fontSize: 11, color: T.textMuted }}>Se déconnecter ?</span>
+                    <span style={{ fontSize: 11, color: T.textMuted }}>{t("Se déconnecter ?")}</span>
                     <span style={{ display: "flex", gap: 4 }}>
-                      <button onClick={disconnect} disabled={disconnecting} style={{ ...btnSm, padding: "3px 8px", borderColor: T.red, color: T.red }}>{disconnecting ? "…" : "Oui"}</button>
-                      <button onClick={() => setConfirmDisconnect(false)} style={{ ...btnSm, padding: "3px 8px" }}>Non</button>
+                      <button onClick={disconnect} disabled={disconnecting} style={{ ...btnSm, padding: "3px 8px", borderColor: T.red, color: T.red }}>{disconnecting ? "…" : t("Oui")}</button>
+                      <button onClick={() => setConfirmDisconnect(false)} style={{ ...btnSm, padding: "3px 8px" }}>{t("Non")}</button>
                     </span>
                   </span>
                 ) : (
-                  <button onClick={() => setConfirmDisconnect(true)} title="Retirer ce membre de tes amis"
-                    style={{ background: "none", border: "none", padding: 0, fontSize: 11, color: T.textFaint, cursor: "pointer", fontFamily: "inherit" }}>Se déconnecter</button>
+                  <button onClick={() => setConfirmDisconnect(true)} title={t("Retirer ce membre de tes amis")}
+                    style={{ background: "none", border: "none", padding: 0, fontSize: 11, color: T.textFaint, cursor: "pointer", fontFamily: "inherit" }}>{t("Se déconnecter")}</button>
                 )}
                 {disconnectError && <span role="alert" style={{ fontSize: 11, color: T.red }}>{disconnectError}</span>}
               </div>
             )
-            : isPending ? <span style={{ fontSize: 12, color: T.textFaint }}>En attente</span>
-            : <button onClick={sendRequest} style={{ ...btnSm, borderColor: T.accent, color: T.accent }}>+ Suivre</button>
+            : isPending ? <span style={{ fontSize: 12, color: T.textFaint }}>{t("En attente")}</span>
+            : <button onClick={sendRequest} style={{ ...btnSm, borderColor: T.accent, color: T.accent }}>+ {t("Suivre")}</button>
           )}
         </div>
 
@@ -329,7 +330,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
             ].map(([label, val]) => (
               <div key={label} style={{ background: T.bgSubtle, borderRadius: 10, padding: 10, textAlign: "center" }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: T.text }}>{val}</div>
-                <div style={{ fontSize: 11, color: T.textFaint }}>{label}</div>
+                <div style={{ fontSize: 11, color: T.textFaint }}>{t(label)}</div>
               </div>
             ))}
           </div>
@@ -347,11 +348,11 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
             const content = (
               <>
                 <div style={{ fontSize: 16, fontWeight: 700, color: active ? T.accent : color }}>{val}</div>
-                <div style={{ fontSize: 11, color: active ? T.accent : T.textFaint }}>{label}{isBadges ? " ›" : ""}</div>
+                <div style={{ fontSize: 11, color: active ? T.accent : T.textFaint }}>{t(label)}{isBadges ? " ›" : ""}</div>
               </>
             );
             return isBadges ? (
-              <button key={label} onClick={() => setTab(t => (t === "badges" ? "holdings" : "badges"))} aria-pressed={active} title="Voir ses badges"
+              <button key={label} onClick={() => setTab(cur => (cur === "badges" ? "holdings" : "badges"))} aria-pressed={active} title={t("Voir ses badges")}
                 style={{ ...tile, cursor: "pointer", fontFamily: "inherit", width: "100%" }}>{content}</button>
             ) : <div key={label} style={tile}>{content}</div>;
           })}
@@ -363,7 +364,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
         <div style={{ marginBottom: 12 }}>
           <button onClick={() => setShowCompare(v => !v)} aria-expanded={showCompare}
             style={{ ...btnSm, width: "100%", padding: "9px 12px", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, ...(showCompare ? { borderColor: T.accent, color: T.accent, background: T.accentBg } : {}) }}>
-            <Icon name="scale" size={14} />{showCompare ? "Masquer la comparaison" : "Comparer avec moi"}
+            <Icon name="scale" size={14} />{showCompare ? t("Masquer la comparaison") : t("Comparer avec moi")}
           </button>
           {showCompare && (
             <div style={{ ...card, marginTop: 8 }}>
@@ -376,7 +377,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: `0.5px solid ${T.border}` }}>
         {[["holdings", "Holdings"], ["activite", "Activité"], superInv ? ["news", "Actualités"] : ["posts", "Posts"]].map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} style={{ flex: 1, padding: "10px 4px", fontSize: 13, fontWeight: tab === id ? 600 : 400, background: "none", border: "none", borderBottom: `2px solid ${tab === id ? T.accent : "transparent"}`, color: tab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
-            {label}
+            {t(label)}
           </button>
         ))}
       </div>
@@ -389,7 +390,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
               <style>{`@media (max-width: 760px) { .holdings-top { grid-template-columns: minmax(0, 1fr) !important; } }`}</style>
               <PerfHistory T={T} card={{ ...card, marginBottom: 0 }} />
               <div style={{ ...card, marginBottom: 0 }}>
-                <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>Allocation</div>
+                <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Allocation")}</div>
                 <PieChart
                   T={T}
                   data={pieData(entries, !!superInv)}
@@ -399,16 +400,16 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
             </div>
           )}
           <div style={card}>
-            <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Positions ({entries.length}){avecPerf.length > 0 && !superInv && <span style={{ textTransform: "none", letterSpacing: 0 }}> · perf. depuis l'achat</span>}</div>
-            {entries.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>{superInv ? "Portefeuille bientôt disponible (mise à jour quotidienne)." : "Aucune position publique"}</div>}
+            <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Positions ({n})", { n: entries.length })}{avecPerf.length > 0 && !superInv && <span style={{ textTransform: "none", letterSpacing: 0 }}> · {t("perf. depuis l'achat")}</span>}</div>
+            {entries.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>{superInv ? t("Portefeuille bientôt disponible (mise à jour quotidienne).") : t("Aucune position publique")}</div>}
             {(superInv && !showAllEntries ? entries.slice(0, 10) : entries).map((e, i) => (
               <div key={e.id}>
-              <button onClick={() => openAsset(e)} aria-label={`Voir le cours de ${e.label}`}
+              <button onClick={() => openAsset(e)} aria-label={t("Voir le cours de {name}", { name: e.label })}
                 style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}`, background: "none", borderLeft: "none", borderRight: "none", borderBottom: "none", width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit", opacity: resolving?.id === e.id && !resolving.error ? 0.6 : 1 }}>
                 <div style={{ width: 8, height: 8, borderRadius: "50%", background: EXP_COLORS[e.exposition] || "#888", flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{e.label}</div>
-                  <div style={{ fontSize: 11, color: T.textFaint }}>{e.exposition || e.type}{e.broker ? ` · ${e.broker}` : ""}</div>
+                  <div style={{ fontSize: 11, color: T.textFaint }}>{t(e.exposition || e.type)}{e.broker ? ` · ${e.broker}` : ""}</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 13, color: T.textMuted }}>{e.percentage}%</div>
@@ -421,13 +422,13 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
             {superInv && entries.length > 10 && (
               <button onClick={() => setShowAllEntries(v => !v)}
                 style={{ width: "100%", padding: "10px 0 2px", background: "none", border: "none", borderTop: `0.5px solid ${T.border}`, fontSize: 13, fontWeight: 600, color: T.accent, cursor: "pointer", fontFamily: "inherit" }}>
-                {showAllEntries ? "Voir moins" : `Voir les ${entries.length} positions`}
+                {showAllEntries ? t("Voir moins") : t("Voir les {n} positions", { n: entries.length })}
               </button>
             )}
           </div>
           {superInv?.last_period && (
             <div style={{ fontSize: 11, color: T.textFaint, lineHeight: 1.5, margin: "-4px 4px 12px" }}>
-              <Icon name="landmark" size={12} style={{ marginRight: 4 }} />D'après sa déclaration 13F à la SEC : positions au {new Date(`${superInv.last_period}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}, mises à jour automatiquement chaque trimestre. Actions cotées aux États-Unis uniquement.
+              <Icon name="landmark" size={12} style={{ marginRight: 4 }} />{t("D'après sa déclaration 13F à la SEC : positions au {date}, mises à jour automatiquement chaque trimestre. Actions cotées aux États-Unis uniquement.", { date: new Date(`${superInv.last_period}T12:00:00`).toLocaleDateString(LOCALE, { day: "numeric", month: "long", year: "numeric" }) })}
             </div>
           )}
         </div>
@@ -445,8 +446,8 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       {/* Vitrine des badges, ouverte depuis la case « Badges » du haut */}
       {tab === "badges" && (
         <div>
-          <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", margin: "4px 0 10px", display: "flex", alignItems: "center", gap: 6 }}><Icon name="award" size={13} />Badges débloqués</div>
-          {badges.length === 0 && <div style={{ ...card, textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>Aucun badge débloqué</div>}
+          <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", margin: "4px 0 10px", display: "flex", alignItems: "center", gap: 6 }}><Icon name="award" size={13} />{t("Badges débloqués")}</div>
+          {badges.length === 0 && <div style={{ ...card, textAlign: "center", color: T.textFaint, fontSize: 13, padding: "2rem" }}>{t("Aucun badge débloqué")}</div>}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
             {badges.map(b => {
               const info = getBadgeInfo(b.badge_id);

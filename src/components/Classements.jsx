@@ -3,6 +3,7 @@ import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
+import { t } from "../i18n";
 
 const FILTERS = [
   { id: "performance", label: "Performance", icon: "up" },
@@ -69,7 +70,7 @@ export default function Classements({ session , T: TProp }) {
 
   function getValue(u) {
     if (filter === "performance") return { val: u.perf !== null ? `${u.perf >= 0 ? "+" : ""}${u.perf.toFixed(1)}%` : "—", color: u.perf === null ? T.textFaint : u.perf >= 0 ? T.up : T.red };
-    if (filter === "regularite") return { val: u.streak > 0 ? `${u.streak} mois` : "—", icon: u.streak > 0 ? "flame" : null, color: T.yellow };
+    if (filter === "regularite") return { val: u.streak > 0 ? t("{n} mois", { n: u.streak }) : "—", icon: u.streak > 0 ? "flame" : null, color: T.yellow };
     if (filter === "diversification") return { val: `${u.scoreDiversif}/100`, color: u.scoreDiversif >= 70 ? T.accent : u.scoreDiversif >= 40 ? T.yellow : T.red };
     if (filter === "contribution") return { val: u.contribution > 0 ? `${u.contribution}` : "—", icon: u.contribution > 0 ? "comment" : null, color: T.purple };
     if (filter === "badges") return { val: `${u.nbBadges}`, icon: "award", color: T.gold };
@@ -78,11 +79,11 @@ export default function Classements({ session , T: TProp }) {
 
   return (
     <div>
-      <div style={{ fontSize: 13, color: T.textFaint, marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}><Icon name="trophy" size={14} />Classements Verio</div>
+      <div style={{ fontSize: 13, color: T.textFaint, marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}><Icon name="trophy" size={14} />{t("Classements Verio")}</div>
 
       {/* Scope */}
       <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-        {[["amis", "Amis", "users"], ["global", "Global", "globe"]].map(([id, label, icon]) => (
+        {[["amis", t("Amis"), "users"], ["global", t("Global"), "globe"]].map(([id, label, icon]) => (
           <button key={id} onClick={() => { if (id !== scope) { setLoading(true); setScope(id); } }} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${scope === id ? T.accent : T.border}`, background: scope === id ? T.accentBg : "none", color: scope === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 }}>
             <Icon name={icon} size={14} />{label}
           </button>
@@ -93,17 +94,17 @@ export default function Classements({ session , T: TProp }) {
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
         {FILTERS.map(f => (
           <button key={f.id} onClick={() => setFilter(f.id)} style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filter === f.id ? T.accent : T.border}`, background: filter === f.id ? T.accentBg : "none", color: filter === f.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 5 }}>
-            <Icon name={f.icon} size={13} />{f.label}
+            <Icon name={f.icon} size={13} />{t(f.label)}
           </button>
         ))}
       </div>
 
       <div style={card(T)}>
-        {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1.5rem" }}>Chargement…</div>}
+        {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1.5rem" }}>{t("Chargement…")}</div>}
 
         {!loading && users.length === 0 && (
           <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1.5rem" }}>
-            {scope === "amis" ? "Ajoute des amis pour te comparer" : "Aucun utilisateur trouvé"}
+            {scope === "amis" ? t("Ajoute des amis pour te comparer") : t("Aucun utilisateur trouvé")}
           </div>
         )}
 
@@ -118,10 +119,10 @@ export default function Classements({ session , T: TProp }) {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: u.isMe ? T.accent : T.text }}>
                   {u.full_name}
-                  {u.isMe && <span style={{ fontSize: 11, color: T.textFaint, marginLeft: 6 }}>· moi</span>}
+                  {u.isMe && <span style={{ fontSize: 11, color: T.textFaint, marginLeft: 6 }}>· {t("moi")}</span>}
                 </div>
                 <div style={{ fontSize: 12, color: T.textFaint }}>
-                  {u.strategy && <span style={{ marginRight: 8 }}>{u.strategy}</span>}
+                  {u.strategy && <span style={{ marginRight: 8 }}>{t(u.strategy)}</span>}
                   {u.city && <span>{u.city}</span>}
                 </div>
               </div>

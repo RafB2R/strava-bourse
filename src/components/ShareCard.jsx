@@ -4,6 +4,7 @@ import { T as TLive } from "../theme";
 import { drawShareCard, shareText, SHARE_FORMATS } from "../shareCard";
 import { Circle } from "lucide-react";
 import Icon from "./Icon";
+import { t } from "../i18n";
 
 const APP_URL = typeof window !== "undefined" ? window.location.origin : "";
 const DOMAIN = APP_URL.replace(/^https?:\/\//, "");
@@ -72,10 +73,10 @@ export default function ShareCard({ session, perf, allocation, positions, onClos
         await navigator.share({ files: [file], text: `${text} ${APP_URL}` });
       } else {
         await navigator.share({ text, url: APP_URL });
-        setMessage("Ton navigateur ne partage pas les images : télécharge-la pour la publier.");
+        setMessage(t("Ton navigateur ne partage pas les images : télécharge-la pour la publier."));
       }
     } catch (e) {
-      if (e?.name !== "AbortError") setMessage("Le partage n'a pas abouti. Tu peux télécharger l'image.");
+      if (e?.name !== "AbortError") setMessage(t("Le partage n'a pas abouti. Tu peux télécharger l'image."));
     }
   }
 
@@ -88,7 +89,7 @@ export default function ShareCard({ session, perf, allocation, positions, onClos
     a.download = `verio-portefeuille-${format}.png`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setMessage("Image téléchargée");
+    setMessage(t("Image téléchargée"));
   }
 
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(APP_URL)}`;
@@ -101,10 +102,10 @@ export default function ShareCard({ session, perf, allocation, positions, onClos
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div role="dialog" aria-label="Partager mon portefeuille" onClick={e => e.stopPropagation()} style={{ background: T.bgSecondary, border: `0.5px solid ${T.border}`, borderRadius: 18, padding: 20, width: "100%", maxWidth: 440, maxHeight: "calc(100vh / var(--verio-zoom, 1) - 32px)", overflowY: "auto", fontFamily: "'Outfit', system-ui, sans-serif" }}>
+      <div role="dialog" aria-label={t("Partager mon portefeuille")} onClick={e => e.stopPropagation()} style={{ background: T.bgSecondary, border: `0.5px solid ${T.border}`, borderRadius: 18, padding: 20, width: "100%", maxWidth: 440, maxHeight: "calc(100vh / var(--verio-zoom, 1) - 32px)", overflowY: "auto", fontFamily: "'Outfit', system-ui, sans-serif" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: T.text, display: "flex", alignItems: "center", gap: 8 }}><Icon name="share" size={16} />Partager mon portefeuille</div>
-          <button onClick={onClose} aria-label="Fermer" style={{ background: "none", border: "none", fontSize: 18, color: T.textFaint, cursor: "pointer", display: "inline-flex", padding: 4 }}><Icon name="close" size={18} /></button>
+          <div style={{ fontSize: 16, fontWeight: 700, color: T.text, display: "flex", alignItems: "center", gap: 8 }}><Icon name="share" size={16} />{t("Partager mon portefeuille")}</div>
+          <button onClick={onClose} aria-label={t("Fermer")} style={{ background: "none", border: "none", fontSize: 18, color: T.textFaint, cursor: "pointer", display: "inline-flex", padding: 4 }}><Icon name="close" size={18} /></button>
         </div>
 
         <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
@@ -113,26 +114,26 @@ export default function ShareCard({ session, perf, allocation, positions, onClos
           ))}
         </div>
         <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
-          <button onClick={() => setShowPerf(v => !v)} style={pill(showPerf)}>{showPerf ? <Icon name="check" size={13} /> : <Circle size={13} strokeWidth={1.75} aria-hidden="true" />}Performance</button>
-          {format === "story" && <button onClick={() => setShowPositions(v => !v)} style={pill(showPositions)}>{showPositions ? <Icon name="check" size={13} /> : <Circle size={13} strokeWidth={1.75} aria-hidden="true" />}Positions</button>}
+          <button onClick={() => setShowPerf(v => !v)} style={pill(showPerf)}>{showPerf ? <Icon name="check" size={13} /> : <Circle size={13} strokeWidth={1.75} aria-hidden="true" />}{t("Performance")}</button>
+          {format === "story" && <button onClick={() => setShowPositions(v => !v)} style={pill(showPositions)}>{showPositions ? <Icon name="check" size={13} /> : <Circle size={13} strokeWidth={1.75} aria-hidden="true" />}{t("Positions")}</button>}
         </div>
 
         <div style={{ display: "flex", justifyContent: "center", background: T.bgSubtle, borderRadius: 12, padding: 12, marginBottom: 10 }}>
-          {!stats && <div style={{ fontSize: 13, color: T.textFaint, padding: "4rem 0" }}>Préparation de l'image…</div>}
+          {!stats && <div style={{ fontSize: 13, color: T.textFaint, padding: "4rem 0" }}>{t("Préparation de l'image…")}</div>}
           <canvas ref={canvasRef} style={{ display: stats ? "block" : "none", width: "auto", height: "auto", maxWidth: "100%", maxHeight: format === "story" ? "52vh" : "40vh", borderRadius: 10 }} />
         </div>
-        <div style={{ fontSize: 11, color: T.textFaint, textAlign: "center", marginBottom: 14 }}><Icon name="lock" size={12} style={{ marginRight: 4 }} />Aucun montant n'apparaît sur l'image, seulement des pourcentages.</div>
+        <div style={{ fontSize: 11, color: T.textFaint, textAlign: "center", marginBottom: 14 }}><Icon name="lock" size={12} style={{ marginRight: 4 }} />{t("Aucun montant n'apparaît sur l'image, seulement des pourcentages.")}</div>
 
         <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-          {nativeShare && <button onClick={share} style={btnPrimary}>Partager</button>}
-          <button onClick={download} style={nativeShare ? btnSecondary : btnPrimary}>Télécharger l'image</button>
+          {nativeShare && <button onClick={share} style={btnPrimary}>{t("Partager")}</button>}
+          <button onClick={download} style={nativeShare ? btnSecondary : btnPrimary}>{t("Télécharger l'image")}</button>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <a href={twitterUrl} target="_blank" rel="noopener noreferrer" style={btnSecondary}>Publier sur X</a>
+          <a href={twitterUrl} target="_blank" rel="noopener noreferrer" style={btnSecondary}>{t("Publier sur X")}</a>
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" style={btnSecondary}>WhatsApp</a>
         </div>
         <div style={{ fontSize: 11, color: T.textFaint, marginTop: 10, lineHeight: 1.5 }}>
-          Pour Instagram : sur mobile, « Partager » puis Instagram. Sur ordinateur, télécharge l'image puis publie-la depuis ton téléphone. X et WhatsApp reçoivent le texte et le lien ; ajoute l'image téléchargée si tu veux.
+          {t("Pour Instagram : sur mobile, « Partager » puis Instagram. Sur ordinateur, télécharge l'image puis publie-la depuis ton téléphone. X et WhatsApp reçoivent le texte et le lien ; ajoute l'image téléchargée si tu veux.")}
         </div>
         {message && <div style={{ fontSize: 12, color: T.accent, marginTop: 10, textAlign: "center" }}>{message}</div>}
       </div>
