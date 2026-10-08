@@ -4,6 +4,7 @@ import { T as TLive } from "../theme";
 import { badgeFromData } from "../badges";
 import { momentNotification } from "../moments";
 import { closeFinishedPolls, pollEndedText } from "../polls";
+import Icon from "./Icon";
 
 function timeAgo(date) {
   const diff = (Date.now() - new Date(date)) / 1000;
@@ -78,7 +79,7 @@ export default function Notifications({ session, T: TProp, onOpen }) {
         onClick={() => { setOpen(p => !p); if (!open) setReloadKey(k => k + 1); }}
         style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer", position: "relative", display: "flex", alignItems: "center", gap: 4 }}
       >
-        <span style={{ fontSize: 16 }}>🔔</span>
+        <Icon name="bell" size={16} style={{ color: T.textMuted }} />
         {unread > 0 && (
           <span style={{ position: "absolute", top: -4, right: -4, background: T.red, color: T.bg, borderRadius: "50%", width: 16, height: 16, fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
             {unread > 9 ? "9+" : unread}
@@ -107,8 +108,8 @@ export default function Notifications({ session, T: TProp, onOpen }) {
                   onClick={() => { if (!notif.read) markRead(notif.id); setOpen(false); onOpen?.(notif); }}
                   onKeyDown={e => { if (e.key === "Enter") { if (!notif.read) markRead(notif.id); setOpen(false); onOpen?.(notif); } }}
                   style={{ display: "flex", gap: 12, padding: "12px 16px", borderBottom: `0.5px solid ${T.border}`, background: notif.read ? "none" : T.accentBg, cursor: "pointer" }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
-                    {meta.icon}
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, color: T.textMuted }}>
+                    <Icon emoji={meta.icon} size={16} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, color: notif.read ? T.textMuted : T.text, lineHeight: 1.4, marginBottom: 3 }}>{meta.text}</div>

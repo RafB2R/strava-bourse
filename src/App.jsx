@@ -7,6 +7,7 @@ import { syncMoments } from "./moments";
 import { fetchUnreadTotal } from "./messages";
 import Notifications from "./components/Notifications";
 import Comparison from "./components/Comparison";
+import Icon from "./components/Icon";
 
 // Écrans chargés à la demande pour alléger le bundle initial
 const Landing = lazy(() => import("./Landing"));
@@ -25,10 +26,10 @@ const InstallBanner = lazy(() => import("./components/InstallBanner"));
 const FriendSuggestions = lazy(() => import("./components/SideWidgets").then(m => ({ default: m.FriendSuggestions })));
 
 const TABS = [
-  { id: "feed", label: "Fil", icon: "🏠" },
-  { id: "explore", label: "Explore", icon: "🔍" },
-  { id: "portfolio", label: "Portef.", icon: "📊" },
-  { id: "profil", label: "Profil", icon: "👤" },
+  { id: "feed", label: "Fil", icon: "home" },
+  { id: "explore", label: "Explore", icon: "search" },
+  { id: "portfolio", label: "Portef.", icon: "chart" },
+  { id: "profil", label: "Profil", icon: "user" },
 ];
 
 // Onglet demandé par l'adresse (raccourcis de l'application installée : /?tab=portfolio)
@@ -53,17 +54,17 @@ function desktopZoom() {
 function getGreeting(name) {
   const hour = new Date().getHours();
   const firstName = name?.split(" ")[0] || "";
-  if (hour < 12) return `Bonjour ${firstName} ☀️`;
-  if (hour < 18) return `Bon après-midi ${firstName} 👋`;
-  return `Bonsoir ${firstName} 🌙`;
+  if (hour < 12) return `Bonjour ${firstName}`;
+  if (hour < 18) return `Bon après-midi ${firstName}`;
+  return `Bonsoir ${firstName}`;
 }
 
-// Bouton 💬 à côté de la cloche des notifications, avec le nombre de messages non lus
+// Bouton messagerie à côté de la cloche des notifications, avec le nombre de messages non lus
 function MessagesButton({ unread, onClick, active, T }) {
   return (
     <button onClick={onClick} aria-label={unread > 0 ? `Messagerie, ${unread} message(s) non lu(s)` : "Messagerie"}
       style={{ background: active ? T.accentBg : "none", border: `0.5px solid ${active ? T.accent : T.borderStrong}`, borderRadius: 8, padding: "6px 10px", cursor: "pointer", position: "relative", display: "flex", alignItems: "center" }}>
-      <span style={{ fontSize: 16 }}>💬</span>
+      <Icon name="comment" size={16} style={{ color: T.textMuted }} />
       {unread > 0 && (
         <span style={{ position: "absolute", top: -4, right: -4, background: T.red, color: T.bg, borderRadius: 999, minWidth: 16, height: 16, padding: "0 4px", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
           {unread > 9 ? "9+" : unread}
@@ -97,7 +98,7 @@ function MarketWidget({ T }) {
 
   return (
     <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: 16, marginBottom: 16 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 12 }}>📈 Marchés</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}><Icon name="up" size={14} />Marchés</div>
       {INDICES.map(({ label }) => {
         const d = data[label];
         const change = d?.change;
@@ -122,7 +123,7 @@ function ComparisonWidget({ data, myId, T }) {
   if (!data) return null;
   return (
     <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: 16, marginBottom: 16 }}>
-      <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>⚖️ Comparaison</div>
+      <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, display: "flex", alignItems: "center", gap: 5 }}><Icon name="scale" size={13} />Comparaison</div>
       <Comparison key={data.userId} myId={myId} theirEntries={data.entries} theirName={data.profile.full_name?.split(" ")[0]} T={T} />
     </div>
   );
@@ -215,7 +216,7 @@ export default function App() {
     return () => { ignore = true; clearInterval(timer); };
   }, [userId]);
 
-  // « ✉️ Message » depuis un profil : ouvre la conversation dans l'onglet Messages
+  // « Message » depuis un profil : ouvre la conversation dans l'onglet Messages
   // Ordinateur : fenêtre de discussion en bas d'écran ; mobile : messagerie plein écran
   function openMessage(otherId) {
     if (isDesktop) { setDockTarget(otherId); setDockOpen(true); return; }
@@ -310,7 +311,7 @@ export default function App() {
   const kyc = profile && !profile.kyc_complete && !showKYC;
   const kycBanner = kyc ? (
     <div style={{ background: T.accentBg, borderBottom: `1px solid ${T.border}`, padding: "10px 24px", display: "flex", alignItems: "center", gap: 12 }}>
-      <span>📋</span>
+      <Icon name="list" size={18} style={{ color: T.accent }} />
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: T.accent }}>Complète ton profil investisseur</div>
         <div style={{ fontSize: 12, color: T.textMuted }}>Personnalise ton expérience en 2 minutes</div>
@@ -358,13 +359,13 @@ export default function App() {
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => goToTab(t.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 10, border: "none", background: tab === t.id ? T.accentBg : "transparent", color: tab === t.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === t.id ? 700 : 400, fontSize: 14 }}>
-              <span style={{ fontSize: 18 }}>{t.icon}</span>{t.label}
+              <Icon name={t.icon} size={18} />{t.label}
             </button>
           ))}
         </div>
         <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
           <button onClick={toggleTheme} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 10, border: "none", background: "transparent", color: T.textMuted, cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>
-            <span>{themeKey === "dark" ? "☀️" : "🌙"}</span>
+            <Icon name={themeKey === "dark" ? "sun" : "moon"} size={16} />
             {themeKey === "dark" ? "Mode clair" : "Mode sombre"}
           </button>
           {profile?.full_name && (
@@ -373,7 +374,7 @@ export default function App() {
                 {profile.full_name[0]}
               </div>
               <button onClick={() => goToTab("profil")} title="Mon profil" style={{ flex: 1, minWidth: 0, textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.full_name}</button>
-              <button onClick={handleLogout} style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 16 }} title="Déconnexion">↩</button>
+              <button onClick={handleLogout} style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center" }} title="Déconnexion"><Icon name="logout" size={16} /></button>
             </div>
           )}
         </div>
@@ -426,8 +427,8 @@ export default function App() {
             {profile?.full_name && <div style={{ fontSize: 12, color: T.textMuted, marginTop: 1 }}>{getGreeting(profile.full_name)}</div>}
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <button onClick={toggleTheme} style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "6px 10px", fontSize: 14, cursor: "pointer" }}>
-              {themeKey === "dark" ? "☀️" : "🌙"}
+            <button onClick={toggleTheme} style={{ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "6px 10px", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", color: T.textMuted }}>
+              <Icon name={themeKey === "dark" ? "sun" : "moon"} size={16} />
             </button>
             <Notifications session={session} T={T} onOpen={openNotification} />
             <MessagesButton unread={unreadMessages} active={tab === "messages"} onClick={() => goToTab("messages")} T={T} />
@@ -444,7 +445,7 @@ export default function App() {
         <div style={{ maxWidth: 620, margin: "0 auto", display: "flex" }}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => goToTab(t.id)} style={{ flex: 1, padding: "12px 4px 14px", fontSize: 10, background: "none", border: "none", color: tab === t.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === t.id ? 600 : 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: 20 }}>{t.icon}</span>{t.label}
+              <Icon name={t.icon} size={20} />{t.label}
             </button>
           ))}
         </div>

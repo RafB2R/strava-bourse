@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
 import { normalizeUsername, usernameFormatError, isUsernameAvailable } from "../usernames";
+import Icon from "./Icon";
 
 const inp = (T) => ({ width: "100%", padding: "12px 14px", fontSize: 14, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: T.text, fontFamily: "inherit", marginBottom: 12, display: "block" });
 const btn = { width: "100%", padding: "12px", fontSize: 14, fontWeight: 700, borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "inherit" };
@@ -75,8 +76,8 @@ export default function Auth({ T: TProp }) {
       <div style={{ width: "100%", maxWidth: 400 }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ fontSize: 28, fontWeight: 700, color: T.text, marginBottom: 6 }}>ve<span style={{ color: T.accent }}>rio</span></div>
-          <div style={{ fontSize: 14, color: T.textMuted }}>
-            {mode === "login" ? "Content de te revoir 👋" : "Rejoins la communauté 🌱"}
+          <div style={{ fontSize: 14, color: T.textMuted, display: "inline-flex", alignItems: "center", gap: 6 }}>
+            {mode === "login" ? "Content de te revoir" : "Rejoins la communauté"}<Icon name={mode === "login" ? "hand" : "leaf"} size={15} />
           </div>
         </div>
 
@@ -108,8 +109,8 @@ export default function Auth({ T: TProp }) {
                 aria-invalid={status?.ok === false} aria-describedby="username-status"
                 onChange={e => setUsername(e.target.value.replace(/\s/g, ""))} />
               {status && (
-                <div id="username-status" role="status" style={{ fontSize: 12, marginBottom: 12, color: status.ok === false ? T.red : status.ok ? T.accent : T.textFaint }}>
-                  {status.ok === true ? "✓ " : status.ok === false ? "✗ " : ""}{status.text}
+                <div id="username-status" role="status" style={{ fontSize: 12, marginBottom: 12, color: status.ok === false ? T.red : status.ok ? T.accent : T.textFaint, display: "flex", alignItems: "center", gap: 5 }}>
+                  {status.ok === true ? <Icon name="check" size={13} /> : status.ok === false ? <Icon name="close" size={13} /> : null}{status.text}
                 </div>
               )}
             </>
@@ -121,8 +122,8 @@ export default function Auth({ T: TProp }) {
           <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Mot de passe</label>
           <input style={{ ...inp(T), marginBottom: 16 }} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} />
 
-          {error && <div style={{ fontSize: 13, color: T.red, marginBottom: 12 }}>⚠️ {error}</div>}
-          {success && <div style={{ fontSize: 13, color: T.accent, marginBottom: 12 }}>✅ {success}</div>}
+          {error && <div style={{ fontSize: 13, color: T.red, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}><Icon name="warning" size={14} />{error}</div>}
+          {success && <div style={{ fontSize: 13, color: T.accent, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}><Icon name="ok" size={14} />{success}</div>}
 
           <button onClick={handleSubmit} disabled={loading || (mode === "register" && status?.ok === false)} style={{ ...btn, background: T.accent, color: T.onAccent, marginBottom: 14, opacity: mode === "register" && status?.ok === false ? 0.5 : 1 }}>
             {loading ? "Chargement…" : mode === "login" ? "Se connecter" : "Créer mon compte"}

@@ -4,6 +4,7 @@ import { shortTime, fetchConversations, fetchMessages, sendMessage, markRead, st
 import { MAX_IMAGES, ACCEPT_ATTR, isImage, compressImage, MAX_FILES, FILE_ACCEPT_ATTR, checkFile } from "../media";
 import { PostImages, ComposerPreviews, PostFiles, ComposerFiles } from "./PostMedia";
 import Avatar from "./Avatar";
+import Icon from "./Icon";
 
 
 // Fil d'une conversation : messages en temps réel, envoi, lecture
@@ -135,7 +136,7 @@ export function Thread({ conversation, session, T, onBack, onViewProfile, onRead
         {dock && (
           <>
             <button onClick={e => { e.stopPropagation(); onToggleMinimize?.(); }} aria-label={minimized ? "Agrandir la conversation" : "Réduire la conversation"} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 14, padding: "2px 6px" }}>{minimized ? "▴" : "▾"}</button>
-            <button onClick={e => { e.stopPropagation(); onClose?.(); }} aria-label="Fermer la conversation" style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 14, padding: "2px 6px" }}>✕</button>
+            <button onClick={e => { e.stopPropagation(); onClose?.(); }} aria-label="Fermer la conversation" style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 14, padding: "2px 6px", display: "flex", alignItems: "center" }}><Icon name="close" size={15} /></button>
           </>
         )}
       </div>
@@ -143,7 +144,7 @@ export function Thread({ conversation, session, T, onBack, onViewProfile, onRead
       {!minimized && <>
       <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: dock ? "10px 12px" : "14px", display: "flex", flexDirection: "column", gap: 6 }}>
         {messages === null && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", margin: "auto" }}>Chargement…</div>}
-        {messages?.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", margin: "auto" }}>Aucun message. Dis bonjour 👋</div>}
+        {messages?.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", margin: "auto" }}>Aucun message. Dis bonjour <Icon name="hand" size={14} /></div>}
         {messages?.map((m, i) => {
           const mine = m.sender_id === me;
           const prev = messages[i - 1];
@@ -155,14 +156,14 @@ export function Thread({ conversation, session, T, onBack, onViewProfile, onRead
                 <div style={{ maxWidth: "78%", marginBottom: m.content?.trim() ? 3 : 0 }}>
                   {m.images.some(img => urls[img.path])
                     ? <PostImages images={m.images.map(img => ({ ...img, url: urls[img.path] }))} T={T} compact />
-                    : <div style={{ width: 160, height: 110, borderRadius: 10, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: T.textFaint }}>📷 Chargement…</div>}
+                    : <div style={{ width: 160, height: 110, borderRadius: 10, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: T.textFaint, gap: 6 }}><Icon name="camera" size={14} />Chargement…</div>}
                 </div>
               )}
               {m.files?.length > 0 && (
                 <div style={{ maxWidth: "78%", marginBottom: m.content?.trim() ? 3 : 0 }}>
                   {m.files.some(f => fileUrls[f.path])
                     ? <PostFiles files={m.files} urls={fileUrls} T={T} compact />
-                    : <div style={{ fontSize: 12, color: T.textFaint, padding: "8px 12px", borderRadius: 10, background: T.bgSubtle }}>📎 Chargement…</div>}
+                    : <div style={{ fontSize: 12, color: T.textFaint, padding: "8px 12px", borderRadius: 10, background: T.bgSubtle, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="clip" size={13} />Chargement…</div>}
                 </div>
               )}
               {m.content?.trim() && (
@@ -184,18 +185,18 @@ export function Thread({ conversation, session, T, onBack, onViewProfile, onRead
           <input ref={fileInput} type="file" accept={ACCEPT_ATTR} multiple hidden onChange={e => { addImages(e.target.files); e.target.value = ""; }} />
           <button onClick={() => fileInput.current?.click()} aria-label="Joindre une image" title="Joindre une image"
             disabled={pending.length + preparing >= MAX_IMAGES}
-            style={{ background: "none", border: "none", fontSize: 20, padding: "6px 2px", cursor: "pointer", opacity: pending.length + preparing >= MAX_IMAGES ? 0.4 : 1 }}>🖼️</button>
+            style={{ background: "none", border: "none", fontSize: 20, padding: "6px 2px", cursor: "pointer", color: T.textMuted, display: "flex", alignItems: "center", opacity: pending.length + preparing >= MAX_IMAGES ? 0.4 : 1 }}><Icon name="image" size={20} /></button>
           <input ref={docInput} type="file" accept={FILE_ACCEPT_ATTR} multiple hidden onChange={e => { addFiles(e.target.files); e.target.value = ""; }} />
           <button onClick={() => docInput.current?.click()} aria-label="Joindre un fichier" title="Joindre un fichier (PDF, Excel, Word… 10 Mo max)"
             disabled={pendingFiles.length >= MAX_FILES}
-            style={{ background: "none", border: "none", fontSize: 19, padding: "6px 2px", cursor: "pointer", opacity: pendingFiles.length >= MAX_FILES ? 0.4 : 1 }}>📎</button>
+            style={{ background: "none", border: "none", fontSize: 19, padding: "6px 2px", cursor: "pointer", color: T.textMuted, display: "flex", alignItems: "center", opacity: pendingFiles.length >= MAX_FILES ? 0.4 : 1 }}><Icon name="clip" size={19} /></button>
           <textarea value={input} onChange={e => setInput(e.target.value)} rows={1} maxLength={2000} placeholder="Écris un message…"
             onPaste={e => { const files = [...e.clipboardData.files].filter(isImage); if (files.length) { e.preventDefault(); addImages(files); } }}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
             style={{ flex: 1, resize: "none", padding: "9px 12px", fontSize: 14, borderRadius: 18, border: `0.5px solid ${T.input.border}`, background: T.input.background, color: T.input.color, fontFamily: "inherit", maxHeight: 120 }} />
           <button onClick={send} disabled={!canSend} aria-label="Envoyer"
             style={{ background: T.accent, color: T.onAccent, border: "none", borderRadius: 18, padding: dock ? "9px 12px" : "9px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", opacity: canSend ? 1 : 0.5 }}>
-            {sending ? "…" : dock ? "➤" : "Envoyer"}
+            {sending ? "…" : dock ? <Icon name="send" size={15} /> : "Envoyer"}
           </button>
         </div>
       </div>
@@ -227,7 +228,7 @@ export default function Messages({ session, T: TProp, openWith, onOpened, onView
     return () => { ignore = true; };
   }, [reloadKey, onUnreadChange]);
 
-  // Ouverture directe depuis un profil (« ✉️ Message »)
+  // Ouverture directe depuis un profil (« Message »)
   useEffect(() => {
     if (!openWith) return;
     let ignore = false;
@@ -272,8 +273,8 @@ export default function Messages({ session, T: TProp, openWith, onOpened, onView
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <div style={{ fontSize: 20, fontWeight: 800, color: T.text }}>Messages</div>
-        <button onClick={() => setPicking(p => !p)} style={{ background: T.accent, color: T.onAccent, border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-          {picking ? "Fermer" : "✉️ Nouveau message"}
+        <button onClick={() => setPicking(p => !p)} style={{ background: T.accent, color: T.onAccent, border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 }}>
+          {picking ? "Fermer" : <><Icon name="mail" size={14} />Nouveau message</>}
         </button>
       </div>
       {error && <div style={{ ...card, color: T.red, fontSize: 13 }}>{error}</div>}
@@ -299,7 +300,7 @@ export default function Messages({ session, T: TProp, openWith, onOpened, onView
         {conversations === null && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>Chargement…</div>}
         {conversations?.length === 0 && (
           <div style={{ textAlign: "center", padding: "1.5rem 0" }}>
-            <div style={{ fontSize: 28, marginBottom: 8 }}>💬</div>
+            <div style={{ marginBottom: 8, color: T.textFaint }}><Icon name="comment" size={28} /></div>
             <div style={{ fontSize: 14, color: T.textMuted, marginBottom: 4 }}>Aucune conversation pour l'instant</div>
             <div style={{ fontSize: 12, color: T.textFaint }}>Écris à un ami avec « Nouveau message » ou depuis son profil.</div>
           </div>
@@ -322,7 +323,7 @@ export default function Messages({ session, T: TProp, openWith, onOpened, onView
           </button>
         ))}
       </div>
-      <div style={{ fontSize: 11, color: T.textFaint, textAlign: "center" }}>🔒 Messages visibles uniquement par les participants. Tu ne peux écrire qu'à tes amis.</div>
+      <div style={{ fontSize: 11, color: T.textFaint, textAlign: "center" }}><Icon name="lock" size={11} style={{ marginRight: 4 }} />Messages visibles uniquement par les participants. Tu ne peux écrire qu'à tes amis.</div>
     </div>
   );
 }

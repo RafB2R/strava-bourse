@@ -5,6 +5,7 @@ import { INDICES } from "../indices";
 import { fetchSuperInvestors, setFollowing } from "../superInvestors";
 import { fetchFollowedAssets, setFollowingAsset } from "../assetFollows";
 import Avatar from "./Avatar";
+import Icon from "./Icon";
 
 // Juste après le questionnaire d'inscription : premiers comptes à suivre, pour que
 // le fil ne soit pas vide. Tout est facultatif (« Passer ») et se change ensuite.
@@ -85,7 +86,7 @@ export default function Onboarding({ session, T: TProp, onDone }) {
   }
 
   const total = followedSupers.size + followedAssets.size; // les demandes d'ami attendent une réponse
-  const section = { fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", margin: "18px 0 8px" };
+  const section = { fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", margin: "18px 0 8px", display: "flex", alignItems: "center", gap: 6 };
   const chip = on => ({
     padding: "7px 12px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
     border: `0.5px solid ${on ? T.accent : T.border}`, background: on ? T.accentBg : T.bgCard, color: on ? T.accent : T.text,
@@ -94,43 +95,43 @@ export default function Onboarding({ session, T: TProp, onDone }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "1rem" }}>
       <div style={{ background: T.bgSecondary, border: `0.5px solid ${T.border}`, borderRadius: 20, padding: "1.75rem", maxWidth: 560, width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
-        <div style={{ fontSize: 28, marginBottom: 8 }}>✨</div>
+        <div style={{ marginBottom: 8, color: T.accent }}><Icon name="sparkles" size={28} /></div>
         <div style={{ fontSize: 20, fontWeight: 700, color: T.text, marginBottom: 4 }}>Remplis ton fil</div>
         <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5 }}>
           Suis quelques investisseurs, sociétés et indices : leurs mouvements et leurs actualités arriveront dans ton fil. Tu pourras changer ça à tout moment.
         </div>
 
         {supers.length > 0 && <>
-          <div style={section}>🏆 Légendes</div>
+          <div style={section}><Icon name="trophy" size={13} />Légendes</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {supers.map(s => (
               <button key={s.user_id} onClick={() => toggleSuper(s.user_id)} aria-pressed={followedSupers.has(s.user_id)} title={`${s.firm} · ${s.style}`} style={chip(followedSupers.has(s.user_id))}>
-                {s.icon} {s.profile?.full_name}{followedSupers.has(s.user_id) ? " ✓" : ""}
+                {s.icon} {s.profile?.full_name}{followedSupers.has(s.user_id) && <Icon name="check" size={13} style={{ marginLeft: 4 }} />}
               </button>
             ))}
           </div>
         </>}
 
-        <div style={section}>🏢 Sociétés</div>
+        <div style={section}><Icon name="building" size={13} />Sociétés</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {COMPANIES.map(c => (
             <button key={c.symbol} onClick={() => toggleAsset(c)} aria-pressed={followedAssets.has(c.symbol)} style={chip(followedAssets.has(c.symbol))}>
-              {c.name}{followedAssets.has(c.symbol) ? " ✓" : ""}
+              {c.name}{followedAssets.has(c.symbol) && <Icon name="check" size={13} style={{ marginLeft: 4 }} />}
             </button>
           ))}
         </div>
 
-        <div style={section}>📈 Indices</div>
+        <div style={section}><Icon name="up" size={13} />Indices</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {INDICES.map(i => ({ symbol: i.symbol, name: i.name, type: "Indice" })).map(i => (
             <button key={i.symbol} onClick={() => toggleAsset(i)} aria-pressed={followedAssets.has(i.symbol)} style={chip(followedAssets.has(i.symbol))}>
-              {i.name}{followedAssets.has(i.symbol) ? " ✓" : ""}
+              {i.name}{followedAssets.has(i.symbol) && <Icon name="check" size={13} style={{ marginLeft: 4 }} />}
             </button>
           ))}
         </div>
 
         {members.length > 0 && <>
-          <div style={section}>👥 Membres actifs</div>
+          <div style={section}><Icon name="users" size={13} />Membres actifs</div>
           {members.map(m => (
             <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `0.5px solid ${T.border}` }}>
               <Avatar userId={m.id} name={m.full_name} size={34} />

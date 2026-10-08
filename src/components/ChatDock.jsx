@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { T as TLive } from "../theme";
 import { Thread } from "./Messages";
 import Avatar from "./Avatar";
+import Icon from "./Icon";
 import { shortTime, fetchConversations, startConversation, fetchFriends } from "../messages";
 
 const BAR_WIDTH = 300;
@@ -45,7 +46,7 @@ export default function ChatDock({ session, T: TProp, open, onToggle, target, on
     setActive(list.find(c => c.conversation_id === id) || null);
   }, []);
 
-  // « ✉️ Message » depuis un profil : ouvre directement la fenêtre de discussion.
+  // « Message » depuis un profil : ouvre directement la fenêtre de discussion.
   // La cible n'est effacée qu'une fois la conversation ouverte (sinon l'effet serait annulé).
   useEffect(() => {
     if (!target) return;
@@ -90,7 +91,7 @@ export default function ChatDock({ session, T: TProp, open, onToggle, target, on
       {/* Barre « Messagerie » et liste des conversations */}
       <div style={{ position: "fixed", bottom: 0, right: 16, width: BAR_WIDTH, zIndex: 60, ...panel }}>
         <button onClick={onToggle} aria-expanded={open} style={{ ...rowBtn, padding: "10px 12px", borderBottom: open ? `0.5px solid ${T.border}` : "none" }}>
-          <span style={{ fontSize: 16 }}>💬</span>
+          <Icon name="comment" size={16} style={{ color: T.textMuted }} />
           <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: T.text }}>Messagerie</span>
           {unread > 0 && <span style={{ background: T.red, color: T.bg, borderRadius: 999, fontSize: 11, fontWeight: 700, padding: "1px 7px" }}>{unread}</span>}
           <span style={{ fontSize: 13, color: T.textMuted }}>{open ? "▾" : "▴"}</span>
@@ -99,8 +100,8 @@ export default function ChatDock({ session, T: TProp, open, onToggle, target, on
         {open && (
           <div style={{ height: 380, display: "flex", flexDirection: "column" }}>
             <div style={{ padding: "8px 12px", borderBottom: `0.5px solid ${T.border}` }}>
-              <button onClick={() => setPicking(p => !p)} style={{ width: "100%", background: picking ? "none" : T.accent, color: picking ? T.textMuted : T.onAccent, border: picking ? `0.5px solid ${T.border}` : "none", borderRadius: 8, padding: "7px 10px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                {picking ? "Annuler" : "✉️ Nouveau message"}
+              <button onClick={() => setPicking(p => !p)} style={{ width: "100%", background: picking ? "none" : T.accent, color: picking ? T.textMuted : T.onAccent, border: picking ? `0.5px solid ${T.border}` : "none", borderRadius: 8, padding: "7px 10px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                {picking ? "Annuler" : <><Icon name="mail" size={13} />Nouveau message</>}
               </button>
               {error && <div style={{ fontSize: 12, color: T.red, marginTop: 6 }}>{error}</div>}
             </div>
