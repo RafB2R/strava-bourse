@@ -11,6 +11,7 @@ import IndexDetail from "./IndexDetail";
 import { resolveAsset } from "../attachments";
 import { detailFor } from "../indices";
 import { useDetailView } from "../useDetailView";
+import { autoFollowPortfolio } from "../assetFollows";
 
 const VEHICULES = ["ETF", "Action directe", "Fonds actif", "Obligation directe", "SCPI", "Crypto", "Autre"];
 const EXPOSITIONS = ["Actions", "Obligations", "Immobilier", "Multi-actifs", "Monétaire", "Crypto", "Matières premières"];
@@ -243,6 +244,8 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
   const onInitialEntries = useEffectEvent(async raw => {
     const data = await normalize(raw);
     applyEntries(data);
+    // Les actions détenues sont suivies automatiquement (leurs actualités dans le fil)
+    autoFollowPortfolio(session.user.id, data).catch(() => {});
     if (data && data.length > 0 && !hasRefreshed.current) {
       hasRefreshed.current = true;
       refreshAllPrices(data);
@@ -354,6 +357,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
     if (form.broker.trim() && !knownBrokers.includes(form.broker.trim())) await createActivity(session.user.id, "new_broker", { broker: form.broker.trim() });
     setForm({ label: "", isin: "", vehicule: "ETF", exposition: "Actions", percentage: "", prix_achat: "", prix_actuel: "", nombre_parts: "", broker: "" });
     setShowForm(false); loadEntries(); setSaving(false);
+    autoFollowPortfolio(session.user.id, [{ type: form.vehicule, isin: form.isin.trim().toUpperCase() || null, label: form.label.trim() }]).catch(() => {});
     // Badges et moments (premier ETF, portefeuille complet…) calculés côté serveur
     syncBadges();
     syncMoments();
