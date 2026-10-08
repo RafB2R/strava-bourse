@@ -16,7 +16,7 @@ import { tagAtCaret, finalizeTags, hasHashtag } from "../tags";
 import IndexDetail from "./IndexDetail";
 import { detailFor } from "../indices";
 import { fetchFollowedIds, fetchFollowedNews, quarterLabel } from "../superInvestors";
-import { fetchCompanyNews } from "../assetFollows";
+import { fetchCompanyNews, fetchFollowedAssets, setFollowingAsset } from "../assetFollows";
 import Avatar from "./Avatar";
 
 // Actualités dans le fil (Super Investors et sociétés suivis) : 4 au plus, un titre une seule fois
@@ -258,10 +258,16 @@ async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYP
   else {
     query = query.in("type", FEED_TYPES);
     if (scope === "amis") query = query.in("user_id", [...ids, ...followed]);
+    // « Mes valeurs » : les posts qui citent une de mes valeurs (filtrés plus bas)
+    if (scope === "valeurs") query = query.eq("type", "post");
   }
   const { data } = await query;
+  const mine = scope === "valeurs" && !onlyUserId && !focusId && !hashtag ? await fetchFollowedAssets(userId).catch(() => []) : [];
+  const mySymbols = new Set(mine.map(a => a.symbol));
   // « #dividende » ne doit pas ramener « #dividendes »
-  const activities = (data || []).filter(a => !hashtag || hasHashtag(a.data?.content, hashtag));
+  const activities = (data || [])
+    .filter(a => !hashtag || hasHashtag(a.data?.content, hashtag))
+    .filter(a => scope !== "valeurs" || onlyUserId || focusId || hashtag || (a.data?.tickers || []).some(t => mySymbols.has(t.symbol)));
 
   // Likes et commentaires des activités affichées
   const likes = {}, comments = {};
@@ -281,9 +287,12 @@ async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYP
   const pollIds = activities.filter(a => a.type === "post" && a.data?.poll).map(a => a.id);
   const [polls, clubPosts, news] = await Promise.all([
     fetchPolls(pollIds, userId),
-    (onlyUserId || focusId) ? [] : fetchMyClubPosts(userId, hashtag),
-    // Un peu d'actualité des Super Investors et des sociétés suivis (fil principal)
-    onlyUserId || focusId || hashtag ? [] : Promise.all([
+    (onlyUserId || focusId || scope === "valeurs") ? [] : fetchMyClubPosts(userId, hashtag),
+    // « Mes valeurs » : l'actualité de chaque société et indice suivis (3 articles sur 7 jours)
+    // Ailleurs : un peu d'actualité des Légendes et des sociétés suivies
+    onlyUserId || focusId || hashtag ? [] : scope === "valeurs"
+      ? fetchCompanyNews(userId, { perAsset: 3, days: 7, assets: mine }).then(list => list.sort((x, y) => new Date(y.created_at) - new Date(x.created_at)).slice(0, 40)).catch(() => [])
+      : Promise.all([
       followed.length ? fetchFollowedNews(userId).catch(() => []) : [],
       fetchCompanyNews(userId).catch(() => []),
     ]).then(([a, b]) => {
@@ -309,7 +318,7 @@ async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYP
       if (l.user_id === userId) entry.mine = true;
     }
   }
-  return { ids, activities, likes, comments, polls, newsLikes, newsComments, clubPosts: [...clubPosts, ...news] };
+  return { ids, activities, likes, comments, polls, newsLikes, newsComments, followedAssets: mine, clubPosts: [...clubPosts, ...news] };
 }
 
 // « onlyUserId » : version intégrée au profil public — mêmes cartes que le fil, limitées à ce
@@ -334,6 +343,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
   const [likes, setLikes] = useState({});
   const [newsLikes, setNewsLikes] = useState({}); // likes des actualités, par adresse de l'article
   const [newsComments, setNewsComments] = useState({}); // commentaires des actualités, par adresse
+  const [followedAssets, setFollowedAssets] = useState([]); // onglet « Mes valeurs »
   const [comments, setComments] = useState({});
   const [openComment, setOpenComment] = useState(() => (focusId != null ? { [focusId]: true } : {}));
   const [commentInputs, setCommentInputs] = useState({});
@@ -379,8 +389,9 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
 
   useEffect(() => {
     let ignore = false;
-    fetchFeed(userId, scope, onlyUserId, only === "posts" ? ["post"] : TRADE_TYPES, hashtag, focusId).then(({ ids, activities, likes, comments, polls, newsLikes, newsComments, clubPosts }) => {
+    fetchFeed(userId, scope, onlyUserId, only === "posts" ? ["post"] : TRADE_TYPES, hashtag, focusId).then(({ ids, activities, likes, comments, polls, newsLikes, newsComments, followedAssets, clubPosts }) => {
       if (ignore) return;
+      setFollowedAssets(followedAssets);
       setNewsLikes(newsLikes);
       setNewsComments(newsComments);
       setClubPosts(clubPosts);
@@ -689,7 +700,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
       const { error } = await supabase.from("club_reactions").delete().eq("id", mine.id);
       if (error) setReactions(rs => [...rs, mine]);
     } else {
-      const temp = { id: `tmp-${Date.now()}`, post_id: post.id, user_id: userId, type: "👍" };
+      const temp = { id: `tmp-${post.id}`, post_id: post.id, user_id: userId, type: "👍" };
       setReactions(rs => [...rs, temp]);
       const { data, error } = await supabase.from("club_reactions").insert({ post_id: post.id, user_id: userId, type: "👍" }).select("id, post_id, user_id, type").single();
       if (error) setReactions(rs => rs.filter(r => r !== temp));
@@ -699,6 +710,13 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
       }
     }
     likePending.current.delete(key);
+  }
+
+  // Ne plus suivre une société depuis « Mes valeurs » (elle ne sera pas resuivie automatiquement)
+  async function unfollowAsset(asset) {
+    setFollowedAssets(list => list.filter(a => a.symbol !== asset.symbol));
+    setClubPosts(list => list.filter(p => p.kind !== "news" || p.company?.symbol !== asset.symbol));
+    if (!(await setFollowingAsset(userId, asset, false))) setReloadKey(k => k + 1);
   }
 
   function toggleComment(id) { setOpenComment(p => ({ ...p, [id]: !p[id] })); }
@@ -832,12 +850,31 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
 
       {/* Scope */}
       {!embedded && <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-        {[["verio", "🔥 Découvrir"], ["amis", "📌 Mon fil"]].map(([id, label]) => (
+        {[["verio", "🔥 Découvrir"], ["amis", "📌 Mon fil"], ["valeurs", "🏢 Mes valeurs"]].map(([id, label]) => (
           <button key={id} onClick={() => { if (id !== scope) { setLoading(true); setScope(id); } }} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${scope === id ? T.accent : T.border}`, background: scope === id ? T.accentBg : "none", color: scope === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>
             {label}
           </button>
         ))}
       </div>}
+
+      {/* Mes valeurs : sociétés et indices suivis (✕ pour ne plus suivre) */}
+      {!embedded && scope === "valeurs" && !loading && (
+        <div style={{ ...card, padding: "0.9rem 1rem" }}>
+          <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Sociétés et indices suivis</div>
+          {followedAssets.length === 0
+            ? <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5 }}>Les actions de ton portefeuille sont suivies automatiquement. Tu peux aussi suivre une société ou un indice depuis sa fiche.</div>
+            : <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {followedAssets.map(a => (
+                  <span key={a.symbol} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 6px 4px 10px", borderRadius: 999, border: `0.5px solid ${T.border}`, background: T.bgSubtle, fontSize: 12 }}>
+                    <button onClick={() => openAssetDetail(a)} style={{ background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: T.text, cursor: "pointer" }}>{a.name}</button>
+                    {a.auto && <span title="Suivie automatiquement : elle est dans ton portefeuille" style={{ fontSize: 10, color: T.textFaint }}>portefeuille</span>}
+                    <button onClick={() => unfollowAsset(a)} aria-label={`Ne plus suivre ${a.name}`} title="Ne plus suivre"
+                      style={{ width: 18, height: 18, borderRadius: "50%", border: "none", background: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, lineHeight: 1, padding: 0 }}>✕</button>
+                  </span>
+                ))}
+              </div>}
+        </div>
+      )}
 
       {/* Filtres */}
       {!embedded && <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
