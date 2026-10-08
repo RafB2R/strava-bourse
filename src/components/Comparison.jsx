@@ -34,9 +34,9 @@ function Row({ label, mine, theirs, format, better, T }) {
   const theyBetter = comparable && !meBetter;
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 6, padding: "7px 0", borderTop: `0.5px solid ${T.border}`, alignItems: "center" }}>
-      <div style={{ textAlign: "right", fontSize: 13, fontWeight: 700, color: meBetter ? T.accent : T.text }}>{mine != null ? format(mine) : "—"}</div>
+      <div style={{ textAlign: "right", fontSize: 13, fontWeight: 700, color: meBetter ? T.up : T.text }}>{mine != null ? format(mine) : "—"}</div>
       <div style={{ textAlign: "center", fontSize: 10, color: T.textFaint, minWidth: 84 }}>{label}</div>
-      <div style={{ textAlign: "left", fontSize: 13, fontWeight: 700, color: theyBetter ? T.accent : T.text }}>{theirs != null ? format(theirs) : "—"}</div>
+      <div style={{ textAlign: "left", fontSize: 13, fontWeight: 700, color: theyBetter ? T.up : T.text }}>{theirs != null ? format(theirs) : "—"}</div>
     </div>
   );
 }

@@ -88,7 +88,7 @@ function TickerChip({ ticker, T, onClick }) {
       <span style={{ width: 30, height: 30, borderRadius: "50%", background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, flexShrink: 0 }}>{short}</span>
       <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 0 }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: T.text, maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ticker.name}</span>
-        <span style={{ fontSize: 11, fontWeight: 700, color: ch == null ? T.textFaint : ch >= 0 ? T.accent : T.red }}>{quote ? fmtChange(ch) : "…"}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: ch == null ? T.textFaint : ch >= 0 ? T.up : T.red }}>{quote ? fmtChange(ch) : "…"}</span>
       </span>
     </button>
   );

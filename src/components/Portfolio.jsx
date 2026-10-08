@@ -435,8 +435,8 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
           {hasValeur ? formatEur(valeurTotale) : "— €"}
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 16 }}>
-          {perfGlobale !== null && <span style={{ fontSize: 17, fontWeight: 600, color: perfGlobale >= 0 ? T.accent : T.red }}>{perfGlobale >= 0 ? "+" : ""}{perfGlobale.toFixed(2)}%</span>}
-          {gainTotal !== null && <span style={{ fontSize: 14, color: gainTotal >= 0 ? T.accent : T.red }}>{gainTotal >= 0 ? "+" : ""}{formatEur(gainTotal)}</span>}
+          {perfGlobale !== null && <span style={{ fontSize: 17, fontWeight: 600, color: perfGlobale >= 0 ? T.up : T.red }}>{perfGlobale >= 0 ? "+" : ""}{perfGlobale.toFixed(2)}%</span>}
+          {gainTotal !== null && <span style={{ fontSize: 14, color: gainTotal >= 0 ? T.up : T.red }}>{gainTotal >= 0 ? "+" : ""}{formatEur(gainTotal)}</span>}
           {/* Performance = évolution du cours depuis le prix d'achat de chaque position (hors dividendes) */}
           {perfGlobale !== null && <span title="Évolution du cours depuis ton prix d'achat, pondérée par le poids de chaque position (hors dividendes)" style={{ fontSize: 12, color: T.textFaint }}>depuis l'achat</span>}
           {!hasValeur && <span style={{ fontSize: 13, color: T.textFaint }}>Ajoute le nombre de parts pour voir la valeur</span>}
@@ -504,7 +504,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
                 {fetchingPrice ? "Recherche…" : "🔍 Récupérer le prix via ISIN"}
               </button>
             )}
-            {priceHint && <div style={{ fontSize: 12, color: priceHint.startsWith("✅") ? T.accent : T.red, marginBottom: 10 }}>{priceHint}</div>}
+            {priceHint && <div style={{ fontSize: 12, color: priceHint.startsWith("✅") ? T.up : T.red, marginBottom: 10 }}>{priceHint}</div>}
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Véhicule</label>
             <select style={{ ...inp, background: T.bgCard }} value={form.vehicule} onChange={e => setForm({ ...form, vehicule: e.target.value })}>
               {VEHICULES.map(t => <option key={t} style={{ background: T.bgSecondary }}>{t}</option>)}
@@ -531,7 +531,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
               <div style={{ background: T.accentBg, border: `0.5px solid ${T.accentBorder}`, borderRadius: 8, padding: "10px 12px", marginBottom: 10 }}>
                 <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>Valeur de la position</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: T.accent }}>{formatEur(formValeur)}</div>
-                {formValeurAchat && (() => { const p = calcPerf(Number(form.prix_achat), Number(form.prix_actuel)); return p !== null ? <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Achat : {formatEur(formValeurAchat)} · <span style={{ color: p >= 0 ? T.accent : T.red }}>{p >= 0 ? "+" : ""}{p.toFixed(2)}%</span></div> : null; })()}
+                {formValeurAchat && (() => { const p = calcPerf(Number(form.prix_achat), Number(form.prix_actuel)); return p !== null ? <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Achat : {formatEur(formValeurAchat)} · <span style={{ color: p >= 0 ? T.up : T.red }}>{p >= 0 ? "+" : ""}{p.toFixed(2)}%</span></div> : null; })()}
               </div>
             )}
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Broker</label>
@@ -556,7 +556,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
                 {editFetchingPrice ? "Recherche…" : "🔍 Mettre à jour le prix via ISIN"}
               </button>
             )}
-            {editPriceHint && <div style={{ fontSize: 12, color: editPriceHint.startsWith("✅") ? T.accent : T.red, marginBottom: 10 }}>{editPriceHint}</div>}
+            {editPriceHint && <div style={{ fontSize: 12, color: editPriceHint.startsWith("✅") ? T.up : T.red, marginBottom: 10 }}>{editPriceHint}</div>}
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Véhicule</label>
             <select style={{ ...inp, background: T.bgCard }} value={editForm.type} onChange={e => setEditForm({ ...editForm, type: e.target.value })}>
               {VEHICULES.map(t => <option key={t} style={{ background: T.bgSecondary }}>{t}</option>)}
@@ -582,7 +582,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
             {editForm.prix_achat && editForm.prix_actuel && editForm.nombre_parts && (() => {
               const val = Number(editForm.prix_actuel) * Number(editForm.nombre_parts);
               const p = calcPerf(Number(editForm.prix_achat), Number(editForm.prix_actuel));
-              return <div style={{ background: T.accentBg, borderRadius: 8, padding: "10px 12px", marginBottom: 10 }}><div style={{ fontSize: 18, fontWeight: 700, color: T.accent }}>{formatEur(val)}</div>{p !== null && <div style={{ fontSize: 12, color: p >= 0 ? T.accent : T.red, marginTop: 2 }}>{p >= 0 ? "+" : ""}{p.toFixed(2)}%</div>}</div>;
+              return <div style={{ background: T.accentBg, borderRadius: 8, padding: "10px 12px", marginBottom: 10 }}><div style={{ fontSize: 18, fontWeight: 700, color: T.accent }}>{formatEur(val)}</div>{p !== null && <div style={{ fontSize: 12, color: p >= 0 ? T.up : T.red, marginTop: 2 }}>{p >= 0 ? "+" : ""}{p.toFixed(2)}%</div>}</div>;
             })()}
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>Broker</label>
             <input style={inp} value={editForm.broker} onChange={e => setEditForm({ ...editForm, broker: e.target.value })} />
@@ -610,7 +610,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
               </div>
               <div style={{ textAlign: "right" }}>
                 {e.valeur !== null ? <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{formatEur(e.valeur)}</div> : <div style={{ fontSize: 13, color: T.textFaint }}>{e.percentage}%</div>}
-                {e.performance !== null && <div style={{ fontSize: 12, fontWeight: 500, color: e.performance >= 0 ? T.accent : T.red }}>{e.performance >= 0 ? "+" : ""}{Number(e.performance).toFixed(2)}%</div>}
+                {e.performance !== null && <div style={{ fontSize: 12, fontWeight: 500, color: e.performance >= 0 ? T.up : T.red }}>{e.performance >= 0 ? "+" : ""}{Number(e.performance).toFixed(2)}%</div>}
                 {(() => {
                   const fy = forecast.rows.find(r => r.entry.id === e.id)?.yield;
                   const y = fy > 0 ? fy : income.byEntry[e.id]?.yield;
@@ -624,7 +624,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
                 {e.nombre_parts && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>Nombre de parts</span><span style={{ color: T.text, fontWeight: 500 }}>{e.nombre_parts}</span></div>}
                 {e.prix_achat && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>Prix d'achat</span><span style={{ color: T.text, fontWeight: 500 }}>{e.prix_achat} €</span></div>}
                 {e.prix_actuel && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>Prix actuel</span><span style={{ color: T.text, fontWeight: 500 }}>{e.prix_actuel} €</span></div>}
-                {e.valeurAchat && e.valeur && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>Gain / perte</span><span style={{ fontWeight: 500, color: e.valeur >= e.valeurAchat ? T.accent : T.red }}>{e.valeur >= e.valeurAchat ? "+" : ""}{formatEur(e.valeur - e.valeurAchat)}</span></div>}
+                {e.valeurAchat && e.valeur && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>Gain / perte</span><span style={{ fontWeight: 500, color: e.valeur >= e.valeurAchat ? T.up : T.red }}>{e.valeur >= e.valeurAchat ? "+" : ""}{formatEur(e.valeur - e.valeurAchat)}</span></div>}
                 {e.isin && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>ISIN</span><span style={{ color: T.text, fontWeight: 500, fontFamily: "monospace", fontSize: 12 }}>{e.isin}</span></div>}
                 {e.broker && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>Broker</span><span style={{ color: T.text, fontWeight: 500 }}>{e.broker}</span></div>}
                 <IncomeSection entry={e} stats={income.byEntry[e.id]} form={incomeForm[e.id] || {}} T={T} btnSm={btnSm}

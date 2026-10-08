@@ -75,7 +75,7 @@ function StatsSection({ profile, session, friends, perf, T, onViewProfile }) {
           <div style={{ flex: 1, fontSize: 14, color: f.me ? T.text : T.accent }}>
             {f.name}{f.me && <span style={{ fontSize: 11, color: T.textFaint }}> · moi</span>}
           </div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: f.perf === null ? T.textFaint : f.perf >= 0 ? T.accent : T.red }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: f.perf === null ? T.textFaint : f.perf >= 0 ? T.up : T.red }}>
             {f.perf === null ? "—" : `${f.perf >= 0 ? "+" : ""}${f.perf.toFixed(1)}%`}
           </div>
         </div>
@@ -266,7 +266,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
           {[
             ["Positions", stats.positions, T.accent],
-            ["Perf. depuis l'achat", perf === null ? "—" : `${perf >= 0 ? "+" : ""}${perf.toFixed(2)}%`, perf === null ? T.textFaint : perf >= 0 ? T.accent : T.red],
+            ["Perf. depuis l'achat", perf === null ? "—" : `${perf >= 0 ? "+" : ""}${perf.toFixed(2)}%`, perf === null ? T.textFaint : perf >= 0 ? T.up : T.red],
             ["Depuis", profile.investing_since || "—", T.text],
           ].map(([label, val, color]) => (
             <div key={label} style={{ background: T.bgSubtle, borderRadius: 10, padding: 12 }}>

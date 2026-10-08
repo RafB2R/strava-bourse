@@ -97,7 +97,7 @@ function QuoteCard({ item, T, onOpen }) {
             {isRate ? (data?.price ? `${data.price.toFixed(2).replace(".", ",")} %` : "—") : `${formatPrice(data?.price)}${unit && data?.price ? ` ${unit}` : ""}`}
           </div>
           {data?.change !== null && data?.change !== undefined && (
-            <div style={{ fontSize: 12, fontWeight: 500, color: data.change >= 0 ? T.accent : T.red, marginTop: 2 }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: data.change >= 0 ? T.up : T.red, marginTop: 2 }}>
               {points != null
                 ? `${points >= 0 ? "+" : "−"}${Math.abs(points).toFixed(2).replace(".", ",")} pt sur un jour`
                 : fmtChange(data.change)}
@@ -132,7 +132,7 @@ function RateTile({ country, name, rates, T, onOpen }) {
       style={{ background: T.bgSubtle, border: "none", borderRadius: 12, padding: "12px 14px", textAlign: "left", cursor: "pointer", fontFamily: "inherit", width: "100%", minWidth: 0 }}>
       <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}><Flag country={country} size={12} />{name}</div>
       <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>{r ? `${r.value.toFixed(2).replace(".", ",")} %` : rates ? "—" : "…"}</div>
-      {r?.change != null && <div style={{ fontSize: 12, color: r.change >= 0 ? T.accent : T.red, marginTop: 2 }}>{r.change >= 0 ? "+" : "−"}{Math.abs(r.change).toFixed(2).replace(".", ",")} pt sur un {r.frequency === "daily" ? "jour" : "mois"}</div>}
+      {r?.change != null && <div style={{ fontSize: 12, color: r.change >= 0 ? T.up : T.red, marginTop: 2 }}>{r.change >= 0 ? "+" : "−"}{Math.abs(r.change).toFixed(2).replace(".", ",")} pt sur un {r.frequency === "daily" ? "jour" : "mois"}</div>}
       {r && <div style={{ fontSize: 10, color: T.textFaint, marginTop: 2 }}>{fmtRateDate(r)}</div>}
     </button>
   );
@@ -155,10 +155,10 @@ function IndexTile({ index, onOpen, T }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><Flag country={index.country} size={12} />{index.name}</div>
         <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>{quote?.price ? quote.price.toLocaleString("fr-FR", { maximumFractionDigits: 0 }) : quote ? "—" : "…"}</div>
-        <div style={{ fontSize: 12, fontWeight: 500, color: day == null ? T.textFaint : day >= 0 ? T.accent : T.red, marginTop: 2 }}>{day == null ? "—" : fmtChange(day)} <span style={{ color: T.textFaint, fontWeight: 400 }}>auj.</span></div>
+        <div style={{ fontSize: 12, fontWeight: 500, color: day == null ? T.textFaint : day >= 0 ? T.up : T.red, marginTop: 2 }}>{day == null ? "—" : fmtChange(day)} <span style={{ color: T.textFaint, fontWeight: 400 }}>auj.</span></div>
       </div>
       <div style={{ textAlign: "right" }}>
-        <Sparkline points={year?.points} color={yearUp ? T.accent : T.red} width={72} height={30} />
+        <Sparkline points={year?.points} color={yearUp ? T.up : T.red} width={72} height={30} />
         <div style={{ fontSize: 10, color: T.textFaint, marginTop: 2 }}>{year ? `${fmtChange(year.change)} · 1 an` : "1 an"}</div>
       </div>
     </button>
@@ -257,7 +257,7 @@ export default function Marches({ T: TProp }) {
                 onClick={() => openDetail({ symbol: s.symbol, name: s.name, type: `Secteur S&P 500 · ETF ${s.symbol}`, summary: `Suivi à travers l'ETF ${s.symbol}, qui réplique les entreprises du secteur « ${s.name} » de l'indice S&P 500.` })}
                 style={{ background: T.bgSubtle, border: "none", borderRadius: 10, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%", minWidth: 0 }}>
                 <span style={{ fontSize: 12, color: T.textMuted }}>{s.name}</span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: s.change === null ? T.textFaint : s.change >= 0 ? T.accent : T.red }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: s.change === null ? T.textFaint : s.change >= 0 ? T.up : T.red }}>
                   {s.change === null ? "—" : fmtChange(s.change)}
                 </span>
               </button>

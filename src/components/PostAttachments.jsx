@@ -57,7 +57,7 @@ export function AssetCard({ asset: raw, T, onOpen }) {
           {quote ? (
             <>
               <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{fmtPrice(quote.price, asset.type === "Indice" ? null : quote.currency)}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: up ? T.accent : T.red }}>{fmtChange(quote.change)} auj.</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: up ? T.up : T.red }}>{fmtChange(quote.change)} auj.</div>
             </>
           ) : <div style={{ fontSize: 12, color: T.textFaint }}>Cours…</div>}
         </div>
@@ -65,10 +65,10 @@ export function AssetCard({ asset: raw, T, onOpen }) {
       {period && (
         chart?.points?.length > 1 ? (
           <>
-            <AreaChart points={chart.points} color={periodUp ? T.accent : T.red} />
+            <AreaChart points={chart.points} color={periodUp ? T.up : T.red} />
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: T.textFaint, marginTop: 4 }}>
               <span>Sur {periodLabel === "1A" ? "1 an" : periodLabel === "5A" ? "5 ans" : periodLabel === "6M" ? "6 mois" : "1 mois"}</span>
-              <span style={{ fontWeight: 700, color: periodUp ? T.accent : T.red }}>{fmtChange(chart.change)}</span>
+              <span style={{ fontWeight: 700, color: periodUp ? T.up : T.red }}>{fmtChange(chart.change)}</span>
             </div>
           </>
         ) : <div style={{ height: 90, marginTop: 10, borderRadius: 8, background: T.bgCard, opacity: 0.6 }} />

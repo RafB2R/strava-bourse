@@ -336,7 +336,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
           {[
             ["Positions", entries.length, T.text],
-            ["Perf. depuis l'achat", perfGlobale !== null ? `${perfGlobale >= 0 ? "+" : ""}${perfGlobale.toFixed(1)}%` : "—", perfGlobale !== null ? (perfGlobale >= 0 ? T.accent : T.red) : T.textFaint],
+            ["Perf. depuis l'achat", perfGlobale !== null ? `${perfGlobale >= 0 ? "+" : ""}${perfGlobale.toFixed(1)}%` : "—", perfGlobale !== null ? (perfGlobale >= 0 ? T.up : T.red) : T.textFaint],
             ["Badges", badges.length, T.text],
           ].map(([label, val, color]) => {
             // La case Badges ouvre la vitrine des badges (il n'y a plus d'onglet Badges)
@@ -411,7 +411,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 13, color: T.textMuted }}>{e.percentage}%</div>
-                  {e.performance !== null && <div style={{ fontSize: 12, fontWeight: 600, color: e.performance >= 0 ? T.accent : T.red }}>{e.performance >= 0 ? "+" : ""}{Number(e.performance).toFixed(1)}%</div>}
+                  {e.performance !== null && <div style={{ fontSize: 12, fontWeight: 600, color: e.performance >= 0 ? T.up : T.red }}>{e.performance >= 0 ? "+" : ""}{Number(e.performance).toFixed(1)}%</div>}
                 </div>
               </button>
               {resolving?.id === e.id && resolving.error && <div role="alert" style={{ fontSize: 12, color: T.red, paddingBottom: 8 }}>{resolving.error}</div>}

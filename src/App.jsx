@@ -101,7 +101,7 @@ function MarketWidget({ T }) {
       {INDICES.map(({ label }) => {
         const d = data[label];
         const change = d?.change;
-        const color = change === undefined ? T.textFaint : change >= 0 ? T.accent : T.red;
+        const color = change === undefined ? T.textFaint : change >= 0 ? T.up : T.red;
         return (
           <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderTop: `0.5px solid ${T.border}` }}>
             <span style={{ fontSize: 12, color: T.textMuted }}>{label}</span>
@@ -294,7 +294,7 @@ export default function App() {
   async function handleLogout() { await supabase.auth.signOut(); }
 
   const loadingScreen = (
-    <div style={{ minHeight: "100vh", background: T.bg, display: "flex", alignItems: "center", justifyContent: "center", color: T.textMuted, fontFamily: "system-ui" }}>
+    <div style={{ minHeight: "100vh", background: T.bg, display: "flex", alignItems: "center", justifyContent: "center", color: T.textMuted, fontFamily: "'Outfit', system-ui, sans-serif" }}>
       Chargement…
     </div>
   );
@@ -349,7 +349,7 @@ export default function App() {
 
   // ── DESKTOP ──
   if (isDesktop) return (
-    <div style={{ background: T.bg, minHeight: "100vh", fontFamily: "system-ui, sans-serif", display: "flex" }}>
+    <div style={{ background: T.bg, minHeight: "100vh", fontFamily: "'Outfit', system-ui, sans-serif", display: "flex" }}>
       {/* Sidebar */}
       <div style={{ width: 220, flexShrink: 0, position: "fixed", top: 0, left: 0, bottom: 0, background: T.bgSecondary, borderRight: `1px solid ${T.border}`, display: "flex", flexDirection: "column", padding: "24px 14px", overflowY: "auto" }}>
         <div style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 28, paddingLeft: 8 }}>
@@ -418,7 +418,7 @@ export default function App() {
 
   // ── MOBILE ──
   return (
-    <div style={{ background: T.bg, minHeight: "100vh", fontFamily: "system-ui, sans-serif" }}>
+    <div style={{ background: T.bg, minHeight: "100vh", fontFamily: "'Outfit', system-ui, sans-serif" }}>
       <div style={{ background: T.bgSecondary, borderBottom: `0.5px solid ${T.border}`, position: "sticky", top: 0, zIndex: 10, paddingTop: "env(safe-area-inset-top)" }}>
         <div style={{ maxWidth: 620, margin: "0 auto", padding: "14px 1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>

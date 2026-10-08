@@ -67,7 +67,7 @@ export default function Classements({ session , T: TProp }) {
   const rankIcon = i => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
 
   function getValue(u) {
-    if (filter === "performance") return { val: u.perf !== null ? `${u.perf >= 0 ? "+" : ""}${u.perf.toFixed(1)}%` : "—", color: u.perf === null ? T.textFaint : u.perf >= 0 ? T.accent : T.red };
+    if (filter === "performance") return { val: u.perf !== null ? `${u.perf >= 0 ? "+" : ""}${u.perf.toFixed(1)}%` : "—", color: u.perf === null ? T.textFaint : u.perf >= 0 ? T.up : T.red };
     if (filter === "regularite") return { val: u.streak > 0 ? `🔥 ${u.streak} mois` : "—", color: T.yellow };
     if (filter === "diversification") return { val: `${u.scoreDiversif}/100`, color: u.scoreDiversif >= 70 ? T.accent : u.scoreDiversif >= 40 ? T.yellow : T.red };
     if (filter === "contribution") return { val: u.contribution > 0 ? `💬 ${u.contribution}` : "—", color: T.purple };

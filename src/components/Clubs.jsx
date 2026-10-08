@@ -246,7 +246,7 @@ function ClubRanking({ clubId, session }) {
         const val = filter === "performance" ? (m.perf !== null ? `${m.perf >= 0 ? "+" : ""}${m.perf.toFixed(1)}%` : "—")
           : filter === "regularite" ? (m.streak > 0 ? `🔥 ${m.streak} mois` : "—")
           : `🏅 ${m.nbBadges}`;
-        const color = filter === "performance" ? (m.perf === null ? T.textFaint : m.perf >= 0 ? T.accent : T.red) : filter === "regularite" ? T.yellow : T.gold;
+        const color = filter === "performance" ? (m.perf === null ? T.textFaint : m.perf >= 0 ? T.up : T.red) : filter === "regularite" ? T.yellow : T.gold;
         return (
           <div key={m.user_id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}` }}>
             <div style={{ fontSize: 16, minWidth: 28, textAlign: "center" }}>

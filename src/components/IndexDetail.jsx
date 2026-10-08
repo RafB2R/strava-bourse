@@ -143,7 +143,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
   // Taux : écart en points entre le début et la fin de la période
   const rateDelta = index.isRate && data?.points?.length > 1 ? data.points[data.points.length - 1][1] - data.points[0][1] : null;
   const up = (rateDelta ?? data?.change ?? 0) >= 0;
-  const color = up ? T.accent : T.red;
+  const color = up ? T.up : T.red;
   const periodInfo = PERIODS.find(p => p.id === period);
 
   return (
@@ -205,8 +205,8 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
           <div style={sectionLabel}>📌 Chiffres clés</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
             {[
-              ["Depuis le 1er janvier", facts.ytd ? fmtChange(facts.ytd.change) : "—", facts.ytd?.change == null ? T.text : facts.ytd.change >= 0 ? T.accent : T.red],
-              ["Sur 1 an", facts.year ? fmtChange(facts.year.change) : "—", facts.year?.change == null ? T.text : facts.year.change >= 0 ? T.accent : T.red],
+              ["Depuis le 1er janvier", facts.ytd ? fmtChange(facts.ytd.change) : "—", facts.ytd?.change == null ? T.text : facts.ytd.change >= 0 ? T.up : T.red],
+              ["Sur 1 an", facts.year ? fmtChange(facts.year.change) : "—", facts.year?.change == null ? T.text : facts.year.change >= 0 ? T.up : T.red],
               ["Plus haut 1 an", facts.year ? fmtValue(facts.year.high) : "—", T.text],
               ["Plus bas 1 an", facts.year ? fmtValue(facts.year.low) : "—", T.text],
               ["Dividende 12 mois", facts.year?.dividends ? `${fmtPrice(facts.year.dividends)}${facts.year.currency ? ` ${facts.year.currency}` : ""}` : "Aucun", T.text],
@@ -241,9 +241,9 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = "← 
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{c.name}</div>
                 <div style={{ fontSize: 11, color: T.textFaint }}>{c.symbol}</div>
               </div>
-              {row?.data && <Sparkline points={row.data.points} color={ch >= 0 ? T.accent : T.red} width={72} height={26} />}
+              {row?.data && <Sparkline points={row.data.points} color={ch >= 0 ? T.up : T.red} width={72} height={26} />}
               <div style={{ textAlign: "right", minWidth: 76 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: ch == null ? T.textFaint : ch >= 0 ? T.accent : T.red }}>{row ? fmtChange(ch) : "…"}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: ch == null ? T.textFaint : ch >= 0 ? T.up : T.red }}>{row ? fmtChange(ch) : "…"}</div>
                 <div style={{ fontSize: 10, color: T.textFaint }}>{periodInfo.long}</div>
               </div>
             </div>

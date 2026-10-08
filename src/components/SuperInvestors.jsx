@@ -220,7 +220,7 @@ function InvestorDetail({ investor, T, onBack }) {
               {Object.entries(MOVES).map(([type, meta]) => {
                 const list = data.moves.filter(m => m.type === type);
                 if (!list.length) return null;
-                const color = meta.color === "red" ? T.red : T.accent;
+                const color = meta.color === "red" ? T.red : T.up;
                 return (
                   <div key={type} style={{ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, padding: "10px 12px 4px", marginBottom: 12, boxShadow: T.cardShadow }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color, marginBottom: 4 }}>{meta.label} · {list.length}</div>

@@ -42,7 +42,7 @@ function getActivityMeta(activity) {
   const trade = tradeTexts(activity.type, d);
   if (trade) {
     const up = activity.type === "renforcement";
-    return { tag: { renforcement: "Renforcement", allegement: "Allègement", vente: "Vente" }[activity.type], tagBg: up ? T.accentBg : "rgba(240,153,123,0.1)", tagColor: up ? T.accent : T.orange, title: `${name} ${trade.sentence}`, sub: trade.detail, stat: trade.stat };
+    return { tag: { renforcement: "Renforcement", allegement: "Allègement", vente: "Vente" }[activity.type], tagBg: up ? T.upBg : "rgba(240,153,123,0.1)", tagColor: up ? T.up : T.orange, title: `${name} ${trade.sentence}`, sub: trade.detail, stat: trade.stat };
   }
   if (isMoment(activity.type)) {
     const m = MOMENTS[activity.type];
@@ -51,12 +51,12 @@ function getActivityMeta(activity) {
   const map = {
     declaration_13f: { tag: "Déclaration 13F", tagBg: "rgba(240,215,0,0.1)", tagColor: T.gold, title: `${name} a publié ses mouvements du ${quarterLabel(d.period)}`, sub: d.positions ? `${d.positions} positions en portefeuille` : "", stat: "" },
     new_position: { tag: "Nouvelle position", tagBg: "rgba(123,184,240,0.1)", tagColor: T.blue, title: `${name} a ajouté une nouvelle position`, sub: d.label, stat: `${d.exposition || d.vehicule || ""}${d.broker ? ` · ${d.broker}` : ""}${d.percentage ? ` · ${d.percentage}%` : ""}` },
-    renforcement: { tag: "Renforcement", tagBg: T.accentBg, tagColor: T.accent, title: `${name} a renforcé une position`, sub: d.label, stat: "" },
+    renforcement: { tag: "Renforcement", tagBg: T.upBg, tagColor: T.up, title: `${name} a renforcé une position`, sub: d.label, stat: "" },
     vente: { tag: "Vente", tagBg: "rgba(240,153,123,0.1)", tagColor: T.orange, title: `${name} a vendu une position`, sub: d.label, stat: "" },
     allegement: { tag: "Allègement", tagBg: "rgba(240,153,123,0.1)", tagColor: T.orange, title: `${name} a allégé une position`, sub: d.label, stat: "" },
     dividende: { tag: "Dividende 💰", tagBg: "rgba(240,203,123,0.1)", tagColor: T.yellow, title: `${name} a reçu un dividende`, sub: d.label, stat: "" },
     coupon: { tag: "Coupon", tagBg: "rgba(240,203,123,0.1)", tagColor: T.yellow, title: `${name} a reçu un coupon`, sub: d.label, stat: "" },
-    versement: { tag: "Versement", tagBg: T.accentBg, tagColor: T.accent, title: `${name} a effectué un versement`, sub: d.broker, stat: "" },
+    versement: { tag: "Versement", tagBg: T.upBg, tagColor: T.up, title: `${name} a effectué un versement`, sub: d.broker, stat: "" },
     retrait: { tag: "Retrait", tagBg: "rgba(240,153,123,0.1)", tagColor: T.orange, title: `${name} a effectué un retrait`, sub: d.broker, stat: "" },
     rebalancement: { tag: "Rééquilibrage", tagBg: "rgba(240,203,123,0.1)", tagColor: T.yellow, title: `${name} a rééquilibré son portefeuille`, sub: "", stat: "" },
     suppression_position: { tag: "Position supprimée", tagBg: "rgba(128,128,128,0.1)", tagColor: "#888", title: `${name} a supprimé une position`, sub: d.label, stat: "" },
@@ -147,7 +147,7 @@ function DeclarationMoves({ data, T, onOpenLabel }) {
             <div key={`${m.label}-${i}`} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
               <span style={{ flex: 1, minWidth: 0 }}>{nameBtn(m.label)}</span>
               <span style={{ fontSize: 11, color: T.textFaint, flexShrink: 0 }}>{meta.short}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: meta.up ? T.accent : T.orange, flexShrink: 0, minWidth: 74, textAlign: "right" }}>{fmtNum(m.avant)} → {fmtPctFr(m.apres)}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: meta.up ? T.up : T.orange, flexShrink: 0, minWidth: 74, textAlign: "right" }}>{fmtNum(m.avant)} → {fmtPctFr(m.apres)}</span>
             </div>
           );
         })}
@@ -160,7 +160,7 @@ function DeclarationMoves({ data, T, onOpenLabel }) {
     <div style={{ marginTop: 10 }}>
       {moves.map((m, i) => {
         const meta = DECL_MOVES[m.type] || DECL_MOVES.up;
-        const color = meta.up ? T.accent : T.orange;
+        const color = meta.up ? T.up : T.orange;
         return (
           <div key={`${m.label}-${i}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}` }}>
             <span style={{ flex: 1, minWidth: 0 }}>

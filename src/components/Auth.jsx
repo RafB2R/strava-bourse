@@ -71,7 +71,7 @@ export default function Auth({ T: TProp }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: T.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui, sans-serif", padding: "1rem" }}>
+    <div style={{ minHeight: "100vh", background: T.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Outfit', system-ui, sans-serif", padding: "1rem" }}>
       <div style={{ width: "100%", maxWidth: 400 }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ fontSize: 28, fontWeight: 700, color: T.text, marginBottom: 6 }}>ve<span style={{ color: T.accent }}>rio</span></div>
