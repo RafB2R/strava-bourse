@@ -56,8 +56,9 @@ function NoteEditor({ activity, myId, T, onCancel, onSaved }) {
         style={{ minHeight: 70, resize: "vertical", padding: "9px 12px", fontSize: 14, lineHeight: 1.5, borderRadius: 10, border: `0.5px solid ${T.accent}`, background: T.bgCard, color: T.text, fontFamily: "inherit" }} />
       {error && <div role="alert" style={{ fontSize: 12, color: T.red, marginTop: 4 }}>{error}</div>}
       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 6 }}>
-        <button onClick={onCancel} style={{ background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>
-        <button onClick={save} disabled={saving} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "5px 14px", fontSize: 12, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>{saving ? "…" : "Enregistrer"}</button>
+        {/* onMouseDown : garde le focus pour que la liste de suggestions ne se ferme pas sous le clic */}
+        <button onMouseDown={e => e.preventDefault()} onClick={onCancel} style={{ background: "none", border: `0.5px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 12, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>
+        <button onMouseDown={e => e.preventDefault()} onClick={save} disabled={saving} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "5px 14px", fontSize: 12, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>{saving ? "…" : "Enregistrer"}</button>
       </div>
     </div>
   );

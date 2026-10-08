@@ -178,7 +178,7 @@ function DeclarationMoves({ data, T, onOpenLabel }) {
 
 // Article de presse sur un Super Investor ou une société suivis : titre, journal, date ;
 // s'ouvre sur le site du journal. L'icône et le nom ouvrent le profil ou la fiche.
-function NewsFeedCard({ item, T, card, onProfile, onAsset }) {
+function NewsFeedCard({ item, T, card, onProfile, onAsset, like, onLike, btnAct }) {
   const { article, investor, company } = item;
   const who = investor
     ? { icon: investor.icon, name: investor.name, title: `Voir le profil de ${investor.name}`, open: () => onProfile(investor.id) }
@@ -199,6 +199,11 @@ function NewsFeedCard({ item, T, card, onProfile, onAsset }) {
         <div style={{ fontSize: 14, fontWeight: 600, color: T.text, lineHeight: 1.4 }}>{article.title}</div>
         {article.source && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 4 }}>{article.source}</div>}
       </a>
+      <div style={{ marginTop: 10 }}>
+        <button onClick={onLike} style={{ ...btnAct, ...(like.mine ? { borderColor: T.accent, color: T.accent } : {}) }}>
+          👍 {like.mine ? "Liké" : "Like"}{like.count > 0 ? ` · ${like.count}` : ""}
+        </button>
+      </div>
     </div>
   );
 }
@@ -281,7 +286,17 @@ async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYP
         .slice(0, FEED_NEWS_MAX);
     }),
   ]);
-  return { ids, activities, likes, comments, polls, clubPosts: [...clubPosts, ...news] };
+  // Likes des actualités affichées (par adresse de l'article)
+  const newsLikes = {};
+  if (news.length) {
+    const { data: rows } = await supabase.from("news_likes").select("url, user_id").in("url", news.map(n => n.article.url));
+    for (const l of rows || []) {
+      const entry = newsLikes[l.url] ||= { count: 0, mine: false };
+      entry.count++;
+      if (l.user_id === userId) entry.mine = true;
+    }
+  }
+  return { ids, activities, likes, comments, polls, newsLikes, clubPosts: [...clubPosts, ...news] };
 }
 
 // « onlyUserId » : version intégrée au profil public — mêmes cartes que le fil, limitées à ce
@@ -304,6 +319,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
   const [scope, setScope] = useState("verio");
   const [friendIds, setFriendIds] = useState([]);
   const [likes, setLikes] = useState({});
+  const [newsLikes, setNewsLikes] = useState({}); // likes des actualités, par adresse de l'article
   const [comments, setComments] = useState({});
   const [openComment, setOpenComment] = useState(() => (focusId != null ? { [focusId]: true } : {}));
   const [commentInputs, setCommentInputs] = useState({});
@@ -330,6 +346,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
   const textRef = useRef(null);
   const [openAsset, setOpenAsset] = useState(null);           // fiche ouverte depuis un post
   const [noteEditing, setNoteEditing] = useState(null);       // mouvement dont l'auteur écrit la description
+  const [postEdit, setPostEdit] = useState(null);             // { id, text, tags, saving, error } : post en cours de modification
   const feedScroll = useRef(0);
   const [polls, setPolls] = useState({ counts: {}, mine: {} });
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -348,8 +365,9 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
 
   useEffect(() => {
     let ignore = false;
-    fetchFeed(userId, scope, onlyUserId, only === "posts" ? ["post"] : TRADE_TYPES, hashtag, focusId).then(({ ids, activities, likes, comments, polls, clubPosts }) => {
+    fetchFeed(userId, scope, onlyUserId, only === "posts" ? ["post"] : TRADE_TYPES, hashtag, focusId).then(({ ids, activities, likes, comments, polls, newsLikes, clubPosts }) => {
       if (ignore) return;
+      setNewsLikes(newsLikes);
       setClubPosts(clubPosts);
       setPolls(polls);
       setFriendIds(ids);
@@ -504,6 +522,17 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
     setReloadKey(k => k + 1);
   }
 
+  // Modifier son post : seul le texte (et ses $valeurs / @membres) change
+  async function savePostEdit(activity) {
+    const text = postEdit.text.trim();
+    const tags = finalizeTags(text, postEdit.tags);
+    setPostEdit(e => ({ ...e, saving: true, error: "" }));
+    const { data, error } = await supabase.rpc("update_my_post", { activity: String(activity.id), content: text, tickers: tags?.tickers || null, mentions: tags?.mentions || null });
+    if (error || !data) { setPostEdit(e => ({ ...e, saving: false, error: "Modification impossible. Réessaie." })); return; }
+    setActivities(list => list.map(a => (a.id === activity.id ? { ...a, data } : a)));
+    setPostEdit(null);
+  }
+
   const likePending = useRef(new Set());
 
   // Supprime un de ses posts, puis ses images et fichiers du stockage
@@ -551,6 +580,20 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
     likePending.current.delete(id);
     if (error) { setLikes(p => ({ ...p, [id]: current })); return; }
     if (!current.mine) notify(activity.user_id, "activity_like", { activity_id: id });
+  }
+
+  // Like d'une actualité : affiché tout de suite, annulé si Supabase refuse
+  async function toggleNewsLike(url) {
+    const key = `news:${url}`;
+    if (likePending.current.has(key)) return;
+    likePending.current.add(key);
+    const current = newsLikes[url] || { count: 0, mine: false };
+    setNewsLikes(p => ({ ...p, [url]: { count: current.count + (current.mine ? -1 : 1), mine: !current.mine } }));
+    const { error } = current.mine
+      ? await supabase.from("news_likes").delete().eq("url", url).eq("user_id", userId)
+      : await supabase.from("news_likes").insert({ url, user_id: userId });
+    likePending.current.delete(key);
+    if (error) setNewsLikes(p => ({ ...p, [url]: current }));
   }
 
   function toggleComment(id) { setOpenComment(p => ({ ...p, [id]: !p[id] })); }
@@ -716,7 +759,8 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
 
       {visible.map(activity => {
         if (activity.kind === "news") {
-          return <NewsFeedCard key={`news-${activity.id}`} item={activity} T={T} card={card} onProfile={id => onViewProfile && onViewProfile(id)} onAsset={openAssetDetail} />;
+          return <NewsFeedCard key={`news-${activity.id}`} item={activity} T={T} card={card} btnAct={btnAct} onProfile={id => onViewProfile && onViewProfile(id)} onAsset={openAssetDetail}
+            like={newsLikes[activity.article.url] || { count: 0, mine: false }} onLike={() => toggleNewsLike(activity.article.url)} />;
         }
         if (activity.kind === "club") {
           return (
@@ -741,14 +785,28 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
                   {activity.author?.username && <span style={{ fontSize: 12, fontWeight: 400, color: T.textFaint, marginLeft: 6 }}>@{activity.author.username}</span>}
                   {isMe && <span style={{ fontSize: 11, color: T.textFaint, marginLeft: 6 }}>· moi</span>}
                 </div>
-                <div style={{ fontSize: 12, color: T.textFaint }}>{timeAgo(activity.created_at)}</div>
+                <div style={{ fontSize: 12, color: T.textFaint }}>{timeAgo(activity.created_at)}{activity.type === "post" && activity.data?.edited_at ? " · modifié" : ""}</div>
               </div>
               <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: meta.tagBg, color: meta.tagColor }}>{meta.tag}</span>
             </div>
 
             {activity.type === "post" ? (
               <>
-                {activity.data?.content && (
+                {postEdit?.id === activity.id ? (
+                  <div style={{ marginBottom: 12 }}>
+                    <TagField as="textarea" value={postEdit.text} onValueChange={v => setPostEdit(e => ({ ...e, text: v }))}
+                      tags={postEdit.tags} onTagsChange={t => setPostEdit(e => ({ ...e, tags: t }))} myId={userId} T={T}
+                      autoFocus maxLength={5000}
+                      style={{ minHeight: 90, resize: "vertical", padding: "9px 12px", fontSize: 14, lineHeight: 1.5, borderRadius: 10, border: `0.5px solid ${T.accent}`, background: T.bgCard, color: T.text, fontFamily: "inherit" }} />
+                    {postEdit.error && <div role="alert" style={{ fontSize: 12, color: T.red, marginTop: 4 }}>{postEdit.error}</div>}
+                    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 6 }}>
+                      {/* onMouseDown : garde le focus pour que la liste de suggestions ne se ferme pas sous le clic */}
+                      <button onMouseDown={e => e.preventDefault()} onClick={() => setPostEdit(null)} style={btnAct}>Annuler</button>
+                      <button onMouseDown={e => e.preventDefault()} onClick={() => savePostEdit(activity)} disabled={postEdit.saving}
+                        style={{ ...btnAct, background: T.accent, borderColor: T.accent, color: T.onAccent, fontWeight: 700 }}>{postEdit.saving ? "…" : "Enregistrer"}</button>
+                    </div>
+                  </div>
+                ) : activity.data?.content && (
                   <div style={{ fontSize: 14, color: T.text, lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
                     <RichText text={activity.data.content} tickers={activity.data.tickers} mentions={activity.data.mentions} T={T}
                       onAsset={openAssetDetail} onProfile={id => onViewProfile && onViewProfile(id)} />
@@ -802,6 +860,10 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
                   ✏️ Ajouter une description
                 </button>
               )}
+              {isMe && activity.type === "post" && postEdit?.id !== activity.id && confirmDelete !== activity.id && (
+                <button onClick={() => setPostEdit({ id: activity.id, text: activity.data?.content || "", tags: { tickers: activity.data?.tickers || [], mentions: activity.data?.mentions || [] }, saving: false, error: "" })}
+                  title="Modifier le post" aria-label="Modifier le post" style={{ ...btnAct, marginLeft: "auto", border: "none" }}>✏️</button>
+              )}
               {isMe && activity.type === "post" && (
                 confirmDelete === activity.id ? (
                   <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
@@ -810,7 +872,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
                     <button onClick={() => setConfirmDelete(null)} style={btnAct}>Annuler</button>
                   </span>
                 ) : (
-                  <button onClick={() => setConfirmDelete(activity.id)} title="Supprimer le post" aria-label="Supprimer le post" style={{ ...btnAct, marginLeft: "auto", border: "none" }}>🗑️</button>
+                  <button onClick={() => setConfirmDelete(activity.id)} title="Supprimer le post" aria-label="Supprimer le post" style={{ ...btnAct, ...(postEdit?.id === activity.id ? { marginLeft: "auto" } : {}), border: "none" }}>🗑️</button>
                 )
               )}
             </div>
