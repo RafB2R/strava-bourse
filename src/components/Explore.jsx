@@ -12,6 +12,7 @@ import { syncBadges } from "../badges";
 import { T as TLive } from "../theme";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
+import { t } from "../i18n";
 
 const card = (T) => ({ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 14, boxShadow: T.cardShadow, padding: "1.25rem", marginBottom: 12 });
 const inp = (T) => ({ width: "100%", padding: "10px 14px", fontSize: 14, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: T.text, fontFamily: "inherit", display: "block" });
@@ -87,9 +88,9 @@ async function searchExplore(query, searchTab, userId) {
 
 function timeAgo(date) {
   const diff = (Date.now() - new Date(date)) / 1000;
-  if (diff < 3600) return `il y a ${Math.max(1, Math.floor(diff / 60))} min`;
-  if (diff < 86400) return `il y a ${Math.floor(diff / 3600)} h`;
-  return `il y a ${Math.floor(diff / 86400)} j`;
+  if (diff < 3600) return t("il y a {n} min", { n: Math.max(1, Math.floor(diff / 60)) });
+  if (diff < 86400) return t("il y a {n} h", { n: Math.floor(diff / 3600) });
+  return t("il y a {n} j", { n: Math.floor(diff / 86400) });
 }
 
 export default function Explore({ session , T: TProp, onViewProfile, initialSection, initialClub = null, initialClubView = null, initialHashtag = null }) {
@@ -146,7 +147,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
   useEffect(() => {
     if (query.length < 2) return;
     let ignore = false;
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       setLoading(true);
       const results = await searchExplore(query, searchTab, myId);
       if (ignore) return;
@@ -155,7 +156,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
       else setClubs(results);
       setLoading(false);
     }, 300);
-    return () => { ignore = true; clearTimeout(t); };
+    return () => { ignore = true; clearTimeout(timer); };
   }, [query, searchTab, myId]);
 
   async function sendRequest(userId) {
@@ -174,9 +175,9 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
 
   async function createClub() {
     setError("");
-    if (!form.name.trim()) return setError("Donne un nom au club.");
-    if (!form.category) return setError("Choisis une catégorie.");
-    if (!form.subcategory) return setError("Choisis une sous-catégorie.");
+    if (!form.name.trim()) return setError(t("Donne un nom au club."));
+    if (!form.category) return setError(t("Choisis une catégorie."));
+    if (!form.subcategory) return setError(t("Choisis une sous-catégorie."));
     setSaving(true);
     const { data, error: err } = await supabase.from("clubs").insert({ name: form.name.trim(), description: form.description.trim(), category: form.category, subcategory: form.subcategory, creator_id: session.user.id }).select().single();
     if (err) { setError(err.message); setSaving(false); return; }
@@ -198,29 +199,29 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
   const tagTitle = tag => (
     <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}>
       <div style={{ fontSize: 22, fontWeight: 800, color: T.text }}>#{tag}</div>
-      <div style={{ fontSize: 12, color: T.textFaint }}>Posts de Verio et de tes clubs</div>
+      <div style={{ fontSize: 12, color: T.textFaint }}>{t("Posts de Verio et de tes clubs")}</div>
     </div>
   );
 
   if (hashtag) {
     return (
       <div>
-        <button onClick={() => setHashtag(null)} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13, padding: 0, marginBottom: 14, fontFamily: "inherit" }}>← Explore</button>
+        <button onClick={() => setHashtag(null)} style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 13, padding: 0, marginBottom: 14, fontFamily: "inherit" }}>{t("← Explore")}</button>
         {tagTitle(hashtag)}
         <Feed key={hashtag} session={session} T={T} hashtag={hashtag} onViewProfile={onViewProfile} onOpenClub={club => setSelectedClub(club)} />
       </div>
     );
   }
-  if (openAsset) return <IndexDetail index={detailFor(openAsset)} T={T} backLabel="← Recherche" onBack={closeAsset} />;
+  if (openAsset) return <IndexDetail index={detailFor(openAsset)} T={T} backLabel={t("← Recherche")} onBack={closeAsset} />;
   if (selectedClub) return <Clubs session={session} T={T} initialClub={selectedClub} onBack={() => setSelectedClub(null)} onViewProfile={onViewProfile} />;
 
   return (
     <div>
       {/* Barre de recherche */}
       <div style={{ position: "relative", marginBottom: 20 }}>
-        <input style={{ ...inp(T), paddingLeft: 40 }} placeholder="Rechercher un investisseur, un club, une valeur, un #hashtag…" autoFocus={initialSection === "amis"} value={query} onChange={e => setQuery(e.target.value)} />
+        <input style={{ ...inp(T), paddingLeft: 40 }} placeholder={t("Rechercher un investisseur, un club, une valeur, un #hashtag…")} autoFocus={initialSection === "amis"} value={query} onChange={e => setQuery(e.target.value)} />
         <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, color: T.textFaint, display: "flex" }}><Icon name="search" size={16} /></span>
-        {query && <button onClick={() => setQuery("")} aria-label="Effacer la recherche" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 14, display: "flex" }}><Icon name="close" size={14} /></button>}
+        {query && <button onClick={() => setQuery("")} aria-label={t("Effacer la recherche")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 14, display: "flex" }}><Icon name="close" size={14} /></button>}
       </div>
 
       {/* Résultats de recherche */}
@@ -234,12 +235,12 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
           <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
             {[["users", "user", "Investisseurs"], ["clubs", "landmark", "Clubs"], ["assets", "up", "Valeurs"]].map(([id, icon, label]) => (
               <button key={id} onClick={() => setSearchTab(id)} style={{ padding: "5px 14px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${searchTab === id ? T.accent : T.border}`, background: searchTab === id ? T.accentBg : "none", color: searchTab === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...chip }}>
-                <Icon name={icon} size={13} />{label}
+                <Icon name={icon} size={13} />{t(label)}
               </button>
             ))}
           </div>
 
-          {loading && <div style={{ fontSize: 13, color: T.textFaint, padding: "1rem 0" }}>Recherche…</div>}
+          {loading && <div style={{ fontSize: 13, color: T.textFaint, padding: "1rem 0" }}>{t("Recherche…")}</div>}
 
           {!loading && searchTab === "users" && users.map(u => (
             <div key={u.id} onClick={() => onViewProfile && onViewProfile(u.id)} style={{ ...card(T), display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
@@ -247,14 +248,14 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                 ? <div style={{ width: 40, height: 40, borderRadius: 12, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{superIcons[u.id]}</div>
                 : <Avatar userId={u.id} name={u.full_name} size={40} />}
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}{superIcons[u.id] && <span style={{ marginLeft: 8, padding: "1px 7px", borderRadius: 999, fontSize: 10, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold, display: "inline-flex", alignItems: "center", gap: 4, verticalAlign: "middle" }}><Icon name="trophy" size={11} />Légende</span>}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}{superIcons[u.id] && <span style={{ marginLeft: 8, padding: "1px 7px", borderRadius: 999, fontSize: 10, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold, display: "inline-flex", alignItems: "center", gap: 4, verticalAlign: "middle" }}><Icon name="trophy" size={11} />{t("Légende")}</span>}</div>
                 <div style={{ fontSize: 12, color: T.textMuted }}>@{u.username}{u.city ? ` · ${u.city}` : ""}{u.strategy ? ` · ${u.strategy}` : ""}</div>
-                {u.streak_mois > 0 && <div style={{ fontSize: 11, color: T.yellow, marginTop: 2, ...chip, gap: 4 }}><Icon name="flame" size={12} />{u.streak_mois} mois</div>}
+                {u.streak_mois > 0 && <div style={{ fontSize: 11, color: T.yellow, marginTop: 2, ...chip, gap: 4 }}><Icon name="flame" size={12} />{t("{n} mois", { n: u.streak_mois })}</div>}
               </div>
               {superIcons[u.id] ? null
-                : friendIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.accent, ...chip, gap: 4 }}><Icon name="check" size={13} />Ami</span>
-                : pendingIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.textFaint }}>En attente</span>
-                : <button onClick={e => { e.stopPropagation(); sendRequest(u.id); }} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>+ Suivre</button>}
+                : friendIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.accent, ...chip, gap: 4 }}><Icon name="check" size={13} />{t("Ami")}</span>
+                : pendingIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.textFaint }}>{t("En attente")}</span>
+                : <button onClick={e => { e.stopPropagation(); sendRequest(u.id); }} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>{t("+ Suivre")}</button>}
             </div>
           ))}
 
@@ -265,7 +266,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
               <div style={{ width: 40, height: 40, borderRadius: 10, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{a.symbol.replace(/^\^/, "").split(".")[0].slice(0, 5)}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</div>
-                <div style={{ fontSize: 12, color: T.textMuted }}>{a.symbol} · {a.type}{a.exchange ? ` · ${a.exchange}` : ""}</div>
+                <div style={{ fontSize: 12, color: T.textMuted }}>{a.symbol} · {t(a.type)}{a.exchange ? ` · ${a.exchange}` : ""}</div>
               </div>
             </div>
           ))}
@@ -275,16 +276,16 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
               <div style={{ width: 40, height: 40, borderRadius: 10, background: T.accentBg, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}><CatIcon cat={club.category} size={18} /></div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{club.name}</div>
-                <div style={{ fontSize: 12, color: T.textMuted }}>{club.subcategory}</div>
+                <div style={{ fontSize: 12, color: T.textMuted }}>{t(club.subcategory)}</div>
               </div>
-              {myClubIds.includes(club.id) ? <span style={{ fontSize: 12, color: T.accent, ...chip, gap: 4 }}><Icon name="check" size={13} />Membre</span>
-                : <button onClick={e => { e.stopPropagation(); joinClub(club.id); }} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>Rejoindre</button>}
+              {myClubIds.includes(club.id) ? <span style={{ fontSize: 12, color: T.accent, ...chip, gap: 4 }}><Icon name="check" size={13} />{t("Membre")}</span>
+                : <button onClick={e => { e.stopPropagation(); joinClub(club.id); }} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>{t("Rejoindre")}</button>}
             </div>
           ))}
 
-          {!loading && searchTab === "users" && users.length === 0 && <div style={{ fontSize: 13, color: T.textFaint }}>Aucun investisseur trouvé</div>}
-          {!loading && searchTab === "clubs" && clubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint }}>Aucun club trouvé</div>}
-          {!loading && searchTab === "assets" && assets.length === 0 && <div style={{ fontSize: 13, color: T.textFaint }}>Aucune valeur trouvée (nom, ticker ou ISIN)</div>}
+          {!loading && searchTab === "users" && users.length === 0 && <div style={{ fontSize: 13, color: T.textFaint }}>{t("Aucun investisseur trouvé")}</div>}
+          {!loading && searchTab === "clubs" && clubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint }}>{t("Aucun club trouvé")}</div>}
+          {!loading && searchTab === "assets" && assets.length === 0 && <div style={{ fontSize: 13, color: T.textFaint }}>{t("Aucune valeur trouvée (nom, ticker ou ISIN)")}</div>}
         </div>
       ) : (
         <>
@@ -292,7 +293,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
           <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
             {[["marches", "globe", "Marchés"], ["clubs", "landmark", "Clubs"], ["super", "trophy", "Légendes"]].map(([id, icon, label]) => (
               <button key={id} onClick={() => { setSection(id); setFilterCat('Tous'); }} style={{ padding: "7px 14px", borderRadius: 999, fontSize: 13, border: `0.5px solid ${section === id ? T.accent : T.border}`, background: section === id ? T.accentBg : "none", color: section === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", ...chip, gap: 6 }}>
-                <Icon name={icon} size={14} />{label}
+                <Icon name={icon} size={14} />{t(label)}
               </button>
             ))}
           </div>
@@ -305,7 +306,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 14, paddingBottom: 12, borderBottom: `0.5px solid ${T.border}` }}>
                 <div style={{ display: "flex", gap: 4, background: T.bgSubtle, borderRadius: 10, padding: 3 }}>
-                  {[["mes", `Mes clubs${contextLoaded ? ` (${myClubIds.length})` : ""}`], ["decouvrir", "Découvrir"]].map(([id, label]) => (
+                  {[["mes", `${t("Mes clubs")}${contextLoaded ? ` (${myClubIds.length})` : ""}`], ["decouvrir", t("Découvrir")]].map(([id, label]) => (
                     <button key={id} onClick={() => setClubView(id)} aria-pressed={activeClubView === id}
                       style={{ padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: activeClubView === id ? 700 : 500, border: "none", background: activeClubView === id ? T.bgCard : "transparent", color: activeClubView === id ? T.text : T.textMuted, boxShadow: activeClubView === id ? T.cardShadow : "none", cursor: "pointer", fontFamily: "inherit" }}>
                       {label}
@@ -313,7 +314,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                   ))}
                 </div>
                 <button onClick={() => setShowForm(!showForm)} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
-                  {showForm ? "Annuler" : "+ Créer"}
+                  {showForm ? t("Annuler") : t("+ Créer")}
                 </button>
               </div>
 
@@ -322,7 +323,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {[["Tous","Tous"],["📈 Actions","Actions"],["📊 ETF","ETF"],["🏦 Fonds","Fonds"],["📉 Obligations","Oblig."],["🏠 Immobilier","Immo"],["💰 Patrimoine & Stratégie","Stratégie"],["₿ Crypto","Crypto"]].map(([key,label]) => (
                     <button key={key} onClick={() => setFilterCat(key)} style={{ padding: "5px 12px", borderRadius: 999, fontSize: 12, border: `0.5px solid ${filterCat === key ? T.accent : T.border}`, background: filterCat === key ? T.accentBg : "none", color: filterCat === key ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", ...chip }}>
-                      {key !== "Tous" && <CatIcon cat={key} size={13} />}{label}
+                      {key !== "Tous" && <CatIcon cat={key} size={13} />}{t(label)}
                     </button>
                   ))}
                 </div>
@@ -331,23 +332,23 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
 
               {showForm && (
                 <div style={{ ...card(T), marginBottom: 16 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 12 }}>Créer un club</div>
-                  <input style={{ ...inp(T), marginBottom: 10 }} placeholder="Nom du club" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-                  <textarea style={{ ...inp(T), height: 60, resize: "none", marginBottom: 10 }} placeholder="Description (optionnel)" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 12 }}>{t("Créer un club")}</div>
+                  <input style={{ ...inp(T), marginBottom: 10 }} placeholder={t("Nom du club")} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                  <textarea style={{ ...inp(T), height: 60, resize: "none", marginBottom: 10 }} placeholder={t("Description (optionnel)")} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
                     {Object.keys(CATEGORIES).map(cat => (
-                      <button key={cat} onClick={() => setForm({ ...form, category: cat, subcategory: "" })} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${form.category === cat ? T.accent : T.border}`, background: form.category === cat ? T.accentBg : "none", color: form.category === cat ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...chip }}><CatIcon cat={cat} size={13} />{catName(cat)}</button>
+                      <button key={cat} onClick={() => setForm({ ...form, category: cat, subcategory: "" })} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${form.category === cat ? T.accent : T.border}`, background: form.category === cat ? T.accentBg : "none", color: form.category === cat ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", ...chip }}><CatIcon cat={cat} size={13} />{t(catName(cat))}</button>
                     ))}
                   </div>
                   {form.category && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
                       {CATEGORIES[form.category].map(sub => (
-                        <button key={sub} onClick={() => setForm({ ...form, subcategory: sub })} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${form.subcategory === sub ? T.accent : T.border}`, background: form.subcategory === sub ? T.accentBg : "none", color: form.subcategory === sub ? T.accent : T.textFaint, cursor: "pointer", fontFamily: "inherit" }}>{sub}</button>
+                        <button key={sub} onClick={() => setForm({ ...form, subcategory: sub })} style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, border: `0.5px solid ${form.subcategory === sub ? T.accent : T.border}`, background: form.subcategory === sub ? T.accentBg : "none", color: form.subcategory === sub ? T.accent : T.textFaint, cursor: "pointer", fontFamily: "inherit" }}>{t(sub)}</button>
                       ))}
                     </div>
                   )}
                   {error && <div style={{ fontSize: 13, color: T.red, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}><Icon name="warning" size={14} />{error}</div>}
-                  <button onClick={createClub} disabled={saving} style={{ background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>{saving ? "Création…" : "Créer"}</button>
+                  <button onClick={createClub} disabled={saving} style={{ background: T.accent, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 13, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>{saving ? t("Création…") : t("Créer")}</button>
                 </div>
               )}
 
@@ -356,9 +357,9 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                   {contextLoaded && myClubs.length === 0 && (
                     <div style={{ ...card(T), textAlign: "center", padding: "2rem 1rem" }}>
                       <div style={{ marginBottom: 8, color: T.textFaint, display: "flex", justifyContent: "center" }}><Icon name="users" size={28} /></div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: T.text, marginBottom: 6 }}>Tu n'as rejoint aucun club</div>
-                      <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 14 }}>Échange avec des investisseurs qui partagent ta stratégie.</div>
-                      <button onClick={() => setClubView("decouvrir")} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>Découvrir les clubs</button>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: T.text, marginBottom: 6 }}>{t("Tu n'as rejoint aucun club")}</div>
+                      <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 14 }}>{t("Échange avec des investisseurs qui partagent ta stratégie.")}</div>
+                      <button onClick={() => setClubView("decouvrir")} style={{ background: T.accent, border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 700, color: T.onAccent, cursor: "pointer", fontFamily: "inherit" }}>{t("Découvrir les clubs")}</button>
                     </div>
                   )}
                   {myClubs.map(club => {
@@ -371,12 +372,12 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                               <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{club.name}</span>
-                              <span style={{ fontSize: 11, color: T.textFaint, flexShrink: 0, ...chip, gap: 4 }}><Icon name="users" size={12} />{n} membre{n > 1 ? "s" : ""}</span>
+                              <span style={{ fontSize: 11, color: T.textFaint, flexShrink: 0, ...chip, gap: 4 }}><Icon name="users" size={12} />{t(n > 1 ? "{n} membres" : "{n} membre", { n })}</span>
                             </div>
                             <div style={{ fontSize: 12, color: T.textMuted, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {last
-                                ? <><Icon name="comment" size={12} style={{ marginRight: 4 }} /><b style={{ fontWeight: 600 }}>{last.author?.full_name?.split(" ")[0] || "Un membre"}</b> : {last.content} <span style={{ color: T.textFaint }}>· {timeAgo(last.created_at)}</span></>
-                                : <span style={{ color: T.textFaint }}>Pas encore de discussion — lance la première !</span>}
+                                ? <><Icon name="comment" size={12} style={{ marginRight: 4 }} /><b style={{ fontWeight: 600 }}>{last.author?.full_name?.split(" ")[0] || t("Un membre")}</b> : {last.content} <span style={{ color: T.textFaint }}>· {timeAgo(last.created_at)}</span></>
+                                : <span style={{ color: T.textFaint }}>{t("Pas encore de discussion — lance la première !")}</span>}
                             </div>
                           </div>
                           <span style={{ color: T.textFaint, fontSize: 16 }}>›</span>
@@ -387,7 +388,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                 </>
               )}
 
-              {activeClubView === "decouvrir" && filteredClubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}><span style={{ ...chip, gap: 6 }}>Aucun club — crée le premier ! <Icon name="rocket" size={14} /></span></div>}
+              {activeClubView === "decouvrir" && filteredClubs.length === 0 && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "2rem 0" }}><span style={{ ...chip, gap: 6 }}>{t("Aucun club — crée le premier !")} <Icon name="rocket" size={14} /></span></div>}
 
               {activeClubView === "decouvrir" && filteredClubs.map(club => (
                 <div key={club.id} onClick={() => setSelectedClub(club)} style={{ ...card(T), cursor: "pointer" }}>
@@ -396,14 +397,14 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 4 }}>{club.name}</div>
                       <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
-                        <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{club.subcategory}</span>
-                        <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted, ...chip, gap: 4 }}><Icon name="users" size={11} />{memberCounts[club.id] || 0} membre{(memberCounts[club.id] || 0) > 1 ? "s" : ""}</span>
-                        {myClubIds.includes(club.id) && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent, ...chip, gap: 4 }}><Icon name="check" size={11} />Membre</span>}
+                        <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{t(club.subcategory)}</span>
+                        <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted, ...chip, gap: 4 }}><Icon name="users" size={11} />{t((memberCounts[club.id] || 0) > 1 ? "{n} membres" : "{n} membre", { n: memberCounts[club.id] || 0 })}</span>
+                        {myClubIds.includes(club.id) && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent, ...chip, gap: 4 }}><Icon name="check" size={11} />{t("Membre")}</span>}
                       </div>
                       {club.description && <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5 }}>{club.description}</div>}
                     </div>
                     {!myClubIds.includes(club.id) && (
-                      <button onClick={() => joinClub(club.id)} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent, flexShrink: 0 }}>+ Rejoindre</button>
+                      <button onClick={() => joinClub(club.id)} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent, flexShrink: 0 }}>{t("+ Rejoindre")}</button>
                     )}
                   </div>
                 </div>
