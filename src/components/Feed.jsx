@@ -75,6 +75,7 @@ const FILTERS = [
   { id: "moments", label: "Moments" },
 ];
 
+const NEWS_COMMENT_COLUMNS = "id, url, user_id, content, tags, created_at, author:profiles!news_comments_user_id_fkey(full_name, username)";
 const COMMENT_COLUMNS = "id, activity_id, user_id, content, tags, created_at, author:profiles!activity_comments_user_id_fkey(full_name, username)";
 
 // Amis acceptés (moi inclus), activités à afficher selon le périmètre, avec leurs likes et commentaires
@@ -178,7 +179,7 @@ function DeclarationMoves({ data, T, onOpenLabel }) {
 
 // Article de presse sur un Super Investor ou une société suivis : titre, journal, date ;
 // s'ouvre sur le site du journal. L'icône et le nom ouvrent le profil ou la fiche.
-function NewsFeedCard({ item, T, card, onProfile, onAsset, like, onLike, btnAct }) {
+function NewsFeedCard({ item, T, card, onProfile, onAsset, like, onLike, btnAct, commentCount, onToggleComments, comments }) {
   const { article, investor, company } = item;
   const who = investor
     ? { icon: investor.icon, name: investor.name, title: `Voir le profil de ${investor.name}`, open: () => onProfile(investor.id) }
@@ -199,11 +200,13 @@ function NewsFeedCard({ item, T, card, onProfile, onAsset, like, onLike, btnAct 
         <div style={{ fontSize: 14, fontWeight: 600, color: T.text, lineHeight: 1.4 }}>{article.title}</div>
         {article.source && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 4 }}>{article.source}</div>}
       </a>
-      <div style={{ marginTop: 10 }}>
+      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
         <button onClick={onLike} style={{ ...btnAct, ...(like.mine ? { borderColor: T.accent, color: T.accent } : {}) }}>
           👍 {like.mine ? "Liké" : "Like"}{like.count > 0 ? ` · ${like.count}` : ""}
         </button>
+        <button onClick={onToggleComments} style={btnAct}>💬 {commentCount > 0 ? commentCount : "Commenter"}</button>
       </div>
+      {comments}
     </div>
   );
 }
@@ -219,12 +222,17 @@ async function fetchMyClubPosts(userId, hashtag = null) {
   if (hashtag) query = query.ilike("content", `%#${hashtag}%`);
   const { data } = await query;
   const posts = (data || []).filter(p => !hashtag || hasHashtag(p.content, hashtag));
-  // Nombre de réponses par post, en une seule requête
+  // Nombre de réponses et réactions de chaque post, en une requête chacune
   if (posts.length) {
-    const { data: replies } = await supabase.from("club_replies").select("post_id").in("post_id", posts.map(p => p.id));
-    const counts = {};
+    const ids = posts.map(p => p.id);
+    const [{ data: replies }, { data: reactions }] = await Promise.all([
+      supabase.from("club_replies").select("post_id").in("post_id", ids),
+      supabase.from("club_reactions").select("id, post_id, user_id, type").in("post_id", ids),
+    ]);
+    const counts = {}, byPost = {};
     for (const r of replies || []) counts[r.post_id] = (counts[r.post_id] || 0) + 1;
-    for (const p of posts) p.reply_count = counts[p.id] || 0;
+    for (const r of reactions || []) (byPost[r.post_id] ||= []).push(r);
+    for (const p of posts) { p.reply_count = counts[p.id] || 0; p.reactions = byPost[p.id] || []; }
   }
   return posts.map(p => ({ ...p, kind: "club" }));
 }
@@ -286,17 +294,22 @@ async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYP
         .slice(0, FEED_NEWS_MAX);
     }),
   ]);
-  // Likes des actualités affichées (par adresse de l'article)
-  const newsLikes = {};
+  // Likes et commentaires des actualités affichées (par adresse de l'article)
+  const newsLikes = {}, newsComments = {};
   if (news.length) {
-    const { data: rows } = await supabase.from("news_likes").select("url, user_id").in("url", news.map(n => n.article.url));
+    const urls = news.map(n => n.article.url);
+    const [{ data: rows }, { data: commentRows }] = await Promise.all([
+      supabase.from("news_likes").select("url, user_id").in("url", urls),
+      supabase.from("news_comments").select(NEWS_COMMENT_COLUMNS).in("url", urls).order("created_at"),
+    ]);
+    for (const c of commentRows || []) (newsComments[c.url] ||= []).push(c);
     for (const l of rows || []) {
       const entry = newsLikes[l.url] ||= { count: 0, mine: false };
       entry.count++;
       if (l.user_id === userId) entry.mine = true;
     }
   }
-  return { ids, activities, likes, comments, polls, newsLikes, clubPosts: [...clubPosts, ...news] };
+  return { ids, activities, likes, comments, polls, newsLikes, newsComments, clubPosts: [...clubPosts, ...news] };
 }
 
 // « onlyUserId » : version intégrée au profil public — mêmes cartes que le fil, limitées à ce
@@ -320,6 +333,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
   const [friendIds, setFriendIds] = useState([]);
   const [likes, setLikes] = useState({});
   const [newsLikes, setNewsLikes] = useState({}); // likes des actualités, par adresse de l'article
+  const [newsComments, setNewsComments] = useState({}); // commentaires des actualités, par adresse
   const [comments, setComments] = useState({});
   const [openComment, setOpenComment] = useState(() => (focusId != null ? { [focusId]: true } : {}));
   const [commentInputs, setCommentInputs] = useState({});
@@ -365,9 +379,10 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
 
   useEffect(() => {
     let ignore = false;
-    fetchFeed(userId, scope, onlyUserId, only === "posts" ? ["post"] : TRADE_TYPES, hashtag, focusId).then(({ ids, activities, likes, comments, polls, newsLikes, clubPosts }) => {
+    fetchFeed(userId, scope, onlyUserId, only === "posts" ? ["post"] : TRADE_TYPES, hashtag, focusId).then(({ ids, activities, likes, comments, polls, newsLikes, newsComments, clubPosts }) => {
       if (ignore) return;
       setNewsLikes(newsLikes);
+      setNewsComments(newsComments);
       setClubPosts(clubPosts);
       setPolls(polls);
       setFriendIds(ids);
@@ -596,6 +611,96 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
     if (error) setNewsLikes(p => ({ ...p, [url]: current }));
   }
 
+  // Commentaires sous une actualité (clé « news:<adresse> » pour la zone de saisie)
+  async function addNewsComment(url) {
+    const key = `news:${url}`;
+    const text = (commentInputs[key] || "").trim();
+    if (!text) return;
+    const tags = finalizeTags(text, commentTags[key]);
+    setCommentInputs(p => ({ ...p, [key]: "" }));
+    const row = { url, user_id: userId, content: text };
+    if (tags) row.tags = tags;
+    const { data, error } = await supabase.from("news_comments").insert(row).select(NEWS_COMMENT_COLUMNS).single();
+    if (error) { setCommentInputs(p => ({ ...p, [key]: text })); return; }
+    setCommentTags(p => ({ ...p, [key]: null }));
+    setNewsComments(p => ({ ...p, [url]: [...(p[url] || []), data] }));
+    for (const m of tags?.mentions || []) if (m.id !== userId) notify(m.id, "mention", { excerpt: text.slice(0, 80) });
+  }
+
+  async function deleteNewsComment(url, id) {
+    const { error } = await supabase.from("news_comments").delete().eq("id", id);
+    if (!error) setNewsComments(p => ({ ...p, [url]: (p[url] || []).filter(c => c.id !== id) }));
+  }
+
+  // Zone de commentaires (liste + saisie), partagée par les posts / mouvements et les actualités
+  function renderComments({ list, inputKey, onAdd, onDelete, canDeleteAll }) {
+    return (
+      <div style={{ marginTop: 12, borderTop: `0.5px solid ${T.border}`, paddingTop: 10 }}>
+        {list.map(c => (
+          <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            <Avatar userId={c.user_id} name={c.author?.full_name} size={26} />
+            <div style={{ background: T.bgSubtle, borderRadius: 8, padding: "7px 10px", flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(c.user_id)}>
+                  {c.author?.full_name || "Investisseur"}
+                  {c.author?.username && <span style={{ fontWeight: 400, color: T.textFaint, marginLeft: 5 }}>@{c.author.username}</span>}
+                </div>
+                <div style={{ fontSize: 11, color: T.textFaint, flex: 1 }}>{timeAgo(c.created_at)}</div>
+                {(c.user_id === userId || canDeleteAll) && (
+                  <button onClick={() => onDelete(c.id)} title="Supprimer" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, padding: 0 }}>✕</button>
+                )}
+              </div>
+              <div style={{ fontSize: 13, color: T.text, marginTop: 2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                <RichText text={c.content} tickers={c.tags?.tickers} mentions={c.tags?.mentions} T={T} onAsset={openAssetDetail} onProfile={pid => onViewProfile && onViewProfile(pid)} />
+              </div>
+            </div>
+          </div>
+        ))}
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <Avatar userId={userId} name={profile?.full_name} size={26} />
+          <TagField
+            as="input"
+            value={commentInputs[inputKey] || ""}
+            onValueChange={v => setCommentInputs(p => ({ ...p, [inputKey]: v }))}
+            tags={commentTags[inputKey]}
+            onTagsChange={t => setCommentTags(p => ({ ...p, [inputKey]: t }))}
+            onSubmit={onAdd}
+            myId={userId}
+            T={T}
+            placeholder="Commenter… ($ valeur, @ membre)"
+            maxLength={1000}
+            style={{ flex: 1, padding: "7px 10px", fontSize: 13, borderRadius: 8, border: `0.5px solid ${T.border}`, background: T.bgCard, color: T.text, fontFamily: "inherit" }}
+          />
+          <button onMouseDown={e => e.preventDefault()} onClick={onAdd} style={{ ...btnAct, padding: "7px 12px" }}>↵</button>
+        </div>
+      </div>
+    );
+  }
+
+  // Like (réaction 👍) d'un post de club affiché dans le fil, comme dans le club
+  async function toggleClubLike(post) {
+    const key = `club:${post.id}`;
+    if (likePending.current.has(key)) return;
+    likePending.current.add(key);
+    const mine = (post.reactions || []).find(r => r.user_id === userId && r.type === "👍");
+    const setReactions = fn => setClubPosts(list => list.map(p => (p.kind === "club" && p.id === post.id ? { ...p, reactions: fn(p.reactions || []) } : p)));
+    if (mine) {
+      setReactions(rs => rs.filter(r => r !== mine));
+      const { error } = await supabase.from("club_reactions").delete().eq("id", mine.id);
+      if (error) setReactions(rs => [...rs, mine]);
+    } else {
+      const temp = { id: `tmp-${Date.now()}`, post_id: post.id, user_id: userId, type: "👍" };
+      setReactions(rs => [...rs, temp]);
+      const { data, error } = await supabase.from("club_reactions").insert({ post_id: post.id, user_id: userId, type: "👍" }).select("id, post_id, user_id, type").single();
+      if (error) setReactions(rs => rs.filter(r => r !== temp));
+      else {
+        setReactions(rs => rs.map(r => (r === temp ? data : r)));
+        if (post.user_id !== userId) notify(post.user_id, "post_reaction", { reaction: "👍", post_id: post.id });
+      }
+    }
+    likePending.current.delete(key);
+  }
+
   function toggleComment(id) { setOpenComment(p => ({ ...p, [id]: !p[id] })); }
 
   async function addComment(activity) {
@@ -760,11 +865,17 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
       {visible.map(activity => {
         if (activity.kind === "news") {
           return <NewsFeedCard key={`news-${activity.id}`} item={activity} T={T} card={card} btnAct={btnAct} onProfile={id => onViewProfile && onViewProfile(id)} onAsset={openAssetDetail}
-            like={newsLikes[activity.article.url] || { count: 0, mine: false }} onLike={() => toggleNewsLike(activity.article.url)} />;
+            like={newsLikes[activity.article.url] || { count: 0, mine: false }} onLike={() => toggleNewsLike(activity.article.url)}
+            commentCount={(newsComments[activity.article.url] || []).length}
+            onToggleComments={() => toggleComment(`news:${activity.article.url}`)}
+            comments={openComment[`news:${activity.article.url}`] && renderComments({
+              list: newsComments[activity.article.url] || [], inputKey: `news:${activity.article.url}`,
+              onAdd: () => addNewsComment(activity.article.url), onDelete: id => deleteNewsComment(activity.article.url, id),
+            })} />;
         }
         if (activity.kind === "club") {
           return (
-            <ClubFeedCard key={`club-${activity.id}`} post={activity} T={T} card={card} btnAct={btnAct}
+            <ClubFeedCard key={`club-${activity.id}`} post={activity} T={T} card={card} btnAct={btnAct} myId={userId} onLike={() => toggleClubLike(activity)}
               onOpenClub={onOpenClub} onAsset={openAssetDetail} onProfile={id => onViewProfile && onViewProfile(id)} />
           );
         }
@@ -877,47 +988,10 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
               )}
             </div>
 
-            {openComment[activity.id] && (
-              <div style={{ marginTop: 12, borderTop: `0.5px solid ${T.border}`, paddingTop: 10 }}>
-                {activityComments.map(c => (
-                  <div key={c.id} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                    <Avatar userId={c.user_id} name={c.author?.full_name} size={26} />
-                    <div style={{ background: T.bgSubtle, borderRadius: 8, padding: "7px 10px", flex: 1 }}>
-                      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, cursor: "pointer" }} onClick={() => onViewProfile && onViewProfile(c.user_id)}>
-                          {c.author?.full_name || "Investisseur"}
-                          {c.author?.username && <span style={{ fontWeight: 400, color: T.textFaint, marginLeft: 5 }}>@{c.author.username}</span>}
-                        </div>
-                        <div style={{ fontSize: 11, color: T.textFaint, flex: 1 }}>{timeAgo(c.created_at)}</div>
-                        {(c.user_id === userId || isMe) && (
-                          <button onClick={() => deleteComment(activity.id, c.id)} title="Supprimer" style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 12, padding: 0 }}>✕</button>
-                        )}
-                      </div>
-                      <div style={{ fontSize: 13, color: T.text, marginTop: 2, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                        <RichText text={c.content} tickers={c.tags?.tickers} mentions={c.tags?.mentions} T={T} onAsset={openAssetDetail} onProfile={pid => onViewProfile && onViewProfile(pid)} />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <Avatar userId={userId} name={profile?.full_name} size={26} />
-                  <TagField
-                    as="input"
-                    value={commentInputs[activity.id] || ""}
-                    onValueChange={v => setCommentInputs(p => ({ ...p, [activity.id]: v }))}
-                    tags={commentTags[activity.id]}
-                    onTagsChange={t => setCommentTags(p => ({ ...p, [activity.id]: t }))}
-                    onSubmit={() => addComment(activity)}
-                    myId={userId}
-                    T={T}
-                    placeholder="Commenter… ($ valeur, @ membre)"
-                    maxLength={1000}
-                    style={{ flex: 1, padding: "7px 10px", fontSize: 13, borderRadius: 8, border: `0.5px solid ${T.border}`, background: T.bgCard, color: T.text, fontFamily: "inherit" }}
-                  />
-                  <button onClick={() => addComment(activity)} style={{ ...btnAct, padding: "7px 12px" }}>↵</button>
-                </div>
-              </div>
-            )}
+            {openComment[activity.id] && renderComments({
+              list: activityComments, inputKey: activity.id, canDeleteAll: isMe,
+              onAdd: () => addComment(activity), onDelete: id => deleteComment(activity.id, id),
+            })}
           </div>
         );
       })}
