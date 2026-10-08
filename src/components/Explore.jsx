@@ -238,7 +238,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                 ? <div style={{ width: 40, height: 40, borderRadius: 12, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{superIcons[u.id]}</div>
                 : <Avatar userId={u.id} name={u.full_name} size={40} />}
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}{superIcons[u.id] && <span style={{ marginLeft: 8, padding: "1px 7px", borderRadius: 999, fontSize: 10, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold }}>🏆 Super Investor</span>}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}{superIcons[u.id] && <span style={{ marginLeft: 8, padding: "1px 7px", borderRadius: 999, fontSize: 10, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold }}>🏆 Légende</span>}</div>
                 <div style={{ fontSize: 12, color: T.textMuted }}>@{u.username}{u.city ? ` · ${u.city}` : ""}{u.strategy ? ` · ${u.strategy}` : ""}</div>
                 {u.streak_mois > 0 && <div style={{ fontSize: 11, color: T.yellow, marginTop: 2 }}>🔥 {u.streak_mois} mois</div>}
               </div>
@@ -281,7 +281,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
         <>
           {/* Onglets Marchés / Clubs / Super Investors */}
           <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
-            {[["marches", "🌍 Marchés"], ["clubs", "🏛️ Clubs"], ["super", "🏆 Super Investors"]].map(([id, label]) => (
+            {[["marches", "🌍 Marchés"], ["clubs", "🏛️ Clubs"], ["super", "🏆 Légendes"]].map(([id, label]) => (
               <button key={id} onClick={() => { setSection(id); setFilterCat('Tous'); }} style={{ padding: "7px 14px", borderRadius: 999, fontSize: 13, border: `0.5px solid ${section === id ? T.accent : T.border}`, background: section === id ? T.accentBg : "none", color: section === id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
                 {label}
               </button>

@@ -298,7 +298,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
               {profile.username ? `@${profile.username}` : ""}{superInv ? `${profile.username ? " · " : ""}${superInv.firm}` : profile.city ? ` · ${profile.city}` : ""}
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {superInv && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold }}>🏆 Super Investor</span>}
+              {superInv && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold }}>🏆 Légende</span>}
               {profile.strategy && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{profile.strategy}</span>}
               {profile.streak_mois > 0 && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: "rgba(240,203,123,0.1)", color: T.yellow }}>🔥 {profile.streak_mois} mois</span>}
               {profile.investing_since && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted }}>Depuis {profile.investing_since}</span>}
