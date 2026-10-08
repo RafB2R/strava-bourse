@@ -129,7 +129,7 @@ export default {
   "Mis à jour à {time}": "Updated at {time}",
   "⟳ Actualiser": "⟳ Refresh",
   "Suivis": "Following",
-  "Indices": "Indices",
+  "Indices": "Indexes",
   "· touche un indice pour le découvrir": "· tap an index to explore it",
   "Secteurs S&P 500": "S&P 500 sectors",
   "Chargement…": "Loading…",

@@ -18,12 +18,21 @@ import { detailFor } from "../indices";
 import { fetchFollowedIds, fetchFollowedNews, quarterLabel } from "../superInvestors";
 import { fetchCompanyNews, fetchFollowedAssets, setFollowingAsset } from "../assetFollows";
 import Avatar from "./Avatar";
+import LegendIcon from "./LegendIcon";
+import Medal from "./Medal";
 import Icon from "./Icon";
 import { t, LANG } from "../i18n";
 
 // Actualités dans le fil (Super Investors et sociétés suivis) : 4 au plus, un titre une seule fois
 const FEED_NEWS_MAX = 4;
 
+
+// « 🔥 6 mois » → icône flamme + « 6 mois » (les textes des moments gardent l'emoji en tête)
+function statWithIcon(stat) {
+  if (typeof stat !== "string") return stat;
+  const m = stat.match(/^(\p{Extended_Pictographic}\uFE0F?)\s*(.*)$/u);
+  return m ? <><Icon emoji={m[1]} size={13} />{m[2]}</> : stat;
+}
 
 function timeAgo(date) {
   const diff = (Date.now() - new Date(date)) / 1000;
@@ -63,7 +72,7 @@ function getActivityMeta(activity) {
     rebalancement: { tag: t("Rééquilibrage"), tagBg: "rgba(240,203,123,0.1)", tagColor: T.yellow, title: t("{name} a rééquilibré son portefeuille", { name }), sub: "", stat: "" },
     suppression_position: { tag: t("Position supprimée"), tagBg: "rgba(128,128,128,0.1)", tagColor: "#888", title: t("{name} a supprimé une position", { name }), sub: d.label, stat: "" },
     new_broker: { tag: t("Nouveau broker"), tagBg: "rgba(175,169,236,0.1)", tagColor: T.purple, title: t("{name} a ajouté un broker", { name }), sub: d.broker, stat: "" },
-    badge: { tag: t("Badge"), tagIcon: "award", tagBg: "rgba(240,215,0,0.08)", tagColor: T.gold, title: t("{name} a débloqué un badge", { name }), sub: badge.category, stat: `${badge.medal} ${badge.name}` },
+    badge: { tag: t("Badge"), tagIcon: "award", tagBg: "rgba(240,215,0,0.08)", tagColor: T.gold, title: t("{name} a débloqué un badge", { name }), sub: badge.category, stat: <><Medal tier={badge.medal} size={13} T={T} />{badge.name}</> },
   };
   return map[activity.type] || { tag: t("Activité"), tagBg: "rgba(128,128,128,0.1)", tagColor: "#888", title: t("{name} a eu une activité", { name }), sub: "", stat: "" };
 }
@@ -190,7 +199,7 @@ function NewsFeedCard({ item, T, card, onProfile, onAsset, like, onLike, btnAct,
     <div style={card}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
         <button onClick={who.open} title={who.title}
-          style={{ width: 36, height: 36, borderRadius: 10, background: T.bgSubtle, border: "none", fontSize: 18, cursor: "pointer", flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", color: T.textMuted }}>{company && !investor ? <Icon emoji={who.icon} size={18} /> : who.icon}</button>
+          style={{ width: 36, height: 36, borderRadius: 10, background: investor ? "none" : T.bgSubtle, border: "none", padding: 0, cursor: "pointer", flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", color: T.textMuted }}>{investor ? <LegendIcon icon={who.icon} size={36} T={T} /> : <Icon emoji={who.icon} size={18} />}</button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <button onClick={who.open} style={{ background: "none", border: "none", padding: 0, fontFamily: "inherit", fontSize: 14, fontWeight: 600, color: T.text, cursor: "pointer", textAlign: "left" }}>{who.name}</button>
           <div style={{ fontSize: 11, color: T.textFaint }}>{timeAgo(item.created_at)}</div>
@@ -981,7 +990,7 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
                 {activity.type === "declaration_13f" && <DeclarationMoves data={activity.data} T={T} onOpenLabel={label => openLabel(activity.id, label)} />}
                 {(meta.stat || TRADE_TYPES.includes(activity.type)) && (
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 8 }}>
-                    {meta.stat && <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 500, background: meta.tagBg, color: meta.tagColor }}>{meta.stat}</span>}
+                    {meta.stat && <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 500, background: meta.tagBg, color: meta.tagColor }}>{statWithIcon(meta.stat)}</span>}
                     {TRADE_TYPES.includes(activity.type) && (() => {
                       const src = tradeSource(activity.data);
                       return <span title={src.title} style={{ fontSize: 11, color: T.textFaint, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon emoji={src.icon} size={12} />{src.label}</span>;

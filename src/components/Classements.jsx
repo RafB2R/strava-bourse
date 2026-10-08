@@ -3,6 +3,7 @@ import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
+import Medal from "./Medal";
 import { t } from "../i18n";
 
 const FILTERS = [
@@ -113,7 +114,7 @@ export default function Classements({ session , T: TProp }) {
           return (
             <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}`, background: u.isMe ? T.accentBg : "none", borderRadius: 8, paddingLeft: u.isMe ? 8 : 0 }}>
               <div style={{ fontSize: 18, minWidth: 28, textAlign: "center" }}>
-                {rankIcon(i) || <span style={{ fontSize: 13, color: T.textFaint, fontWeight: 600 }}>{i + 1}</span>}
+                {rankIcon(i) ? <Medal tier={rankIcon(i)} size={20} T={T} /> : <span style={{ fontSize: 13, color: T.textFaint, fontWeight: 600 }}>{i + 1}</span>}
               </div>
               <Avatar userId={u.id} name={u.full_name} size={36} />
               <div style={{ flex: 1 }}>

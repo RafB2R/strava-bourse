@@ -12,6 +12,8 @@ import NewsList from "./NewsList";
 import Comparison from "./Comparison";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
+import Medal from "./Medal";
+import LegendIcon from "./LegendIcon";
 import { t, LOCALE } from "../i18n";
 
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
@@ -272,7 +274,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
       <div style={card}>
         <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 14 }}>
           {superInv
-            ? <div style={{ width: 56, height: 56, borderRadius: 16, background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>{superInv.icon}</div>
+            ? <LegendIcon icon={superInv.icon} size={56} T={T} />
             : <Avatar userId={userId} name={profile.full_name} size={56} />}
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 2 }}>{profile.full_name}</div>
@@ -453,7 +455,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
               const info = getBadgeInfo(b.badge_id);
               return (
                 <div key={b.badge_id} style={{ background: T.bgCard, border: `0.5px solid ${T.border}`, borderRadius: 12, padding: "14px 10px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                  <div style={{ fontSize: 22 }}>{info.medal}</div>
+                  <Medal tier={info.medal} size={28} T={T} />
                   <div style={{ fontSize: 11, fontWeight: 600, color: T.medals[info.medal] || T.accent, textAlign: "center", lineHeight: 1.3 }}>{info.name}</div>
                   {info.category && <div style={{ fontSize: 10, color: T.textFaint, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Icon emoji={info.icon} size={11} />{info.category}</div>}
                 </div>

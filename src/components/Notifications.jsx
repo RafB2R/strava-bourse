@@ -5,6 +5,7 @@ import { badgeFromData } from "../badges";
 import { momentNotification } from "../moments";
 import { closeFinishedPolls, pollEndedText } from "../polls";
 import Icon from "./Icon";
+import Medal from "./Medal";
 import { t } from "../i18n";
 
 function timeAgo(date) {
@@ -20,7 +21,7 @@ function getNotifMeta(notif) {
   switch (notif.type) {
     case "friend_request": return { icon: "👥", text: t("{name} t'a envoyé une demande d'ami", { name: d.from_name }) };
     case "friend_accepted": return { icon: "🤝", text: t("{name} a accepté ta demande d'ami", { name: d.from_name }) };
-    case "badge_unlocked": { const info = badgeFromData(d); return { icon: info.medal, text: t("Tu as débloqué le badge {badge}", { badge: info.name }) }; }
+    case "badge_unlocked": { const info = badgeFromData(d); return { medal: info.medal, text: t("Tu as débloqué le badge {badge}", { badge: info.name }) }; }
     case "activity_like": return { icon: "👍", text: t("{name} a aimé ton activité", { name: d.from_name }) };
     case "activity_comment": return { icon: "💬", text: t("{name} a commenté : « {excerpt} »", { name: d.from_name, excerpt: d.excerpt }) };
     case "moment": return { icon: d.moment_id?.startsWith("anniversaire") ? "🎂" : "🌟", text: momentNotification(d.moment_id) };
@@ -110,7 +111,7 @@ export default function Notifications({ session, T: TProp, onOpen }) {
                   onKeyDown={e => { if (e.key === "Enter") { if (!notif.read) markRead(notif.id); setOpen(false); onOpen?.(notif); } }}
                   style={{ display: "flex", gap: 12, padding: "12px 16px", borderBottom: `0.5px solid ${T.border}`, background: notif.read ? "none" : T.accentBg, cursor: "pointer" }}>
                   <div style={{ width: 36, height: 36, borderRadius: "50%", background: T.bgSubtle, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, color: T.textMuted }}>
-                    <Icon emoji={meta.icon} size={16} />
+                    {meta.medal ? <Medal tier={meta.medal} size={20} T={T} /> : <Icon emoji={meta.icon} size={16} />}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, color: notif.read ? T.textMuted : T.text, lineHeight: 1.4, marginBottom: 3 }}>{meta.text}</div>

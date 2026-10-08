@@ -7,6 +7,29 @@ import {
   Smile, CornerDownLeft, Timer, HeartHandshake, Leaf, Receipt, Plus, LogOut, Settings, ChevronRight, ChevronLeft, Filter, Layers,
 } from "lucide-react";
 
+// Icônes dessinées dans le style Lucide (24×24, trait), pour ce que Lucide n'a pas
+const svgProps = (size, strokeWidth) => ({ width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth, strokeLinecap: "round", strokeLinejoin: "round" });
+function Lion({ size = 24, strokeWidth = 1.75, ...rest }) {
+  return (
+    <svg {...svgProps(size, strokeWidth)} {...rest}>
+      <path d="M12 3.4Q14.9 1.18 16.3 4.55Q19.92 4.08 19.45 7.7Q22.82 9.1 20.6 12Q22.82 14.9 19.45 16.3Q19.92 19.92 16.3 19.45Q14.9 22.82 12 20.6Q9.1 22.82 7.7 19.45Q4.08 19.92 4.55 16.3Q1.18 14.9 3.4 12Q1.18 9.1 4.55 7.7Q4.08 4.08 7.7 4.55Q9.1 1.18 12 3.4Z" />
+      <circle cx="12" cy="12.4" r="5.4" />
+      <path d="M10 11.2h.01M14 11.2h.01" />
+      <path d="M11.1 13.3h1.8L12 14.3z" />
+      <path d="M12 14.3v.7M10.7 15.6c.6.4 1 .3 1.3-.6.3.9.7 1 1.3.6" />
+    </svg>
+  );
+}
+function Horse({ size = 24, strokeWidth = 1.75, ...rest }) {
+  return (
+    <svg {...svgProps(size, strokeWidth)} {...rest}>
+      <path d="M6.5 21h11" />
+      <path d="M8 21c0-3.5 1.6-5.4 3.6-6.8L8 13.6c-.8-.3-1.1-1.2-.6-1.9L10 8l.5-3 2 1.5c3.4.6 5.5 3.6 5.5 8.5V21" />
+      <path d="M12.6 9.4h.01" />
+    </svg>
+  );
+}
+
 // Icônes de l'interface (Lucide, trait fin) à la place des emojis.
 // <Icon name="flame" /> ou <Icon emoji="🔥" /> : les données (badges, moments, notifications…)
 // peuvent garder leur emoji comme identifiant, l'affichage le remplace par l'icône.
@@ -24,6 +47,7 @@ const ICONS = {
   repeat: Repeat, exchange: ArrowLeftRight, bitcoin: Bitcoin, zap: Zap, book: BookOpen, file: FileText, list: ClipboardList,
   smile: Smile, enter: CornerDownLeft, timer: Timer, care: HeartHandshake, leaf: Leaf, receipt: Receipt, plus: Plus,
   logout: LogOut, settings: Settings, next: ChevronRight, prev: ChevronLeft, filter: Filter, layers: Layers,
+  lion: Lion, horse: Horse,
 };
 
 // Emoji → nom d'icône (pour les données qui gardent un emoji comme identifiant)
@@ -38,6 +62,8 @@ const EMOJI_ICONS = {
   "🔧": "wrench", "✋": "hand", "🔗": "link", "🎂": "cake", "🎄": "gift", "🧘": "leaf", "🌱": "leaf", "🏭": "factory",
   "💱": "exchange", "⚡": "zap", "📗": "book", "📘": "book", "📙": "book", "📄": "file", "📋": "list", "🧾": "receipt",
   "🙂": "smile", "👋": "hand", "↵": "enter", "↩": "enter", "🔮": "sparkles", "🎁": "gift",
+  // Légendes
+  "🦁": "lion", "🐎": "horse", "🛡": "shield", "🏔": "mountain", "💎": "gem",
 };
 
 export default function Icon({ name, emoji, size = 16, strokeWidth = 1.75, style, ...rest }) {

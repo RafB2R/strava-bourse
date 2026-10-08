@@ -20,6 +20,13 @@ export function avatarUrl(userId) {
 
 export function markMissing(userId) { missing.add(userId); }
 
+// Légendes (comptes 13F) : leur icône remplace les initiales partout où elles apparaissent
+const legends = new Map(); // id → emoji servant d'identifiant d'icône (🦁…)
+export function legendIcon(userId) { return legends.get(userId) || null; }
+export function setLegendIcons(pairs) {
+  pairs.forEach(([id, icon]) => { if (icon && legends.get(id) !== icon) { legends.set(id, icon); listeners.forEach(fn => fn(id)); } });
+}
+
 // Les avatars affichés se mettent à jour quand une photo change
 export function onAvatarChange(fn) { listeners.add(fn); return () => listeners.delete(fn); }
 function changed(userId) {
