@@ -25,13 +25,15 @@ create unique index if not exists portfolio_entries_external_idx
 -- Lecture par colonne (voir 20261004000002) : l'origine et la date se voient, pas l'identifiant
 grant select (source, synced_at) on public.portfolio_entries to authenticated;
 
--- Une position synchronisée se met à jour depuis la banque, pas à la main
+-- Une position synchronisée se met à jour depuis la banque, pas à la main ; seul son
+-- poids peut être recalculé (répartition à 100 %). Depuis l'appli, une nouvelle position
+-- est toujours « manual ». (Pas de commentaire dans le corps des fonctions : l'éditeur
+-- SQL de Supabase se trompe sur les apostrophes qui s'y trouvent.)
 create or replace function public.verio_protect_synced_entries()
 returns trigger language plpgsql as $$
 begin
   if auth.role() = 'authenticated' and old.source = 'powens' then
     if tg_op = 'DELETE' then raise exception 'Position synchronisée : elle se gère depuis la banque'; end if;
-    -- Le poids peut être recalculé (répartition à 100 %), rien d'autre
     if (to_jsonb(new) - 'percentage') is distinct from (to_jsonb(old) - 'percentage') then
       raise exception 'Position synchronisée : elle se gère depuis la banque';
     end if;
@@ -49,7 +51,6 @@ create trigger verio_protect_synced_entries before update or delete on public.po
 create or replace function public.verio_manual_source_on_insert()
 returns trigger language plpgsql as $$
 begin
-  -- Depuis l'application, une position est toujours saisie à la main
   if auth.role() = 'authenticated' then new.source := 'manual'; new.external_id := null; new.synced_at := null; end if;
   return new;
 end;
