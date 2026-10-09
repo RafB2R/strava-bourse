@@ -5,8 +5,9 @@
 //   t("Découvrir")                    → "Discover"
 //   t("{n} positions", { n: 3 })      → "3 positions"  (variables entre accolades)
 // La langue est choisie une fois au chargement (choix enregistré, sinon langue du
-// navigateur) ; la changer recharge la page.
-import en from "./en";
+// navigateur) ; la changer recharge la page. Le dictionnaire anglais n'est téléchargé
+// que pour l'anglais : main.jsx attend « i18nReady » avant de charger l'appli, pour que
+// les textes traduits au chargement des modules (badges, moments…) le soient aussi.
 
 const SUPPORTED = ["fr", "en"];
 
@@ -23,7 +24,10 @@ export const LANG = detect();
 // Pour toLocaleString / toLocaleDateString / Intl
 export const LOCALE = LANG === "en" ? "en-GB" : "fr-FR";
 
-const dict = LANG === "en" ? en : {};
+let dict = {};
+export const i18nReady = LANG === "en"
+  ? import("./en").then(m => { dict = m.default; }, () => { /* hors ligne : on reste en français */ })
+  : Promise.resolve();
 
 export function t(text, vars) {
   let out = dict[text] ?? text;

@@ -10,6 +10,7 @@ import ShareCard from "./ShareCard";
 import IndexDetail from "./IndexDetail";
 import Icon from "./Icon";
 import Diversification from "./Diversification";
+import { fetchMyEntries, saveWeights, savePrice, isSynced, insertEntry, updateEntry as storeUpdate, deleteEntry as storeDelete } from "../portfolioStore";
 import { RefreshCw } from "lucide-react";
 import { resolveAsset } from "../attachments";
 import { detailFor } from "../indices";
@@ -69,10 +70,6 @@ async function fetchPrixViaISIN(isin) {
 }
 
 // Mes positions, montants compris (fonction Supabase réservée au propriétaire)
-async function fetchMyEntries() {
-  const { data } = await supabase.rpc("get_my_portfolio_entries");
-  return data || [];
-}
 
 // Pas encore d'historique de valeur : on l'annonce plutôt que d'afficher une courbe inventée
 function HistoryPlaceholder({ T }) {
@@ -246,7 +243,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
     const total = data.reduce((s, e) => s + Number(e.percentage), 0);
     if (Math.abs(total - 100) < 0.05) return data;
     const fixed = rescale(data, 100);
-    await Promise.all(fixed.map(r => supabase.from("portfolio_entries").update({ percentage: r.percentage }).eq("id", r.id)));
+    await saveWeights(fixed);
     const byId = new Map(fixed.map(r => [r.id, r.percentage]));
     return data.map(e => ({ ...e, percentage: byId.get(e.id) ?? e.percentage }));
   }
@@ -304,14 +301,15 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
   }
 
   async function refreshAllPrices(entriesList) {
-    const withISIN = entriesList.filter(e => e.isin);
+    // Positions saisies à la main seulement : celles de la banque sont mises à jour par la synchronisation
+    const withISIN = entriesList.filter(e => e.isin && !isSynced(e));
     if (withISIN.length === 0) return;
     setRefreshing(true);
     for (const e of withISIN) {
       const result = await fetchPrixViaISIN(e.isin);
       if (result) {
         const perf = e.prix_achat ? Math.round(((result.prix - Number(e.prix_achat)) / Number(e.prix_achat)) * 10000) / 100 : null;
-        await supabase.from("portfolio_entries").update({ prix_actuel: result.prix, performance: perf }).eq("id", e.id);
+        await savePrice(e.id, result.prix, perf);
       }
     }
     setLastRefresh(new Date());
@@ -327,7 +325,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
   // Poids des autres positions recalculés pour garder 100 % (sans publier de mouvement :
   // seul le mouvement fait par l'investisseur apparaît dans le fil)
   async function rescaleOthers(others, target) {
-    await Promise.all(rescale(others, target).map(r => supabase.from("portfolio_entries").update({ percentage: r.percentage }).eq("id", r.id)));
+    await saveWeights(rescale(others, target));
   }
 
   async function updateEntry() {
@@ -339,7 +337,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
     setEditError("");
     setEditSaving(true);
     const perf = calcPerf(Number(editForm.prix_achat), Number(editForm.prix_actuel));
-    await supabase.from("portfolio_entries").update({ label: editForm.label.trim(), isin: editForm.isin.trim().toUpperCase() || null, type: editForm.type, exposition: editForm.exposition || null, percentage: newPct, performance: perf, prix_achat: editForm.prix_achat ? Number(editForm.prix_achat) : null, prix_actuel: editForm.prix_actuel ? Number(editForm.prix_actuel) : null, nombre_parts: editForm.nombre_parts ? Number(editForm.nombre_parts) : null, broker: editForm.broker.trim() || null }).eq("id", editingId);
+    await storeUpdate(editingId, { label: editForm.label.trim(), isin: editForm.isin.trim().toUpperCase() || null, type: editForm.type, exposition: editForm.exposition || null, percentage: newPct, performance: perf, prix_achat: editForm.prix_achat ? Number(editForm.prix_achat) : null, prix_actuel: editForm.prix_actuel ? Number(editForm.prix_actuel) : null, nombre_parts: editForm.nombre_parts ? Number(editForm.nombre_parts) : null, broker: editForm.broker.trim() || null });
     // Poids modifié : publié dans le fil comme un fait (« a allégé X · −20 % de la position »)
     const before = entries.find(x => x.id === editingId);
     // Toujours 100 % : les autres positions s'ajustent
@@ -362,9 +360,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
     const perf = calcPerf(Number(form.prix_achat), Number(form.prix_actuel));
     setSaving(true);
     const row = { user_id: session.user.id, label: form.label.trim(), isin: form.isin.trim().toUpperCase() || null, type: form.vehicule, exposition: form.exposition, percentage: newPct, performance: perf, prix_achat: form.prix_achat ? Number(form.prix_achat) : null, prix_actuel: form.prix_actuel ? Number(form.prix_actuel) : null, nombre_parts: form.nombre_parts ? Number(form.nombre_parts) : null, broker: form.broker.trim() || null };
-    let { error: err } = await supabase.from("portfolio_entries").insert(row);
-    // Profil manquant (clé étrangère) : on le crée puis on réessaie une fois
-    if (err?.code === "23503" && !(await supabase.rpc("ensure_my_profile")).error) ({ error: err } = await supabase.from("portfolio_entries").insert(row));
+    const { error: err } = await insertEntry(row);
     if (err) { setError(err.code === "23503" ? t("Ton profil est incomplet : déconnecte-toi puis reconnecte-toi, ou contacte-nous.") : t("Enregistrement impossible. Réessaie.")); setSaving(false); return; }
     if (entries.length) await rescaleOthers(entries, 100 - newPct);
     await createActivity(session.user.id, "new_position", { label: form.label.trim(), vehicule: form.vehicule, exposition: form.exposition, broker: form.broker.trim() || null, percentage: newPct });
@@ -379,7 +375,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
 
   async function deleteEntry(id) {
     const removed = entries.find(x => x.id === id);
-    const { error: err } = await supabase.from("portfolio_entries").delete().eq("id", id);
+    const { error: err } = await storeDelete(id);
     const trade = !err && removed && tradeActivity(removed.label, removed.percentage, 0);
     if (trade) await createActivity(session.user.id, trade.type, trade.data);
     // Vendre, c'est sortir de l'argent : le reste fait toujours 100 % du portefeuille
@@ -645,6 +641,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
                 {e.valeurAchat && e.valeur && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>{t("Gain / perte")}</span><span style={{ fontWeight: 500, color: e.valeur >= e.valeurAchat ? T.up : T.red }}>{e.valeur >= e.valeurAchat ? "+" : ""}{formatEur(e.valeur - e.valeurAchat)}</span></div>}
                 {e.isin && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>ISIN</span><span style={{ color: T.text, fontWeight: 500, fontFamily: "monospace", fontSize: 12 }}>{e.isin}</span></div>}
                 {e.broker && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>{t("Broker")}</span><span style={{ color: T.text, fontWeight: 500 }}>{e.broker}</span></div>}
+                {isSynced(e) && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, color: T.textMuted }}><span>{t("Origine")}</span><span style={{ color: T.text, fontWeight: 500 }}>{t("Synchronisé (Powens)")}</span></div>}
                 <IncomeSection entry={e} stats={income.byEntry[e.id]} form={incomeForm[e.id] || {}} T={T} btnSm={btnSm}
                   onChange={f => setIncomeForm(p => ({ ...p, [e.id]: { ...(p[e.id] || {}), ...f, error: null } }))}
                   onAdd={() => addIncome(e)} onDelete={deleteIncome} />
@@ -653,8 +650,11 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
                   <button onClick={() => openAsset(e)} disabled={resolving?.id === e.id && !resolving.error} style={{ ...btnSm, flex: 1, textAlign: "center", borderColor: T.accent, color: T.accent }}>
                     {resolving?.id === e.id && !resolving.error ? t("Recherche…") : <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="up" size={14} />{t("Voir le cours")}</span>}
                   </button>
-                  <button onClick={() => { startEdit(e); setOpenDetail(p => ({ ...p, [e.id]: false })); }} style={{ ...btnSm, flex: 1, textAlign: "center" }}>{t("Modifier")}</button>
-                  <button onClick={() => deleteEntry(e.id)} style={{ ...btnSm, flex: 1, textAlign: "center", borderColor: T.red, color: T.red }}>{t("Supprimer")}</button>
+                  {/* Position de la banque : elle se met à jour toute seule */}
+                  {!isSynced(e) && <>
+                    <button onClick={() => { startEdit(e); setOpenDetail(p => ({ ...p, [e.id]: false })); }} style={{ ...btnSm, flex: 1, textAlign: "center" }}>{t("Modifier")}</button>
+                    <button onClick={() => deleteEntry(e.id)} style={{ ...btnSm, flex: 1, textAlign: "center", borderColor: T.red, color: T.red }}>{t("Supprimer")}</button>
+                  </>}
                 </div>
               </div>
             )}

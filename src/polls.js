@@ -52,8 +52,13 @@ export function pollRemaining(endsAt) {
 
 // Clôt les sondages terminés et prévient l'auteur et les participants (une seule fois par sondage).
 // Sans pg_cron côté Supabase, c'est l'ouverture de l'application qui déclenche la clôture.
-export async function closeFinishedPolls() {
-  try { await supabase.rpc("close_finished_polls"); } catch { /* sans incidence pour l'affichage */ }
+// Appelée par le fil et la cloche : au plus une fois par minute.
+let lastClose = null; // { at, promise }
+export function closeFinishedPolls() {
+  if (lastClose && Date.now() - lastClose.at < 60000) return lastClose.promise;
+  const promise = Promise.resolve(supabase.rpc("close_finished_polls")).catch(() => { /* sans incidence pour l'affichage */ });
+  lastClose = { at: Date.now(), promise };
+  return promise;
 }
 
 // Texte de la notification « poll_ended »

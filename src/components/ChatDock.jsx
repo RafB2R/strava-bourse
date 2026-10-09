@@ -4,6 +4,7 @@ import { Thread } from "./Messages";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
 import { t } from "../i18n";
+import { useVisibleInterval } from "../useVisibleInterval";
 import { shortTime, fetchConversations, startConversation, fetchFriends } from "../messages";
 
 const BAR_WIDTH = 300;
@@ -23,18 +24,11 @@ export default function ChatDock({ session, T: TProp, open, onToggle, target, on
   const [reloadKey, setReloadKey] = useState(0);
   const reload = useCallback(() => setReloadKey(k => k + 1), []);
 
-  // Liste : au chargement, après lecture, puis toutes les 30 s
-  useEffect(() => {
-    let ignore = false;
-    const refresh = () => fetchConversations().then(list => {
-      if (ignore) return;
-      setConversations(list);
-      onUnreadChange?.(list.reduce((s, c) => s + (c.unread || 0), 0));
-    });
-    refresh();
-    const timer = setInterval(refresh, 30000);
-    return () => { ignore = true; clearInterval(timer); };
-  }, [reloadKey, onUnreadChange]);
+  // Liste : au chargement, après lecture, puis toutes les 30 s (appli à l'écran seulement)
+  useVisibleInterval(() => fetchConversations().then(list => {
+    setConversations(list);
+    onUnreadChange?.(list.reduce((s, c) => s + (c.unread || 0), 0));
+  }), 30000, [reloadKey]);
 
   const openConversation = useCallback(async (friendId) => {
     setError("");
