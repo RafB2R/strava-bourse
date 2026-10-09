@@ -361,8 +361,11 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
     if (newPct >= 100 && entries.length) return setError(t("Tes autres positions ont aussi un poids : mets moins de 100 %."));
     const perf = calcPerf(Number(form.prix_achat), Number(form.prix_actuel));
     setSaving(true);
-    const { error: err } = await supabase.from("portfolio_entries").insert({ user_id: session.user.id, label: form.label.trim(), isin: form.isin.trim().toUpperCase() || null, type: form.vehicule, exposition: form.exposition, percentage: newPct, performance: perf, prix_achat: form.prix_achat ? Number(form.prix_achat) : null, prix_actuel: form.prix_actuel ? Number(form.prix_actuel) : null, nombre_parts: form.nombre_parts ? Number(form.nombre_parts) : null, broker: form.broker.trim() || null });
-    if (err) { setError(err.message); setSaving(false); return; }
+    const row = { user_id: session.user.id, label: form.label.trim(), isin: form.isin.trim().toUpperCase() || null, type: form.vehicule, exposition: form.exposition, percentage: newPct, performance: perf, prix_achat: form.prix_achat ? Number(form.prix_achat) : null, prix_actuel: form.prix_actuel ? Number(form.prix_actuel) : null, nombre_parts: form.nombre_parts ? Number(form.nombre_parts) : null, broker: form.broker.trim() || null };
+    let { error: err } = await supabase.from("portfolio_entries").insert(row);
+    // Profil manquant (clé étrangère) : on le crée puis on réessaie une fois
+    if (err?.code === "23503" && !(await supabase.rpc("ensure_my_profile")).error) ({ error: err } = await supabase.from("portfolio_entries").insert(row));
+    if (err) { setError(err.code === "23503" ? t("Ton profil est incomplet : déconnecte-toi puis reconnecte-toi, ou contacte-nous.") : t("Enregistrement impossible. Réessaie.")); setSaving(false); return; }
     if (entries.length) await rescaleOthers(entries, 100 - newPct);
     await createActivity(session.user.id, "new_position", { label: form.label.trim(), vehicule: form.vehicule, exposition: form.exposition, broker: form.broker.trim() || null, percentage: newPct });
     if (form.broker.trim() && !knownBrokers.includes(form.broker.trim())) await createActivity(session.user.id, "new_broker", { broker: form.broker.trim() });
