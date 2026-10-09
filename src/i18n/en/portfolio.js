@@ -1,5 +1,5 @@
 // Traductions anglaises — portfolio
-// (Portefeuille, Profil, Profil public, Badges, Classements, Partage, Notifications, Installation, KYC)
+// (Portefeuille, Profil, Profil public, Badges, Partage, Notifications, Installation, KYC)
 export default {
   // Portefeuille
   "Portefeuille": "Portfolio",
@@ -247,15 +247,10 @@ export default {
   "Max atteint !": "Max reached!",
   "Ces badges se débloquent dans des moments inattendus. Tu ne sais pas quand — jusqu'à ce que ça arrive.": "These badges unlock at unexpected moments. You won't know when — until it happens.",
   "Bientôt": "Soon",
-  // Classements
-  "Classements Verio": "Verio rankings",
   "Amis": "Friends",
-  "Global": "Global",
   "Régularité": "Consistency",
   "Diversification": "Diversification",
   "Contribution": "Contribution",
-  "Ajoute des amis pour te comparer": "Add friends to compare yourself",
-  "Aucun utilisateur trouvé": "No users found",
   // Partage
   "Ton navigateur ne partage pas les images : télécharge-la pour la publier.": "Your browser can't share images: download it to post it.",
   "Le partage n'a pas abouti. Tu peux télécharger l'image.": "Sharing didn't work. You can download the image.",
@@ -377,4 +372,5 @@ export default {
   "Analyse de la diversification…": "Analysing diversification…",
   "Estimations : une action compte pour le pays de la société ; un ETF est réparti d'après l'indice qu'il suit, reconnu à son nom. La taille vient de la capitalisation boursière (grandes : plus de 10 Md$, petites : moins de 2 Md$).": "Estimates: a stock counts for the company's country; an ETF is split according to the index it tracks, recognised from its name. Size comes from market capitalisation (large: over $10bn, small: under $2bn).",
   "Ton profil est incomplet : déconnecte-toi puis reconnecte-toi, ou contacte-nous.": "Your profile is incomplete: log out and back in, or contact us.",
+  "Origine": "Source",
 };

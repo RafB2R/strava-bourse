@@ -25,6 +25,8 @@ import { t, LANG } from "../i18n";
 
 // Actualités dans le fil (Super Investors et sociétés suivis) : 4 au plus, un titre une seule fois
 const FEED_NEWS_MAX = 4;
+// Sociétés et indices interrogés pour ces actualités (un appel chacun) : les plus récemment suivis
+const FEED_NEWS_ASSETS = 8;
 
 
 // « 🔥 6 mois » → icône flamme + « 6 mois » (les textes des moments gardent l'emoji en tête)
@@ -254,14 +256,19 @@ async function fetchMyClubPosts(userId, hashtag = null) {
 // « focusId » : une seule activité (ouverte depuis une notification)
 async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYPES, hashtag = null, focusId = null) {
   closeFinishedPolls();
-  const { data: friendships } = await supabase.from("friendships").select("requester_id, receiver_id").eq("status", "accepted").or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
+  const mainFeed = !onlyUserId && !focusId && !hashtag;
+  // Requêtes indépendantes en parallèle : amis, Légendes suivies, valeurs suivies (« Mes valeurs »)
+  const [{ data: friendships }, followed, mine] = await Promise.all([
+    supabase.from("friendships").select("requester_id, receiver_id").eq("status", "accepted").or(`requester_id.eq.${userId},receiver_id.eq.${userId}`),
+    // Légendes que je suis : leurs déclarations arrivent dans mon fil comme celles d'un ami
+    mainFeed ? fetchFollowedIds(userId).catch(() => []) : [],
+    mainFeed && scope === "valeurs" ? fetchFollowedAssets(userId).catch(() => []) : [],
+  ]);
   const ids = [userId];
   if (friendships) friendships.forEach(f => {
     if (f.requester_id !== userId) ids.push(f.requester_id);
     if (f.receiver_id !== userId) ids.push(f.receiver_id);
   });
-  // Super Investors que je suis : leurs déclarations arrivent dans mon fil comme celles d'un ami
-  const followed = !onlyUserId && !focusId && !hashtag ? await fetchFollowedIds(userId).catch(() => []) : [];
   let query = supabase.from("activities").select("*, author:profiles!activities_user_id_fkey(full_name, username)").order("created_at", { ascending: false }).limit(100);
   if (focusId) query = query.eq("id", focusId);
   else if (hashtag) query = query.eq("type", "post").ilike("data->>content", `%#${hashtag}%`);
@@ -272,49 +279,53 @@ async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYP
     // « Mes valeurs » : les posts qui citent une de mes valeurs (filtrés plus bas)
     if (scope === "valeurs") query = query.eq("type", "post");
   }
+  // Les actualités (Google Actualités, plusieurs secondes parfois) partent en même temps
+  // mais n'empêchent pas le fil de s'afficher : elles arrivent ensuite (« news »)
+  const news = mainFeed ? fetchFeedNews(userId, scope, followed, mine) : Promise.resolve(null);
   const { data } = await query;
-  const mine = scope === "valeurs" && !onlyUserId && !focusId && !hashtag ? await fetchFollowedAssets(userId).catch(() => []) : [];
   const mySymbols = new Set(mine.map(a => a.symbol));
   // « #dividende » ne doit pas ramener « #dividendes »
   const activities = (data || [])
     .filter(a => !hashtag || hasHashtag(a.data?.content, hashtag))
-    .filter(a => scope !== "valeurs" || onlyUserId || focusId || hashtag || (a.data?.tickers || []).some(t => mySymbols.has(t.symbol)));
+    .filter(a => scope !== "valeurs" || !mainFeed || (a.data?.tickers || []).some(t => mySymbols.has(t.symbol)));
 
-  // Likes et commentaires des activités affichées
+  // Likes, commentaires, sondages et posts des clubs, en parallèle
   const likes = {}, comments = {};
   const activityIds = activities.map(a => a.id);
-  if (activityIds.length > 0) {
-    const [{ data: likeRows }, { data: commentRows }] = await Promise.all([
+  const pollIds = activities.filter(a => a.type === "post" && a.data?.poll).map(a => a.id);
+  const [[{ data: likeRows }, { data: commentRows }], polls, clubPosts] = await Promise.all([
+    activityIds.length ? Promise.all([
       supabase.from("activity_likes").select("activity_id, user_id").in("activity_id", activityIds),
       supabase.from("activity_comments").select(COMMENT_COLUMNS).in("activity_id", activityIds).order("created_at"),
-    ]);
-    for (const l of likeRows || []) {
-      const entry = likes[l.activity_id] ||= { count: 0, mine: false };
-      entry.count++;
-      if (l.user_id === userId) entry.mine = true;
-    }
-    for (const c of commentRows || []) (comments[c.activity_id] ||= []).push(c);
-  }
-  const pollIds = activities.filter(a => a.type === "post" && a.data?.poll).map(a => a.id);
-  const [polls, clubPosts, news] = await Promise.all([
+    ]) : [{ data: [] }, { data: [] }],
     fetchPolls(pollIds, userId),
     (onlyUserId || focusId || scope === "valeurs") ? [] : fetchMyClubPosts(userId, hashtag),
-    // « Mes valeurs » : l'actualité de chaque société et indice suivis (3 articles sur 7 jours)
-    // Ailleurs : un peu d'actualité des Légendes et des sociétés suivies
-    onlyUserId || focusId || hashtag ? [] : scope === "valeurs"
-      ? fetchCompanyNews(userId, { perAsset: 3, days: 7, assets: mine }).then(list => list.sort((x, y) => new Date(y.created_at) - new Date(x.created_at)).slice(0, 40)).catch(() => [])
-      : Promise.all([
-      followed.length ? fetchFollowedNews(userId).catch(() => []) : [],
-      fetchCompanyNews(userId).catch(() => []),
+  ]);
+  for (const l of likeRows || []) {
+    const entry = likes[l.activity_id] ||= { count: 0, mine: false };
+    entry.count++;
+    if (l.user_id === userId) entry.mine = true;
+  }
+  for (const c of commentRows || []) (comments[c.activity_id] ||= []).push(c);
+  return { ids, activities, likes, comments, polls, followedAssets: mine, clubPosts, news };
+}
+
+// Actualités du fil, avec leurs likes et commentaires (par adresse de l'article).
+// « Mes valeurs » : l'actualité de chaque société et indice suivis (3 articles sur 7 jours).
+// Ailleurs : un peu d'actualité des Légendes et des sociétés suivies.
+async function fetchFeedNews(userId, scope, followed, mine) {
+  const news = scope === "valeurs"
+    ? await fetchCompanyNews(userId, { perAsset: 3, days: 7, assets: mine }).then(list => list.sort((x, y) => new Date(y.created_at) - new Date(x.created_at)).slice(0, 40)).catch(() => [])
+    : await Promise.all([
+      followed.length ? fetchFollowedNews(userId, followed).catch(() => []) : [],
+      fetchCompanyNews(userId, { maxAssets: FEED_NEWS_ASSETS }).catch(() => []),
     ]).then(([a, b]) => {
       const seen = new Set();
       return [...a, ...b]
         .sort((x, y) => new Date(y.created_at) - new Date(x.created_at))
         .filter(n => !seen.has(n.article.title) && seen.add(n.article.title))
         .slice(0, FEED_NEWS_MAX);
-    }),
-  ]);
-  // Likes et commentaires des actualités affichées (par adresse de l'article)
+    });
   const newsLikes = {}, newsComments = {};
   if (news.length) {
     const urls = news.map(n => n.article.url);
@@ -329,7 +340,7 @@ async function fetchFeed(userId, scope, onlyUserId = null, onlyTypes = TRADE_TYP
       if (l.user_id === userId) entry.mine = true;
     }
   }
-  return { ids, activities, likes, comments, polls, newsLikes, newsComments, followedAssets: mine, clubPosts: [...clubPosts, ...news] };
+  return { news, newsLikes, newsComments };
 }
 
 // « onlyUserId » : version intégrée au profil public — mêmes cartes que le fil, limitées à ce
@@ -400,12 +411,19 @@ export default function Feed({ session, T: TProp, onViewProfile, onlyUserId = nu
 
   useEffect(() => {
     let ignore = false;
-    fetchFeed(userId, scope, onlyUserId, only === "posts" ? ["post"] : TRADE_TYPES, hashtag, focusId).then(({ ids, activities, likes, comments, polls, newsLikes, newsComments, followedAssets, clubPosts }) => {
+    fetchFeed(userId, scope, onlyUserId, only === "posts" ? ["post"] : TRADE_TYPES, hashtag, focusId).then(({ ids, activities, likes, comments, polls, followedAssets, clubPosts, news }) => {
       if (ignore) return;
       setFollowedAssets(followedAssets);
-      setNewsLikes(newsLikes);
-      setNewsComments(newsComments);
+      setNewsLikes({});
+      setNewsComments({});
       setClubPosts(clubPosts);
+      // Les actualités s'ajoutent dès qu'elles arrivent
+      news.then(r => {
+        if (ignore || !r) return;
+        setNewsLikes(r.newsLikes);
+        setNewsComments(r.newsComments);
+        setClubPosts(list => [...list, ...r.news]);
+      }).catch(() => {});
       setPolls(polls);
       setFriendIds(ids);
       setActivities(activities);

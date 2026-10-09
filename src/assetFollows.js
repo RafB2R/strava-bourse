@@ -73,8 +73,10 @@ export function newsName(name) {
 // Quelques actualités des sociétés suivies, pour le fil : au plus un article récent
 // (3 derniers jours) par société, les plus récents d'abord (le fil en garde quelques-uns)
 // Options (onglet « Mes valeurs ») : plus d'articles par société, sur plus de jours
-export async function fetchCompanyNews(myId, { perAsset = 1, days = 3, assets = null } = {}) {
-  const list = assets || await fetchFollowedAssets(myId);
+// « maxAssets » : seulement les N valeurs suivies le plus récemment (une requête par valeur)
+export async function fetchCompanyNews(myId, { perAsset = 1, days = 3, assets = null, maxAssets = null } = {}) {
+  let list = assets || await fetchFollowedAssets(myId);
+  if (maxAssets && list.length > maxAssets) list = list.slice(-maxAssets);
   const since = Date.now() - days * 86400e3;
   const picks = await Promise.all(list.map(async asset => {
     const articles = await fetch(`/api/news?q=${encodeURIComponent(`"${newsName(asset.name)}"`)}&lang=${LANG}`).then(r => r.json()).catch(() => []);

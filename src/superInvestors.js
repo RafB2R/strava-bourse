@@ -39,8 +39,9 @@ export async function fetchFollowedIds(myId) {
 // Quelques actualités des Super Investors que je suis, pour le fil : au plus un
 // article récent (3 derniers jours) par investisseur, et 3 au total, les plus récents.
 const NEWS_DAYS = 3, NEWS_MAX = 3;
-export async function fetchFollowedNews(myId) {
-  const ids = await fetchFollowedIds(myId);
+// « knownIds » : Légendes suivies déjà connues (évite de les redemander)
+export async function fetchFollowedNews(myId, knownIds = null) {
+  const ids = knownIds || await fetchFollowedIds(myId);
   if (!ids.length) return [];
   const { data } = await supabase.from("super_investors")
     .select("user_id, firm, icon, profile:profiles!super_investors_user_id_fkey(full_name)").in("user_id", ids);

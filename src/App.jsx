@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { supabase } from "./supabase";
 import { themes, getThemeKey } from "./theme";
 import { clearFicheFromUrl } from "./useDetailView";
@@ -6,10 +6,10 @@ import { syncBadges } from "./badges";
 import { syncMoments } from "./moments";
 import { fetchUnreadTotal } from "./messages";
 import Notifications from "./components/Notifications";
-import Comparison from "./components/Comparison";
 import Icon from "./components/Icon";
 import { t, LANG } from "./i18n";
 import { followsNothing } from "./assetFollows";
+import { useVisibleInterval } from "./useVisibleInterval";
 import { fetchSuperInvestors } from "./superInvestors";
 import { setLegendIcons } from "./avatars";
 
@@ -25,6 +25,7 @@ const Onboarding = lazy(() => import("./components/Onboarding"));
 const ProfilPublic = lazy(() => import("./components/ProfilPublic"));
 const Messages = lazy(() => import("./components/Messages"));
 const ChatDock = lazy(() => import("./components/ChatDock"));
+const Comparison = lazy(() => import("./components/Comparison"));
 const ClubsWidget = lazy(() => import("./components/SideWidgets").then(m => ({ default: m.ClubsWidget })));
 const InstallBanner = lazy(() => import("./components/InstallBanner"));
 const FriendSuggestions = lazy(() => import("./components/SideWidgets").then(m => ({ default: m.FriendSuggestions })));
@@ -128,7 +129,9 @@ function ComparisonWidget({ data, myId, T }) {
   return (
     <div style={{ background: T.bgSecondary, border: `1px solid ${T.border}`, boxShadow: T.cardShadow, borderRadius: 14, padding: 16, marginBottom: 16 }}>
       <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10, display: "flex", alignItems: "center", gap: 5 }}><Icon name="scale" size={13} />{t("Comparaison")}</div>
-      <Comparison key={data.userId} myId={myId} theirEntries={data.entries} theirName={data.profile.full_name?.split(" ")[0]} T={T} />
+      <Suspense fallback={null}>
+        <Comparison key={data.userId} myId={myId} theirEntries={data.entries} theirName={data.profile.full_name?.split(" ")[0]} T={T} />
+      </Suspense>
     </div>
   );
 }
@@ -211,16 +214,10 @@ export default function App() {
     return () => window.removeEventListener("resize", handler);
   }, []);
 
-  // Messages non lus : au chargement puis toutes les 30 s
+  // Messages non lus : au chargement puis toutes les 30 s, appli à l'écran seulement.
+  // Sur ordinateur, la fenêtre de discussion (ChatDock) s'en charge déjà.
   const userId = session?.user.id;
-  useEffect(() => {
-    if (!userId) return;
-    let ignore = false;
-    const refresh = () => fetchUnreadTotal().then(n => { if (!ignore) setUnreadMessages(n); });
-    refresh();
-    const timer = setInterval(refresh, 30000);
-    return () => { ignore = true; clearInterval(timer); };
-  }, [userId]);
+  useVisibleInterval(() => fetchUnreadTotal().then(setUnreadMessages), 30000, [userId], !!userId && !isDesktop);
 
   // « Message » depuis un profil : ouvre la conversation dans l'onglet Messages
   // Ordinateur : fenêtre de discussion en bas d'écran ; mobile : messagerie plein écran
@@ -236,16 +233,18 @@ export default function App() {
     localStorage.setItem("verio-theme", next);
   }
 
+  // Session : onAuthStateChange donne la session au chargement (INITIAL_SESSION) puis à
+  // chaque connexion. Le profil n'est chargé qu'une fois par compte : le jeton renouvelé
+  // toutes les heures (TOKEN_REFRESHED) ne relance ni le profil ni les badges.
+  const loadedFor = useRef(null);
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) loadProfile();
-      else setLoading(false);
-    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) loadProfile();
-      else { setProfile(null); setLoading(false); setShowAuth(false); }
+      if (!session) { loadedFor.current = null; setProfile(null); setLoading(false); setShowAuth(false); return; }
+      if (loadedFor.current === session.user.id) return;
+      loadedFor.current = session.user.id;
+      // Hors du callback : supabase-js déconseille d'y attendre d'autres appels
+      setTimeout(loadProfile, 0);
     });
     return () => subscription.unsubscribe();
   }, []);
