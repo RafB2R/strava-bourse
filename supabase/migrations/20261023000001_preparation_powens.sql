@@ -65,7 +65,7 @@ returns void language sql security invoker set search_path = public as $$
   update portfolio_entries e
   set percentage = (w ->> 'percentage')::numeric
   from jsonb_array_elements(weights) w
-  where e.id = (w ->> 'id')::bigint and e.user_id = auth.uid();
+  where e.id::text = w ->> 'id' and e.user_id = auth.uid();
 $$;
 revoke execute on function public.set_my_portfolio_weights(jsonb) from public, anon;
 grant execute on function public.set_my_portfolio_weights(jsonb) to authenticated;
