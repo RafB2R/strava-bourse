@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Icon from "./components/Icon";
+import Logo from "./components/Logo";
 import { t, LANG, setLang } from "./i18n";
 
 // Adaptation au téléphone : les styles en ligne décrivent la version ordinateur,
@@ -92,14 +93,14 @@ function LandingFooter({ onPage }) {
 const dark = { background: "#0D0D0D", color: "#f0f0f0", fontFamily: "Outfit, system-ui, -apple-system, sans-serif", minHeight: "100vh" };
 const navStyle = { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "24px 48px" };
 
-function Logo({ onHome }) {
-  return <div onClick={onHome} style={{ fontSize: 20, fontWeight: 700, color: "#fff", letterSpacing: -0.5, cursor: "pointer" }}>ve<span style={{ color: "#FF6B2C" }}>rio</span></div>;
+function NavLogo({ onHome }) {
+  return <Logo size={22} onClick={onHome} />;
 }
 
 function Nav({ onStart, onPage, onHome }) {
   return (
     <nav className="lp-nav" style={navStyle}>
-      <Logo onHome={onHome} />
+      <NavLogo onHome={onHome} />
       <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
         <span className="lp-navlink" onClick={() => onPage("fonctionnalites")} style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer" }}>{t("Fonctionnalités")}</span>
         <span className="lp-navlink" onClick={() => onPage("communaute")} style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer" }}>{t("Communauté")}</span>
@@ -219,7 +220,7 @@ export default function Landing({ onStart }) {
     <div style={dark}>
       <ResponsiveStyle />
       <nav className="lp-nav" style={navStyle}>
-        <Logo onHome={() => setPage("home")} />
+        <NavLogo onHome={() => setPage("home")} />
         <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
           <span className="lp-navlink" onClick={() => setPage("fonctionnalites")} style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer" }}>{t("Fonctionnalités")}</span>
           <span className="lp-navlink" onClick={() => setPage("communaute")} style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", cursor: "pointer" }}>{t("Communauté")}</span>

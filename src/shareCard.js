@@ -1,3 +1,4 @@
+import { MARK_PATH, MARK_STROKE } from "./logoMark";
 // Dessin de la card de partage du portefeuille (canvas), aux couleurs de la marque.
 // Aucune somme en euros : uniquement des pourcentages, la série, les badges et le score.
 import { t, LANG } from "./i18n";
@@ -77,12 +78,21 @@ export function drawShareCard(canvas, data, { format = "story", showPerf = true,
   let y = story ? 150 : 104;
 
   // Logo + étiquette
-  font(ctx, story ? 64 : 52, 800);
+  // Symbole (même tracé que le logo, src/logoMark.js) puis « erio »
+  const size = story ? 64 : 52;
+  const markH = size * 0.8, scale = markH / 274;
+  ctx.save();
+  ctx.translate(pad - 26 * scale, y - size * 0.13 - 294 * scale); // bas du symbole sur la ligne de base
+  ctx.scale(scale, scale);
+  ctx.strokeStyle = C.accent;
+  ctx.lineWidth = MARK_STROKE;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.stroke(new Path2D(MARK_PATH));
+  ctx.restore();
+  font(ctx, size, 700);
   ctx.fillStyle = C.text;
-  ctx.fillText("ve", pad, y);
-  const veW = ctx.measureText("ve").width;
-  ctx.fillStyle = C.accent;
-  ctx.fillText("rio", pad + veW, y);
+  ctx.fillText("erio", pad + markH * (288 / 274) + size * 0.1, y);
   font(ctx, story ? 30 : 26, 600);
   const tag = t("MON PORTEFEUILLE");
   const tagW = ctx.measureText(tag).width + 40;
