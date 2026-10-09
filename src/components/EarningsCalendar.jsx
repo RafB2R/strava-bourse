@@ -39,7 +39,7 @@ export default function EarningsCalendar({ earnings, loading, T, onOpen }) {
 
   return (
     <div className="earnings-layout" style={{ display: "grid", gridTemplateColumns: "minmax(0, 300px) minmax(0, 1fr)", gap: 16, alignItems: "start" }}>
-      <style>{`@media (max-width: 640px) { .earnings-layout { grid-template-columns: 1fr !important; } }`}</style>
+      <style>{`@media (max-width: 640px) { .earnings-layout { grid-template-columns: minmax(0, 1fr) !important; } }`}</style>
 
       {/* Calendrier */}
       <div>

@@ -376,4 +376,5 @@ export default {
   "Sur la part en actions ({v} %)": "Of the equity share ({v}%)",
   "Analyse de la diversification…": "Analysing diversification…",
   "Estimations : une action compte pour le pays de la société ; un ETF est réparti d'après l'indice qu'il suit, reconnu à son nom. La taille vient de la capitalisation boursière (grandes : plus de 10 Md$, petites : moins de 2 Md$).": "Estimates: a stock counts for the company's country; an ETF is split according to the index it tracks, recognised from its name. Size comes from market capitalisation (large: over $10bn, small: under $2bn).",
+  "Ton profil est incomplet : déconnecte-toi puis reconnecte-toi, ou contacte-nous.": "Your profile is incomplete: log out and back in, or contact us.",
 };

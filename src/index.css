@@ -1,5 +1,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: #0D0D0D; font-family: "Outfit", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+/* Filet de sécurité : un élément trop large ne décale jamais toute la page sur téléphone */
+html, body { overflow-x: clip; }
 button, input, textarea, select { font-family: inherit; }
 button { cursor: pointer; }
 input:focus { outline: none; border-color: #999 !important; }

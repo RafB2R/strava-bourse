@@ -258,7 +258,9 @@ export default function App() {
     supabase.rpc("set_my_lang", { p_lang: LANG }).then(() => {}, () => {});
     // Icônes des Légendes, à la place de leurs initiales
     fetchSuperInvestors().then(list => setLegendIcons(list.map(s => [s.user_id, s.icon])), () => {});
-    const { data } = await supabase.rpc("get_my_profile").maybeSingle();
+    let { data } = await supabase.rpc("get_my_profile").maybeSingle();
+    // Compte sans profil (inscription ratée) : on le crée, sinon rien ne peut s'enregistrer
+    if (!data && !(await supabase.rpc("ensure_my_profile")).error) ({ data } = await supabase.rpc("get_my_profile").maybeSingle());
     setProfile(data);
     if (data?.kyc_complete && data.id) followsNothing(data.id).then(setEmptyFeed, () => {});
     setLoading(false);

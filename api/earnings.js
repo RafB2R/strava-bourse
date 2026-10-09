@@ -22,14 +22,21 @@ function parseCSVLine(line) {
 // dont les grandes européennes via leurs ADR). La clé gratuite est limitée à 25 appels par jour :
 // la réponse est gardée 12 h en cache par Vercel.
 // GET /api/earnings → [{ symbol, name, date, eps, currency, time: "pre-market" | "post-market" | null }]
-const WATCHLIST = [
+// Sociétés suivies et leur nom usuel (Alpha Vantage les donne en majuscules :
+// « J P MORGAN CHASE & COMPANY »)
+const NAMES = {
   // États-Unis
-  'AAPL', 'NVDA', 'MSFT', 'GOOGL', 'META', 'AMZN', 'TSLA', 'AVGO', 'ORCL', 'ADBE', 'CRM', 'AMD', 'INTC', 'NFLX',
-  'JPM', 'BAC', 'GS', 'V', 'MA', 'BRK.B', 'JNJ', 'UNH', 'LLY', 'PFE', 'MRK', 'WMT', 'COST', 'HD', 'MCD', 'KO',
-  'PEP', 'PG', 'DIS', 'NKE', 'XOM', 'CVX',
+  AAPL: 'Apple', NVDA: 'NVIDIA', MSFT: 'Microsoft', GOOGL: 'Alphabet', META: 'Meta', AMZN: 'Amazon', TSLA: 'Tesla',
+  AVGO: 'Broadcom', ORCL: 'Oracle', ADBE: 'Adobe', CRM: 'Salesforce', AMD: 'AMD', INTC: 'Intel', NFLX: 'Netflix',
+  JPM: 'JPMorgan Chase', BAC: 'Bank of America', GS: 'Goldman Sachs', V: 'Visa', MA: 'Mastercard', 'BRK.B': 'Berkshire Hathaway',
+  JNJ: 'Johnson & Johnson', UNH: 'UnitedHealth', LLY: 'Eli Lilly', PFE: 'Pfizer', MRK: 'Merck', WMT: 'Walmart',
+  COST: 'Costco', HD: 'Home Depot', MCD: "McDonald's", KO: 'Coca-Cola', PEP: 'PepsiCo', PG: 'Procter & Gamble',
+  DIS: 'Disney', NKE: 'Nike', XOM: 'ExxonMobil', CVX: 'Chevron',
   // Grandes européennes (ADR)
-  'TTE', 'ASML', 'SAP', 'NVO', 'SNY', 'AZN', 'SHEL', 'BP', 'UL', 'HSBC', 'NVS',
-];
+  TTE: 'TotalEnergies', ASML: 'ASML', SAP: 'SAP', NVO: 'Novo Nordisk', SNY: 'Sanofi', AZN: 'AstraZeneca', SHEL: 'Shell',
+  BP: 'BP', UL: 'Unilever', HSBC: 'HSBC', NVS: 'Novartis',
+};
+const WATCHLIST = Object.keys(NAMES);
 
 const json = (body, cache) => new Response(JSON.stringify(body), {
   headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': cache },
@@ -53,7 +60,7 @@ export default async function handler() {
       .filter(vals => vals.length >= 5 && WATCHLIST.includes(vals[0]) && /^\d{4}-\d{2}-\d{2}$/.test(vals[2]))
       .map(vals => ({
         symbol: vals[0],
-        name: vals[1],
+        name: NAMES[vals[0]] || vals[1],
         date: vals[2],
         eps: vals[4] !== '' && !isNaN(parseFloat(vals[4])) ? parseFloat(vals[4]) : null,
         currency: vals[5] || null,
