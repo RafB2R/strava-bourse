@@ -7,6 +7,7 @@ import { syncMoments } from "./moments";
 import { fetchUnreadTotal } from "./messages";
 import Notifications from "./components/Notifications";
 import Icon from "./components/Icon";
+import Logo from "./components/Logo";
 import { t, LANG } from "./i18n";
 import { followsNothing } from "./assetFollows";
 import { useVisibleInterval } from "./useVisibleInterval";
@@ -376,9 +377,7 @@ export default function App() {
     <div style={{ background: T.bg, minHeight: "100vh", fontFamily: "'Outfit', system-ui, sans-serif", display: "flex" }}>
       {/* Sidebar */}
       <div style={{ width: 220, flexShrink: 0, position: "fixed", top: 0, left: 0, bottom: 0, background: T.bgSecondary, borderRight: `1px solid ${T.border}`, display: "flex", flexDirection: "column", padding: "24px 14px", overflowY: "auto" }}>
-        <div style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 28, paddingLeft: 8 }}>
-          ve<span style={{ color: T.accent }}>rio</span>
-        </div>
+        <div style={{ marginBottom: 28, paddingLeft: 8 }}><Logo size={26} color={T.text} accent={T.accent} /></div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
           {TABS.map(tb => (
             <button key={tb.id} onClick={() => goToTab(tb.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 10px", borderRadius: 10, border: "none", background: tab === tb.id ? T.accentBg : "transparent", color: tab === tb.id ? T.accent : T.textMuted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === tb.id ? 700 : 400, fontSize: 14 }}>
@@ -446,7 +445,7 @@ export default function App() {
       <div style={{ background: T.bgSecondary, borderBottom: `0.5px solid ${T.border}`, position: "sticky", top: 0, zIndex: 10, paddingTop: "env(safe-area-inset-top)" }}>
         <div style={{ maxWidth: 620, margin: "0 auto", padding: "14px 1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>ve<span style={{ color: T.accent }}>rio</span></div>
+            <Logo size={22} color={T.text} accent={T.accent} />
             {profile?.full_name && <div style={{ fontSize: 12, color: T.textMuted, marginTop: 1 }}>{getGreeting(profile.full_name)}</div>}
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>

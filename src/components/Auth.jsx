@@ -3,6 +3,7 @@ import { supabase } from "../supabase";
 import { T as TLive } from "../theme";
 import { normalizeUsername, usernameFormatError, isUsernameAvailable } from "../usernames";
 import Icon from "./Icon";
+import Logo from "./Logo";
 import { t } from "../i18n";
 
 const inp = (T) => ({ width: "100%", padding: "12px 14px", fontSize: 14, borderRadius: 10, border: `0.5px solid ${T.borderStrong}`, background: T.bgCard, color: T.text, fontFamily: "inherit", marginBottom: 12, display: "block" });
@@ -76,7 +77,7 @@ export default function Auth({ T: TProp }) {
     <div style={{ minHeight: "100vh", background: T.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Outfit', system-ui, sans-serif", padding: "1rem" }}>
       <div style={{ width: "100%", maxWidth: 400 }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ fontSize: 28, fontWeight: 700, color: T.text, marginBottom: 6 }}>ve<span style={{ color: T.accent }}>rio</span></div>
+          <div style={{ marginBottom: 8 }}><Logo size={30} color={T.text} accent={T.accent} /></div>
           <div style={{ fontSize: 14, color: T.textMuted, display: "inline-flex", alignItems: "center", gap: 6 }}>
             {mode === "login" ? t("Content de te revoir") : t("Rejoins la communauté")}<Icon name={mode === "login" ? "hand" : "leaf"} size={15} />
           </div>
