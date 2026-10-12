@@ -1,4 +1,4 @@
-// Fonds (OPCVM, SICAV, FCP) absents de Yahoo : valeur liquidative et historique d'après
+// Fonds (OPCVM, SICAV, FCP) et parts d'ETF absents de Yahoo : valeur liquidative et historique d'après
 // les pages publiques de Financial Times (markets.ft.com), à partir de l'ISIN.
 // Fichier dans api/_lib : pas une route, Vercel ne le publie pas.
 //
@@ -20,8 +20,10 @@ const num = s => { const n = parseFloat(String(s).replace(/,/g, '')); return Num
 
 // Fiche du fonds : nom, devise, dernière valeur liquidative et identifiant interne FT (xid)
 export async function fundSummary(isin) {
-  for (const currency of ['EUR', 'USD', 'GBP', 'CHF']) {
-    const res = await fetch(`https://markets.ft.com/data/funds/tearsheet/summary?s=${isin}:${currency}`, { headers: HEADERS });
+  // Fiches « funds » (OPCVM) puis « etfs » (parts d'ETF récentes, encore absentes de Yahoo)
+  const tries = ['funds', 'etfs'].flatMap(kind => ['EUR', 'USD', 'GBP', 'CHF'].map(currency => [kind, currency]));
+  for (const [kind, currency] of tries) {
+    const res = await fetch(`https://markets.ft.com/data/${kind}/tearsheet/summary?s=${isin}:${currency}`, { headers: HEADERS });
     if (!res.ok) continue;
     const html = await res.text();
     const price = num(decode(html.match(/mod-ui-data-list__value[^>]*>([^<]+)</)?.[1] || ''));
