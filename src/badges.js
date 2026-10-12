@@ -1,6 +1,6 @@
 // Définitions des badges Verio : source unique pour l'affichage.
 // Les seuils (target) doivent rester identiques à ceux de la fonction SQL
-// sync_my_badges() (supabase/migrations/20261005000002_badges_serveur.sql),
+// sync_my_badges() (dernière version : supabase/migrations/20261026000001_etiquettes_badges.sql),
 // qui est seule à attribuer les badges.
 import { supabase } from "./supabase";
 import { t } from "./i18n";
@@ -42,19 +42,20 @@ export const BADGE_CATEGORIES = [
     metric: "types", unit: "types",
     levels: [
       { medal: "🥉", name: t("Premier actif"), desc: t("Un premier type d'actif (ETF, action…)"), target: 1 },
-      { medal: "🥈", name: t("Diversifié"), desc: t("3 types d'actifs différents"), target: 3 },
+      { medal: "🥈", name: t("Curieux"), desc: t("3 types d'actifs différents"), target: 3 },
       { medal: "🥇", name: "Global Investor", desc: t("5 types d'actifs différents"), target: 5 },
-      { medal: "💎", name: t("Portefeuille mondial"), desc: t("8 types d'actifs ou plus"), target: 8 },
+      { medal: "💎", name: t("Portefeuille mondial"), desc: t("Les 7 types d'actifs"), target: 7 },
     ],
   },
   {
+    // Répartition, pas nombre de lignes (c'est Builder) : la valeur suivie est le palier atteint
     id: "diversification", icon: "📊", name: "Diversification", desc: t("Ne jamais mettre tous ses œufs dans le même panier."),
-    metric: "positions", unit: "positions",
+    metric: "diversification", unit: t("paliers"),
     levels: [
-      { medal: "🥉", name: t("Premiers pas"), desc: t("3 positions différentes"), target: 3 },
-      { medal: "🥈", name: t("Équilibré"), desc: t("5 positions différentes"), target: 5 },
-      { medal: "🥇", name: t("Bien réparti"), desc: t("8 positions différentes"), target: 8 },
-      { medal: "💎", name: t("Portefeuille complet"), desc: t("10 positions ou plus"), target: 10 },
+      { medal: "🥉", name: t("Deux paniers"), desc: t("2 expositions, aucune ligne au-dessus de 50 %"), target: 1 },
+      { medal: "🥈", name: t("Équilibré"), desc: t("3 expositions, aucune ligne au-dessus de 30 %"), target: 2 },
+      { medal: "🥇", name: t("Bien réparti"), desc: t("4 expositions, aucune ligne au-dessus de 20 %"), target: 3 },
+      { medal: "💎", name: t("Portefeuille complet"), desc: t("Bien réparti, avec un score de diversification d'au moins 85/100"), target: 4 },
     ],
   },
   {

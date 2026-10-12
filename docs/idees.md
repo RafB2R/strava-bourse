@@ -35,21 +35,22 @@ Pistes validées mais repoussées, avec ce qui les bloque aujourd'hui.
   rediscuter.
 - **Les « identités » sont remplacées par les étiquettes automatiques**
   (section suivante).
-- Reste à régler : noms mélangés anglais / français, « Premiers pas » en
-  double, 💎 à la fois palier et badge Diamond Hands.
+- Reste à régler : noms mélangés anglais / français, 💎 à la fois palier et
+  badge Diamond Hands. (« Premiers pas » en double : corrigé, voir plus bas.)
 
 ### À corriger
 
-- **Builder et Diversification comptent la même chose** (le nombre de
-  positions). Diversification pourrait compter les classes d'actifs, mais il
-  n'y en a que 7, donc revoir les paliers 8 et 10.
+- ~~Builder et Diversification comptent la même chose~~ — corrigé
+  (20261026000001) : Diversification mesure la répartition (🥉 2 expositions et
+  aucune ligne > 50 %, 🥈 3 et ≤ 30 %, 🥇 4 et ≤ 20 %, 💎 idem + score ≥ 85/100),
+  Explorer 💎 ramené à 7 types, premier palier renommé « Deux paniers ».
 - **Milestones repose sur l'année déclarée** « investisseur depuis » : on peut
   se déclarer 25 ans d'ancienneté. Alternative : l'ancienneté sur Verio.
 - **La série peut être gonflée** en créant de fausses activités
   « nouvelle position » via l'API. Pour la verrouiller, il faut que ces
   activités soient créées côté serveur.
 
-## Étiquettes automatiques du profil (validé, à coder)
+## Étiquettes automatiques du profil (fait : 20261026000001, src/labels.js)
 
 La stratégie n'est plus choisie à la main (questionnaire d'inscription,
 « Modifier mon profil ») : Verio classe chaque membre d'après son

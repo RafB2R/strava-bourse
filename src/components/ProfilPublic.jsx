@@ -12,6 +12,7 @@ import NewsList from "./NewsList";
 import Comparison from "./Comparison";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
+import ProfileLabels from "./ProfileLabels";
 import Medal from "./Medal";
 import { HistoryChart } from "./PortfolioHistory";
 import { fetchPublicCurve } from "../publicCurve";
@@ -298,7 +299,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {superInv && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="trophy" size={12} />{t("Légende")}</span>}
-              {profile.strategy && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.accentBg, color: T.accent }}>{t(profile.strategy)}</span>}
+              {!superInv && <ProfileLabels userId={userId} T={T} />}
               {profile.streak_mois > 0 && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: "rgba(240,203,123,0.1)", color: T.yellow, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="flame" size={12} />{t("{n} mois", { n: profile.streak_mois })}</span>}
               {profile.investing_since && <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, background: T.bgSubtle, color: T.textMuted }}>{t("Depuis {year}", { year: profile.investing_since })}</span>}
             </div>

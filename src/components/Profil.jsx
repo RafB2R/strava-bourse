@@ -9,10 +9,10 @@ import InstallBanner from "./InstallBanner";
 import PushSettings from "./PushSettings";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
+import ProfileLabels from "./ProfileLabels";
 import { avatarUrl, uploadAvatar, removeAvatar } from "../avatars";
 import { t, LANG, setLang } from "../i18n";
 
-const STRATEGIES = ["ETF passif", "Stock picking", "Dividendes", "Value investing", "DCA", "Mixte"];
 
 
 // Mes stats de portefeuille (colonnes publiques uniquement), ou null sans position
@@ -31,7 +31,7 @@ async function fetchOwnStats(userId) {
 }
 
 async function fetchFriendships(userId) {
-  const { data } = await supabase.from("friendships").select(`id, status, requester_id, receiver_id, requester:profiles!friendships_requester_id_fkey(id, full_name, username, city, strategy), receiver:profiles!friendships_receiver_id_fkey(id, full_name, username, city, strategy)`).or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
+  const { data } = await supabase.from("friendships").select(`id, status, requester_id, receiver_id, requester:profiles!friendships_requester_id_fkey(id, full_name, username, city), receiver:profiles!friendships_receiver_id_fkey(id, full_name, username, city)`).or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
   if (!data) return null;
   // Sans le profil de l'autre membre (compte supprimé…), la ligne est ignorée
   return {
@@ -189,7 +189,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
     setSearching(true);
     // Retire les caractères qui ont un sens dans la syntaxe de filtre PostgREST
     const safe = q.replace(/[,()%*\\]/g, " ").trim();
-    const { data } = await supabase.from("profiles").select("id, full_name, username, city, strategy").neq("id", session.user.id).or(`username.ilike.%${safe}%,full_name.ilike.%${safe}%`).limit(5);
+    const { data } = await supabase.from("profiles").select("id, full_name, username, city").neq("id", session.user.id).or(`username.ilike.%${safe}%,full_name.ilike.%${safe}%`).limit(5);
     setSearchResults(data || []);
     setSearching(false);
   }
@@ -211,7 +211,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
   async function declineRequest(id) { await supabase.from("friendships").delete().eq("id", id); reloadFriendships(); }
 
   function startEdit() {
-    setForm({ full_name: profile.full_name || "", username: profile.username || "", city: profile.city || "", bio: profile.bio || "", strategy: profile.strategy || "ETF passif", investing_since: profile.investing_since || "" });
+    setForm({ full_name: profile.full_name || "", username: profile.username || "", city: profile.city || "", bio: profile.bio || "", investing_since: profile.investing_since || "" });
     setEditing(true);
   }
 
@@ -225,7 +225,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
       if (await isUsernameAvailable(username) === false) { setEditError(t("@{username} est déjà pris, choisis-en un autre.", { username })); setSaving(false); return; }
     }
     setSaving(true);
-    const { data, error } = await supabase.from("profiles").update({ full_name: form.full_name, username, city: form.city, bio: form.bio, strategy: form.strategy, investing_since: form.investing_since || null }).eq("id", session.user.id).select(PUBLIC_PROFILE_COLUMNS).single();
+    const { data, error } = await supabase.from("profiles").update({ full_name: form.full_name, username, city: form.city, bio: form.bio, investing_since: form.investing_since || null }).eq("id", session.user.id).select(PUBLIC_PROFILE_COLUMNS).single();
     setSaving(false);
     if (error || !data) { setEditError(t("Enregistrement impossible. Réessaie.")); return; }
     setProfile(p => ({ ...p, ...data })); setSaved(true); setTimeout(() => setSaved(false), 2000);
@@ -266,7 +266,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 17, fontWeight: 700, color: T.text }}>{profile.full_name || "—"}</div>
             <div style={{ fontSize: 13, color: T.textMuted }}>@{profile.username || "—"}{profile.city ? ` · ${profile.city}` : ""}</div>
-            {profile.strategy && <span style={{ display: "inline-block", marginTop: 4, padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: T.accentBg, color: T.accent }}>{t(profile.strategy)}</span>}
+            <div style={{ marginTop: 4 }}><ProfileLabels userId={session.user.id} T={T} /></div>
           </div>
           <button style={{ ...btnSm, display: "inline-flex", alignItems: "center", gap: 5 }} onClick={startEdit}><Icon name="edit" size={13} />{t("Éditer")}</button>
         </div>
@@ -300,10 +300,6 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
           ))}
           <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Bio")}</label>
           <textarea style={{ ...inp, height: 80, resize: "vertical" }} placeholder={t("Investisseur passif…")} value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} />
-          <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Stratégie")}</label>
-          <select style={{ ...inp, background: T.bgCard }} value={form.strategy} onChange={e => setForm({ ...form, strategy: e.target.value })}>
-            {STRATEGIES.map(s => <option key={s} value={s} style={{ background: T.bgSecondary }}>{t(s)}</option>)}
-          </select>
           <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Investisseur depuis (année)")}</label>
           <input style={inp} placeholder="2018" type="number" value={form.investing_since} onChange={e => setForm({ ...form, investing_since: e.target.value })} />
           <div style={{ height: "0.5px", background: T.border, margin: "16px 0" }} />
@@ -393,7 +389,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: T.accent }}>{f.friend.full_name}</div>
                   <div style={{ fontSize: 12, color: T.textFaint }}>@{f.friend.username}{f.friend.city ? ` · ${f.friend.city}` : ""}</div>
-                  {f.friend.strategy && <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 999, background: T.accentBg, color: T.accent }}>{t(f.friend.strategy)}</span>}
+                  <div style={{ fontSize: 11, color: T.accent }}><ProfileLabels userId={f.friend.id} T={T} compact /></div>
                 </div>
                 <button style={btnRed} onClick={() => declineRequest(f.id)}>{t("Retirer")}</button>
               </div>

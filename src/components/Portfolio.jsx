@@ -12,6 +12,7 @@ import Icon from "./Icon";
 import Diversification from "./Diversification";
 import PortfolioHistory from "./PortfolioHistory";
 import { publishMyCurve } from "../publicCurve";
+import { forgetLabels } from "../labels";
 import { fetchMyEntries, saveWeights, savePrice, isSynced, insertEntry, updateEntry as storeUpdate, deleteEntry as storeDelete } from "../portfolioStore";
 import { RefreshCw } from "lucide-react";
 import { resolveAsset } from "../attachments";
@@ -225,6 +226,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
 
   async function loadEntries() {
     setLoading(true);
+    forgetLabels(session.user.id); // étiquettes recalculées par la base après un changement
     applyEntries(await normalize(await fetchMyEntries()));
   }
 
