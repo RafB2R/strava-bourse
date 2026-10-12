@@ -106,42 +106,53 @@ function applyMove(weights, label, target) {
   [...weights.keys()].forEach(k => { if (!(weights.get(k) > 0)) weights.delete(k); });
 }
 
-// activities : [{ type, data, created_at }] ; entries : positions actuelles (pour l'ISIN et les
-// positions sans mouvement publié, comptées depuis le premier mouvement)
-export async function buildMovesHistory(activities, entries = []) {
+// Mouvements publiés → [{ day, label, target, before }], du plus ancien au plus récent.
+// Les dates d'achat (privées, connues du propriétaire seulement) avancent le début d'une
+// position : son premier mouvement passe à la date d'achat, ou un départ est ajouté à cette
+// date avec son poids d'avant (premier mouvement = renforcement…) ou son poids actuel.
+function movesFrom(activities, entries) {
   const moves = (activities || [])
     .filter(a => MOVES[a.type] && a.data?.label)
-    .map(a => ({ day: dayKey(Date.parse(a.created_at)), label: a.data.label, target: MOVES[a.type](a.data) }))
+    .map(a => ({ day: dayKey(Date.parse(a.created_at)), label: a.data.label, target: MOVES[a.type](a.data), before: a.data.avant, type: a.type }))
     .filter(m => m.target !== undefined && m.target !== null)
     .sort((a, b) => a.day.localeCompare(b.day));
-  if (!moves.length) return null;
-  const first = moves[0].day;
-  const seen = new Set(moves.map(m => m.label));
-  // Positions détenues sans mouvement publié (anciennes saisies) : présentes dès le début
-  const untracked = entries.filter(e => !seen.has(e.label) && Number(e.percentage) > 0);
+  for (const e of entries) {
+    const bought = e.date_achat ? String(e.date_achat).slice(0, 10) : null;
+    if (!bought) continue;
+    const firstMove = moves.find(m => m.label === e.label);
+    if (!firstMove) moves.push({ day: bought, label: e.label, target: Number(e.percentage) });
+    else if (bought < firstMove.day) {
+      if (firstMove.type === "new_position") firstMove.day = bought;
+      else if (Number(firstMove.before) > 0) moves.push({ day: bought, label: e.label, target: Number(firstMove.before) });
+    }
+  }
+  return moves.sort((a, b) => a.day.localeCompare(b.day));
+}
 
-  const labels = [...new Set([...moves.map(m => m.label), ...untracked.map(e => e.label)])];
+async function pricesFor(labels, entries, first) {
   const byLabel = new Map(entries.map(e => [e.label, e]));
   const period = Date.now() - Date.parse(first) <= 360 * DAY ? "1y" : "5y";
-  const prices = new Map((await Promise.all(labels.map(async label => {
+  return new Map((await Promise.all(labels.map(async label => {
     const e = byLabel.get(label) || { label };
     const symbol = await symbolFor(e);
     const chart = symbol ? await chartFor(symbol, period).catch(() => null) : null;
     const pts = chart?.points?.filter(p => p[1] > 0);
     return pts?.length ? [label, new Map(pts.map(p => [dayKey(p[0]), p[1]]))] : null;
   }))).filter(Boolean));
+}
 
-  const weights = new Map(untracked.map(e => [e.label, Number(e.percentage)]));
+// Rejoue jour par jour à partir de « first » : rendement du jour avec les poids de la veille,
+// puis mouvements du jour (ils comptent à partir du lendemain)
+function replay(first, weights, moves, prices) {
   const today = dayKey(Date.now());
   const days = [...new Set([...prices.values()].flatMap(m => [...m.keys()]))].filter(d => d >= first).sort();
   if (!days.includes(today)) days.push(today);
-  const last = new Map(); // dernier cours connu de chaque valeur
+  const last = new Map();
   let perf = 1, mi = 0, prevPrice = null;
   const points = [];
   for (const d of days) {
     const price = new Map();
     for (const [label, m] of prices) { if (m.has(d)) last.set(label, m.get(d)); if (last.has(label)) price.set(label, last.get(label)); }
-    // Rendement du jour avec les poids de la veille (positions dont le cours est connu)
     if (prevPrice) {
       let tw = 0, r = 0;
       for (const [label, w] of weights) {
@@ -150,11 +161,38 @@ export async function buildMovesHistory(activities, entries = []) {
       }
       if (tw > 0) perf *= 1 + r / tw;
     }
-    // Mouvements du jour : ils comptent à partir du lendemain
     while (mi < moves.length && moves[mi].day <= d) { applyMove(weights, moves[mi].label, moves[mi].target); mi++; }
     points.push({ day: d, value: null, perf: (perf - 1) * 100 });
     prevPrice = price;
   }
+  return points;
+}
+
+// activities : mouvements [{ type, data, created_at }] ; entries : positions actuelles (ISIN,
+// date d'achat si connue ; une position sans mouvement ni date compte depuis le début)
+export async function buildMovesHistory(activities, entries = []) {
+  const moves = movesFrom(activities, entries);
+  if (!moves.length) return null;
+  const first = moves[0].day;
+  const seen = new Set(moves.map(m => m.label));
+  const untracked = entries.filter(e => !seen.has(e.label) && Number(e.percentage) > 0);
+  const labels = [...new Set([...moves.map(m => m.label), ...untracked.map(e => e.label)])];
+  const prices = await pricesFor(labels, entries, first);
+  const points = replay(first, new Map(untracked.map(e => [e.label, Number(e.percentage)])), moves, prices);
   const known = labels.filter(l => prices.has(l)).length;
   return { points, first, coverage: Math.round((known / labels.length) * 100) };
+}
+
+// Courbe publiée par le propriétaire ([{ day, perf }]), prolongée jusqu'à aujourd'hui avec
+// les cours et les poids actuels (publics) de ses positions
+export async function extendCurve(points, entries) {
+  if (!points?.length) return points;
+  const lastPoint = points[points.length - 1];
+  if (lastPoint.day >= dayKey(Date.now())) return points;
+  const held = entries.filter(e => Number(e.percentage) > 0);
+  if (!held.length) return points;
+  const prices = await pricesFor(held.map(e => e.label), held, lastPoint.day);
+  const more = replay(lastPoint.day, new Map(held.map(e => [e.label, Number(e.percentage)])), [], prices);
+  const base = 1 + lastPoint.perf / 100;
+  return [...points, ...more.slice(1).map(p => ({ ...p, perf: (base * (1 + p.perf / 100) - 1) * 100 }))];
 }
