@@ -11,6 +11,7 @@ import IndexDetail from "./IndexDetail";
 import Icon from "./Icon";
 import Diversification from "./Diversification";
 import PortfolioHistory from "./PortfolioHistory";
+import { publishMyCurve } from "../publicCurve";
 import { fetchMyEntries, saveWeights, savePrice, isSynced, insertEntry, updateEntry as storeUpdate, deleteEntry as storeDelete } from "../portfolioStore";
 import { RefreshCw } from "lucide-react";
 import { resolveAsset } from "../attachments";
@@ -256,6 +257,16 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
     fetchMyEntries().then(data => { if (!ignore) onInitialEntries(data); });
     return () => { ignore = true; };
   }, []);
+
+  // Courbe publique (base 100) : recalculée et publiée quand les positions changent, en différé
+  // pour ne pas ralentir l'affichage. Les dates d'achat servent au calcul sans être publiées.
+  const curveKey = JSON.stringify(entries.map(e => [e.label, Number(e.percentage), e.date_achat || null, e.isin || null]));
+  useEffect(() => {
+    if (!entries.length) return;
+    const timer = setTimeout(() => publishMyCurve(session.user.id, entries).catch(() => {}), 1500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [curveKey]);
 
   useEffect(() => {
     let ignore = false;

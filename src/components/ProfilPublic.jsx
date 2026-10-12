@@ -14,7 +14,7 @@ import Avatar from "./Avatar";
 import Icon from "./Icon";
 import Medal from "./Medal";
 import { HistoryChart } from "./PortfolioHistory";
-import { buildMovesHistory, MOVE_TYPES } from "../history";
+import { fetchPublicCurve } from "../publicCurve";
 import LegendIcon from "./LegendIcon";
 import { t, LOCALE } from "../i18n";
 
@@ -38,16 +38,15 @@ function pieData(entries, group) {
   return slices;
 }
 
-// Performance publique : base 100 au premier investissement, rejouée à partir des mouvements
-// publiés (achats, renforcements, allègements, ventes : leurs dates et leurs poids en %).
+// Performance publique : base 100 au premier investissement. Courbe publiée par le membre
+// (mouvements + dates d'achat, qui restent privées), prolongée jusqu'au jour même.
 // Jamais de montant ni de date d'achat.
 function PerfHistory({ userId, entries, T, card }) {
   const key = `${userId}|${JSON.stringify(entries.map(e => [e.label, e.percentage]))}`;
   const [state, setState] = useState({ key: null, history: null });
   useEffect(() => {
     let ignore = false;
-    supabase.from("activities").select("type, data, created_at").eq("user_id", userId).in("type", MOVE_TYPES).order("created_at")
-      .then(({ data }) => buildMovesHistory(data || [], entries))
+    fetchPublicCurve(userId, entries)
       .catch(() => null)
       .then(history => { if (!ignore) setState({ key, history }); });
     return () => { ignore = true; };
