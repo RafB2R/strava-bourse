@@ -25,14 +25,14 @@ export function photoStats(entries) {
 
 // Valeur cotée d'une position, retrouvée par son ISIN (si connu) ou son nom ; gardée en mémoire
 const symbols = new Map();
-function symbolFor(entry) {
+export function symbolFor(entry) {
   const key = `${entry.isin || ""}|${entry.label}`;
   if (!symbols.has(key)) symbols.set(key, resolveAsset({ isin: entry.isin, label: entry.label }).then(a => a?.symbol || null).catch(() => null));
   return symbols.get(key);
 }
 
 const charts = new Map();
-function chartFor(symbol, period) {
+export function chartFor(symbol, period) {
   const key = `${symbol}|${period}`;
   if (!charts.has(key)) charts.set(key, fetchChart(symbol, period));
   return charts.get(key);
