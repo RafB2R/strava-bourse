@@ -375,5 +375,7 @@ export default {
   "Reconstruit à partir des cours, depuis la date d'achat de chaque position (sinon son ajout), avec tes parts actuelles.": "Rebuilt from market prices since each position's purchase date (or when you added it), using your current shares.",
   "Calculé sur {v} % du portefeuille (positions dont le cours est connu).": "Based on {v}% of the portfolio (positions with a known price).",
   "Base 100 au premier investissement, le {date}": "Base 100 at the first investment, on {date}",
-  "Hors apports, d'après les cours depuis la date d'achat de chaque position et sa part actuelle du portefeuille.": "Excluding deposits, based on prices since each position's purchase date and its current share of the portfolio.",
+  "La courbe démarrera au premier mouvement publié.": "The chart will start with the first published move.",
+  "Hors apports : la courbe suit les cours et s'ajuste à chaque achat, renforcement, allègement ou vente.": "Excluding deposits: the chart follows prices and adjusts with every buy, top-up, trim or sale.",
+  "Calculé sur {v} % des valeurs (celles dont le cours est connu).": "Based on {v}% of holdings (those with a known price).",
 };
