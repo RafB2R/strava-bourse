@@ -12,6 +12,7 @@ import { syncBadges } from "../badges";
 import { T as TLive } from "../theme";
 import Avatar from "./Avatar";
 import LegendIcon from "./LegendIcon";
+import ProfileLabels from "./ProfileLabels";
 import Icon from "./Icon";
 import { t } from "../i18n";
 
@@ -80,7 +81,7 @@ async function searchExplore(query, searchTab, userId) {
   const q = query.replace(/[,()%*\\]/g, " ").trim();
   if (!q) return [];
   if (searchTab === "users") {
-    const { data } = await supabase.from("profiles").select("id, full_name, username, city, strategy, streak_mois").or(`full_name.ilike.%${q}%,username.ilike.%${q}%`).neq("id", userId).limit(10);
+    const { data } = await supabase.from("profiles").select("id, full_name, username, city, streak_mois").or(`full_name.ilike.%${q}%,username.ilike.%${q}%`).neq("id", userId).limit(10);
     return data || [];
   }
   const { data } = await supabase.from("clubs").select("*").ilike("name", `%${q}%`).limit(10);
@@ -250,7 +251,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
                 : <Avatar userId={u.id} name={u.full_name} size={40} />}
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}{superIcons[u.id] && <span style={{ marginLeft: 8, padding: "1px 7px", borderRadius: 999, fontSize: 10, fontWeight: 600, background: "rgba(240,215,0,0.1)", color: T.gold, display: "inline-flex", alignItems: "center", gap: 4, verticalAlign: "middle" }}><Icon name="trophy" size={11} />{t("Légende")}</span>}</div>
-                <div style={{ fontSize: 12, color: T.textMuted }}>@{u.username}{u.city ? ` · ${u.city}` : ""}{u.strategy ? ` · ${u.strategy}` : ""}</div>
+                <div style={{ fontSize: 12, color: T.textMuted }}>@{u.username}{u.city ? ` · ${u.city}` : ""}{!superIcons[u.id] && <ProfileLabels userId={u.id} T={T} compact prefix=" · " />}</div>
                 {u.streak_mois > 0 && <div style={{ fontSize: 11, color: T.yellow, marginTop: 2, ...chip, gap: 4 }}><Icon name="flame" size={12} />{t("{n} mois", { n: u.streak_mois })}</div>}
               </div>
               {superIcons[u.id] ? null

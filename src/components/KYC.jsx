@@ -6,7 +6,6 @@ import { t } from "../i18n";
 
 const BROKERS = ["Boursorama", "Saxo", "Trade Republic", "Degiro", "Fortuneo", "BinckBank", "Interactive Brokers", "Revolut", "eToro", "Autre"];
 const ACTIFS = ["ETF", "Actions", "Fonds actifs", "Obligations", "Crypto", "Immobilier (SCPI)", "Matières premières"];
-const STRATEGIES = ["ETF passif", "Dividendes", "Value Investing", "Growth Investing", "Stock Picking", "DCA", "Mixte"];
 
 const btn = (T) => ({ background: T.accent, border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 14, color: T.onAccent, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 });
 const btnSm = (T) => ({ background: "none", border: `0.5px solid ${T.borderStrong}`, borderRadius: 8, padding: "8px 16px", fontSize: 13, color: T.textMuted, cursor: "pointer", fontFamily: "inherit" });
@@ -56,7 +55,6 @@ export default function KYC({ session, profile, onComplete, onSkip , T: TProp })
     patrimoine_estime: profile?.patrimoine_estime || "",
     epargne_mensuelle: profile?.epargne_mensuelle || "",
     experience: profile?.experience || "",
-    strategy: profile?.strategy || "",
     tolerance_risque: profile?.tolerance_risque || "",
     objectif_principal: profile?.objectif_principal || "",
     horizon: profile?.horizon || "",
@@ -124,8 +122,6 @@ export default function KYC({ session, profile, onComplete, onSkip , T: TProp })
           <div>
             <label style={lbl(T)}>{t("Ton niveau d'expérience")}</label>
             <ChoiceGrid options={["Débutant", "Intermédiaire", "Avancé", "Expert"]} value={data.experience} onChange={v => set("experience", v)} />
-            <label style={lbl(T)}>{t("Ta stratégie principale")}</label>
-            <ChoiceGrid options={STRATEGIES} value={data.strategy} onChange={v => set("strategy", v)} />
             <label style={lbl(T)}>{t("Ta tolérance au risque")}</label>
             <ChoiceGrid options={["Défensif", "Équilibré", "Dynamique", "Agressif"]} value={data.tolerance_risque} onChange={v => set("tolerance_risque", v)} />
           </div>

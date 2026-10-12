@@ -4,7 +4,7 @@ import {
   Lock, Trophy, Award, Sparkles, Star, Coins, Wallet, Briefcase, Target, Shield, Mountain, Calendar, CalendarDays, Clock,
   Bell, Mail, Send, Share2, Eye, Camera, Newspaper, Lightbulb, Sun, Moon, Rocket, Handshake, Scale, Compass, Megaphone,
   Wrench, Hand, Link2, Cake, Gift, Gem, Factory, Repeat, ArrowLeftRight, Bitcoin, Zap, BookOpen, FileText, ClipboardList,
-  Smile, CornerDownLeft, Timer, HeartHandshake, Leaf, Receipt, Plus, LogOut, Settings, ChevronRight, ChevronLeft, Filter, Layers,
+  Smile, Turtle, CornerDownLeft, Timer, HeartHandshake, Leaf, Receipt, Plus, LogOut, Settings, ChevronRight, ChevronLeft, Filter, Layers,
 } from "lucide-react";
 
 // Icônes dessinées dans le style Lucide (24×24, trait), pour ce que Lucide n'a pas
@@ -47,7 +47,7 @@ const ICONS = {
   repeat: Repeat, exchange: ArrowLeftRight, bitcoin: Bitcoin, zap: Zap, book: BookOpen, file: FileText, list: ClipboardList,
   smile: Smile, enter: CornerDownLeft, timer: Timer, care: HeartHandshake, leaf: Leaf, receipt: Receipt, plus: Plus,
   logout: LogOut, settings: Settings, next: ChevronRight, prev: ChevronLeft, filter: Filter, layers: Layers,
-  lion: Lion, horse: Horse,
+  lion: Lion, horse: Horse, turtle: Turtle,
 };
 
 // Emoji → nom d'icône (pour les données qui gardent un emoji comme identifiant)
@@ -63,7 +63,7 @@ const EMOJI_ICONS = {
   "💱": "exchange", "⚡": "zap", "📗": "book", "📘": "book", "📙": "book", "📄": "file", "📋": "list", "🧾": "receipt",
   "🙂": "smile", "👋": "hand", "↵": "enter", "↩": "enter", "🔮": "sparkles", "🎁": "gift",
   // Légendes
-  "🦁": "lion", "🐎": "horse", "🛡": "shield", "🏔": "mountain", "💎": "gem",
+  "🦁": "lion", "🐎": "horse", "🐢": "turtle", "₿": "bitcoin", "🛡": "shield", "🏔": "mountain", "💎": "gem",
 };
 
 export default function Icon({ name, emoji, size = 16, strokeWidth = 1.75, style, ...rest }) {

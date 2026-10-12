@@ -3,6 +3,7 @@ import { supabase } from "../supabase";
 import { avatarColors } from "../theme";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
+import ProfileLabels from "./ProfileLabels";
 import { t } from "../i18n";
 
 // Encarts de la colonne de droite (ordinateur), sous les marchés : mes clubs, suggestions d'amis
@@ -96,7 +97,7 @@ export function FriendSuggestions({ session, T, onViewProfile, onFindFriends }) 
               <button onClick={() => onViewProfile(s.id)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", textAlign: "left", fontSize: 13, fontWeight: 700, color: T.text, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
                 {s.full_name}
               </button>
-              {(s.city || s.strategy) && <div style={{ fontSize: 11, color: T.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{[s.city, s.strategy].filter(Boolean).join(" · ")}</div>}
+              <div style={{ fontSize: 11, color: T.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.city}<ProfileLabels userId={s.id} T={T} compact prefix={s.city ? " · " : ""} /></div>
               {reason && <div style={{ fontSize: 11, color: T.textFaint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{reason}</div>}
               <button onClick={() => sendRequest(s.id)} disabled={!!state}
                 style={{ marginTop: 6, background: state === "sent" ? "none" : T.accentBg, border: `0.5px solid ${T.accent}`, borderRadius: 8, padding: "4px 12px", fontSize: 12, fontWeight: 700, color: T.accent, cursor: state ? "default" : "pointer", fontFamily: "inherit" }}>
