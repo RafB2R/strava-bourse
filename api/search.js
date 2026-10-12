@@ -1,6 +1,7 @@
 export const config = { runtime: 'edge' };
 
 import { fundSummary, ISIN, FUND_PREFIX } from './_lib/funds.js';
+import { UA, yahooSession } from './_lib/yahoo.js';
 
 // Recherche d'une valeur (action, ETF, indice, fonds, crypto) par nom, ticker ou ISIN.
 // GET /api/search?q=total → [{ symbol, name, exchange, type }]
@@ -14,8 +15,14 @@ export default async function handler(req) {
 
   try {
     const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=8&newsCount=0&listsCount=0&lang=fr-FR&region=FR`;
-    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    const data = res.ok ? await res.json() : null;
+    let res = await fetch(url, { headers: UA });
+    let data = res.ok ? await res.json().catch(() => null) : null;
+    // Refus ou réponse vide (Yahoo exige parfois une session depuis un serveur) : on réessaie
+    // avec cookie et crumb
+    if (!data?.quotes?.length) {
+      const retry = await yahooSession().then(({ cookie, crumb }) => fetch(`${url}&crumb=${encodeURIComponent(crumb)}`, { headers: { ...UA, cookie } })).catch(() => null);
+      if (retry?.ok) { res = retry; data = await retry.json().catch(() => data); }
+    }
     if (!data && !ISIN.test(q.toUpperCase())) return json({ error: `Yahoo : HTTP ${res.status}` }, 502, 'no-store');
     const results = (data?.quotes || [])
       .filter(r => r.symbol && TYPES[r.quoteType])

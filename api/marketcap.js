@@ -1,22 +1,11 @@
 export const config = { runtime: 'edge' };
 
+import { UA, yahooSession as session } from './_lib/yahoo.js';
+
 // Capitalisation boursière d'actions (pour classer grandes / moyennes / petites).
 // GET /api/marketcap?symbols=MC.PA,AAPL → { "MC.PA": { cap, currency }, "AAPL": { … } }
 // Yahoo ne donne la capitalisation qu'avec un jeton (« crumb ») lié à un cookie :
 // on récupère les deux, puis on interroge /v7/finance/quote. Gardé 1 jour en cache.
-
-const UA = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36' };
-
-async function session() {
-  const home = await fetch('https://fc.yahoo.com', { headers: UA, redirect: 'manual' });
-  const raw = home.headers.get('set-cookie') || '';
-  const cookie = raw.split(/,(?=\s*[A-Za-z0-9_]+=)/).map(c => c.split(';')[0].trim()).filter(Boolean).join('; ');
-  if (!cookie) throw new Error('cookie Yahoo absent');
-  const res = await fetch('https://query2.finance.yahoo.com/v1/test/getcrumb', { headers: { ...UA, cookie } });
-  const crumb = (await res.text()).trim();
-  if (!res.ok || !crumb || crumb.length > 40 || /\s|</.test(crumb)) throw new Error(`crumb Yahoo : HTTP ${res.status}`);
-  return { cookie, crumb };
-}
 
 export default async function handler(req) {
   const json = (body, status = 200, cache = 'public, s-maxage=86400, stale-while-revalidate=604800') =>

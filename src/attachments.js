@@ -76,11 +76,33 @@ export function cleanAllocation(a) {
   return rows.length ? { mode: a.mode === "positions" ? "positions" : "classes", rows } : null;
 }
 
-// Valeur cotée correspondant à une position (ISIN d'abord, sinon son nom) ; null si introuvable
+// Noms de plus en plus courts pour la recherche : les noms complets de fonds et d'ETF
+// (« Amundi CAC 40 UCITS ETF - S EUR Acc », « … Small A (C) ») ne sont pas reconnus tels quels
+export function nameVariants(label) {
+  const base = String(label || "").trim();
+  const out = [base];
+  let v = base.split(/\s[-–]\s/)[0];                        // avant « - S EUR Acc »
+  out.push(v);
+  v = v.replace(/\([^)]*\)/g, " ")                            // (C), (D), (Acc)
+    .replace(/\b(UCITS|ETF|SICAV|FCP|Acc|Dist|Capitalisation|Distribution|Hedged|EUR|USD|C|D|A|I|R|S|P)\b\.?/gi, " ")
+    .replace(/\s+/g, " ").trim();
+  out.push(v);
+  out.push(v.normalize("NFD").replace(/[\u0300-\u036f]/g, ""));  // sans accents
+  return [...new Set(out)].filter(x => x.length >= 3);
+}
+
+// Places européennes d'abord (un ETF est souvent coté à Paris, Amsterdam, Milan…)
+const EURO_LISTING = /\.(PA|DE|F|AS|MI|BR|MC|LS|VI|HE|IR)$|^FUND-/;
+
+// Valeur cotée correspondant à une position (ISIN d'abord, sinon son nom, puis des versions
+// plus courtes du nom) ; null si introuvable. Par le nom, on peut tomber sur une autre part
+// du même fonds : même évolution, pas forcément le même prix (le cours de la position, lui,
+// n'est actualisé que par l'ISIN exact).
 export async function resolveAsset({ isin, label }) {
-  for (const q of [isin, label].map(x => (x || "").trim()).filter(x => x.length >= 2)) {
+  const queries = [(isin || "").trim(), ...nameVariants(label)].filter(x => x.length >= 2);
+  for (const q of [...new Set(queries)]) {
     const results = await searchAssets(q);
-    if (results.length) return results[0];
+    if (results.length) return results.find(r => EURO_LISTING.test(r.symbol)) || results[0];
   }
   return null;
 }
