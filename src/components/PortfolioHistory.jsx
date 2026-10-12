@@ -11,15 +11,16 @@ const eur = v => v.toLocaleString(LOCALE, { style: "currency", currency: "EUR", 
 const pct = v => `${v >= 0 ? "+" : ""}${v.toFixed(2)} %`;
 const date = d => new Date(`${d}T12:00:00`).toLocaleDateString(LOCALE, { day: "numeric", month: "short", year: "numeric" });
 
-function Chart({ points, mode, T }) {
+// mode : « value » (€), « perf » (%) ou « base » (base 100 au premier point)
+export function HistoryChart({ points, mode, T }) {
   const [hover, setHover] = useState(null);
   const W = 600, H = 160, pad = 10;
-  const ys = points.map(p => (mode === "value" ? p.value : p.perf));
+  const ys = points.map(p => (mode === "value" ? p.value : mode === "base" ? 100 * (1 + p.perf / 100) : p.perf));
   const min = Math.min(...ys), max = Math.max(...ys), span = max - min || 1;
   const x = i => (points.length === 1 ? W / 2 : (i / (points.length - 1)) * W);
   const y = v => H - pad - ((v - min) / span) * (H - pad * 2);
   const line = points.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(ys[i]).toFixed(1)}`).join(" ");
-  const last = mode === "value" ? ys[ys.length - 1] - ys[0] : ys[ys.length - 1];
+  const last = mode === "perf" ? ys[ys.length - 1] : ys[ys.length - 1] - ys[0];
   const color = last >= 0 ? T.up : T.red;
   const locate = (clientX, el) => {
     const r = el.getBoundingClientRect();
@@ -29,19 +30,19 @@ function Chart({ points, mode, T }) {
   return (
     <div>
       <div style={{ height: 18, fontSize: 12, color: T.textMuted, marginBottom: 4 }}>
-        {h ? <><strong style={{ color: T.text }}>{mode === "value" ? eur(h.value) : pct(h.perf)}</strong> · {date(h.day)}</> : null}
+        {h ? <><strong style={{ color: T.text }}>{mode === "value" ? eur(h.value) : mode === "base" ? (100 * (1 + h.perf / 100)).toFixed(1) : pct(h.perf)}</strong> · {date(h.day)}</> : null}
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={t("Évolution du portefeuille")}
         style={{ width: "100%", height: 160, display: "block", touchAction: "pan-y", cursor: "crosshair" }}
         onMouseMove={e => locate(e.clientX, e.currentTarget)} onMouseLeave={() => setHover(null)}
         onTouchMove={e => locate(e.touches[0].clientX, e.currentTarget)} onTouchEnd={() => setHover(null)}>
         <defs>
-          <linearGradient id="pf-hist" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={`pf-hist-${mode}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity="0.2" />
             <stop offset="100%" stopColor={color} stopOpacity="0" />
           </linearGradient>
         </defs>
-        {points.length > 1 && <path d={`${line} L${W},${H} L0,${H} Z`} fill="url(#pf-hist)" />}
+        {points.length > 1 && <path d={`${line} L${W},${H} L0,${H} Z`} fill={`url(#pf-hist-${mode})`} />}
         {points.length > 1
           ? <path d={line} fill="none" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
           : <circle cx={x(0)} cy={H / 2} r="4" fill={color} />}
@@ -102,7 +103,7 @@ export default function PortfolioHistory({ entries, T }) {
           {t("sur la période, hors apports")}
         </div>
       )}
-      {points.length > 0 && <Chart points={points} mode={shownMode} T={T} />}
+      {points.length > 0 && <HistoryChart points={points} mode={shownMode} T={T} />}
       <div style={{ fontSize: 11, color: T.textFaint, lineHeight: 1.5, marginTop: 6 }}>
         {all.length === 1
           ? t("La courbe démarre aujourd'hui. Indique la date d'achat de tes positions pour voir leur historique.")
