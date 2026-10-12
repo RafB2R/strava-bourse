@@ -13,6 +13,8 @@ import Comparison from "./Comparison";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
 import Medal from "./Medal";
+import { HistoryChart } from "./PortfolioHistory";
+import { buildHistory } from "../history";
 import LegendIcon from "./LegendIcon";
 import { t, LOCALE } from "../i18n";
 
@@ -36,27 +38,40 @@ function pieData(entries, group) {
   return slices;
 }
 
-// Courbe de performance du portefeuille, période au choix. L'historique n'existe pas
-// encore (comme sur le portefeuille privé) : la courbe se construira jour après jour.
-const PERF_PERIODS = [["1m", "1M", "sur 1 mois"], ["3m", "3M", "sur 3 mois"], ["ytd", "YTD", "depuis le 1er janvier"], ["1y", "1A", "sur 1 an"], ["5y", "5A", "sur 5 ans"], ["max", "Max", "depuis le début"]];
-function PerfHistory({ T, card }) {
-  const [period, setPeriod] = useState("1y");
-  const label = PERF_PERIODS.find(p => p[0] === period)[2];
+// Performance publique : base 100 au premier investissement, jusqu'à aujourd'hui.
+// Reconstruite à partir des cours depuis la date d'achat (sinon d'ajout) de chaque position,
+// pondérée par les poids en % : jamais de montant.
+function PerfHistory({ entries, T, card }) {
+  const key = JSON.stringify(entries.map(e => [e.id, e.isin, e.label, e.percentage, e.date_achat, e.created_at]));
+  const [state, setState] = useState({ key: null, history: null });
+  useEffect(() => {
+    let ignore = false;
+    // Seuls les poids comptent ici (pas de parts ni de prix : rien en euros)
+    buildHistory(entries.map(e => ({ ...e, nombre_parts: null, prix_actuel: null }))).catch(() => null)
+      .then(history => { if (!ignore) setState({ key, history }); });
+    return () => { ignore = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  const points = state.key === key ? state.history?.points || [] : null;
+  const last = points?.length ? points[points.length - 1] : null;
+  const since = d => new Date(`${d}T12:00:00`).toLocaleDateString(LOCALE, { day: "numeric", month: "long", year: "numeric" });
   return (
     <div style={{ ...card, display: "flex", flexDirection: "column" }}>
-      <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Performance")}</div>
-      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 12 }}>
-        {PERF_PERIODS.map(([id, short]) => (
-          <button key={id} onClick={() => setPeriod(id)} aria-pressed={period === id}
-            style={{ padding: "4px 10px", borderRadius: 999, fontSize: 12, fontFamily: "inherit", cursor: "pointer", border: `0.5px solid ${period === id ? T.accent : T.border}`, background: period === id ? T.accentBg : "none", color: period === id ? T.accent : T.textMuted, fontWeight: period === id ? 700 : 400 }}>
-            {t(short)}
-          </button>
-        ))}
-      </div>
-      <div style={{ flex: 1, minHeight: 110, borderRadius: 10, border: `0.5px dashed ${T.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: 12, textAlign: "center" }}>
-        <div style={{ fontSize: 13, color: T.textMuted, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="up" size={14} />{t("Courbe en cours de construction")}</div>
-        <div style={{ fontSize: 11, color: T.textFaint }}>{t("La performance {period} se construira jour après jour", { period: t(label) })}</div>
-      </div>
+      <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Performance")}</div>
+      {points === null && <div style={{ fontSize: 12, color: T.textFaint, padding: "2rem 0", textAlign: "center" }}>{t("Calcul de l'historique…")}</div>}
+      {points && !last && <div style={{ fontSize: 12, color: T.textFaint, padding: "2rem 0", textAlign: "center" }}>{t("Historique indisponible")}</div>}
+      {last && <>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
+          <span style={{ fontSize: 22, fontWeight: 800, color: T.text }}>{(100 * (1 + last.perf / 100)).toFixed(1)}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: last.perf >= 0 ? T.up : T.red }}>{last.perf >= 0 ? "+" : ""}{last.perf.toFixed(1)} %</span>
+        </div>
+        <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 6 }}>{t("Base 100 au premier investissement, le {date}", { date: since(points[0].day) })}</div>
+        <HistoryChart points={points} mode="base" T={T} />
+        <div style={{ fontSize: 10, color: T.textFaint, lineHeight: 1.5, marginTop: 6 }}>
+          {t("Hors apports, d'après les cours depuis la date d'achat de chaque position et sa part actuelle du portefeuille.")}
+          {state.history.coverage < 100 && ` ${t("Calculé sur {v} % du portefeuille (positions dont le cours est connu).", { v: state.history.coverage })}`}
+        </div>
+      </>}
     </div>
   );
 }
@@ -145,7 +160,10 @@ function PieChart({ data, T, count = data.length }) {
 async function fetchPublicProfile(userId, myId) {
   const [{ data: p }, { data: e }, { data: b }, { data: f }, superInv] = await Promise.all([
     supabase.from("profiles").select(PUBLIC_PROFILE_COLUMNS).eq("id", userId).single(),
-    supabase.from("portfolio_entries").select(PUBLIC_ENTRY_COLUMNS).eq("user_id", userId).order("percentage", { ascending: false }),
+    // Dates d'achat et d'ajout (courbe de performance) : lisibles depuis 20261025000001 ;
+    // avant cette migration, on se contente des colonnes de base
+    supabase.from("portfolio_entries").select(`${PUBLIC_ENTRY_COLUMNS}, isin, date_achat, created_at`).eq("user_id", userId).order("percentage", { ascending: false })
+      .then(r => (r.error ? supabase.from("portfolio_entries").select(PUBLIC_ENTRY_COLUMNS).eq("user_id", userId).order("percentage", { ascending: false }) : r)),
     supabase.from("user_badges").select("badge_id, unlocked_at").eq("user_id", userId),
     supabase.from("friendships").select("*").or(`requester_id.eq.${myId},receiver_id.eq.${myId}`).or(`requester_id.eq.${userId},receiver_id.eq.${userId}`),
     fetchSuperInvestor(userId, myId).catch(() => null),
@@ -240,7 +258,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
     setFollowBusy(false);
   }
 
-  const avecPerf = entries.filter(e => e.performance !== null);
+  const avecPerf = entries.filter(e => e.performance != null);
   const totalPctPerf = avecPerf.reduce((s, e) => s + Number(e.percentage), 0);
   const perfGlobale = totalPctPerf > 0 ? avecPerf.reduce((s, e) => s + Number(e.performance) * Number(e.percentage) / totalPctPerf, 0) : null;
 
@@ -388,9 +406,9 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
         <div>
           {entries.length > 0 && (
             // Courbe de performance puis répartition, côte à côte (l'une sous l'autre sur mobile)
-            <div className="holdings-top" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12, marginBottom: 12 }}>
+            <div className="holdings-top" style={{ display: "grid", gridTemplateColumns: superInv ? "minmax(0, 1fr)" : "minmax(0, 1fr) minmax(0, 1fr)", gap: 12, marginBottom: 12 }}>
               <style>{`@media (max-width: 760px) { .holdings-top { grid-template-columns: minmax(0, 1fr) !important; } }`}</style>
-              <PerfHistory T={T} card={{ ...card, marginBottom: 0 }} />
+              {!superInv && <PerfHistory entries={entries} T={T} card={{ ...card, marginBottom: 0 }} />}
               <div style={{ ...card, marginBottom: 0 }}>
                 <div style={{ fontSize: 11, color: T.textFaint, fontWeight: 500, marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Allocation")}</div>
                 <PieChart
@@ -415,7 +433,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 13, color: T.textMuted }}>{e.percentage}%</div>
-                  {e.performance !== null && <div style={{ fontSize: 12, fontWeight: 600, color: e.performance >= 0 ? T.up : T.red }}>{e.performance >= 0 ? "+" : ""}{Number(e.performance).toFixed(1)}%</div>}
+                  {e.performance != null && <div style={{ fontSize: 12, fontWeight: 600, color: e.performance >= 0 ? T.up : T.red }}>{e.performance >= 0 ? "+" : ""}{Number(e.performance).toFixed(1)}%</div>}
                 </div>
               </button>
               {resolving?.id === e.id && resolving.error && <div role="alert" style={{ fontSize: 12, color: T.red, paddingBottom: 8 }}>{resolving.error}</div>}
