@@ -10,6 +10,7 @@ import ShareCard from "./ShareCard";
 import IndexDetail from "./IndexDetail";
 import Icon from "./Icon";
 import Diversification from "./Diversification";
+import PortfolioHistory from "./PortfolioHistory";
 import { fetchMyEntries, saveWeights, savePrice, isSynced, insertEntry, updateEntry as storeUpdate, deleteEntry as storeDelete } from "../portfolioStore";
 import { RefreshCw } from "lucide-react";
 import { resolveAsset } from "../attachments";
@@ -70,16 +71,6 @@ async function fetchPrixViaISIN(isin) {
 }
 
 // Mes positions, montants compris (fonction Supabase réservée au propriétaire)
-
-// Pas encore d'historique de valeur : on l'annonce plutôt que d'afficher une courbe inventée
-function HistoryPlaceholder({ T }) {
-  return (
-    <div style={{ height: 90, borderRadius: 10, border: `0.5px dashed ${T.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, marginBottom: 10 }}>
-      <div style={{ fontSize: 13, color: T.textMuted, display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="up" size={14} />{t("Historique disponible bientôt")}</div>
-      <div style={{ fontSize: 11, color: T.textFaint }}>{t("La courbe se construira jour après jour")}</div>
-    </div>
-  );
-}
 
 const DONUT_COLORS = ["#1D9E75", "#7F77DD", "#2BB3A3", "#5B8DEF", "#E0896B", "#B08AE0", "#4FB0D8", "#D9A441", "#8BC34A", "#E57399"];
 
@@ -203,7 +194,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [divVol, setDivVol] = useState(null);
-  const [form, setForm] = useState({ label: "", isin: "", vehicule: "ETF", exposition: "Actions", percentage: "", prix_achat: "", prix_actuel: "", nombre_parts: "", broker: "" });
+  const [form, setForm] = useState({ label: "", isin: "", vehicule: "ETF", exposition: "Actions", percentage: "", prix_achat: "", prix_actuel: "", nombre_parts: "", broker: "", date_achat: "" });
   const [error, setError] = useState("");
   const [openDetail, setOpenDetail] = useState({});
   const [assetView, showAssetView, closeAssetView] = useDetailView(PORTEFEUILLE_URL); // fiche de la valeur d'une position
@@ -319,7 +310,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
 
   async function startEdit(e) {
     setEditingId(e.id);
-    setEditForm({ label: e.label || "", isin: e.isin || "", type: e.type || "ETF", exposition: e.exposition || "Actions", percentage: e.percentage || "", prix_achat: e.prix_achat || "", prix_actuel: e.prix_actuel || "", nombre_parts: e.nombre_parts || "", broker: e.broker || "" });
+    setEditForm({ label: e.label || "", isin: e.isin || "", type: e.type || "ETF", exposition: e.exposition || "Actions", percentage: e.percentage || "", prix_achat: e.prix_achat || "", prix_actuel: e.prix_actuel || "", nombre_parts: e.nombre_parts || "", broker: e.broker || "", date_achat: e.date_achat || "" });
   }
 
   // Poids des autres positions recalculés pour garder 100 % (sans publier de mouvement :
@@ -337,7 +328,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
     setEditError("");
     setEditSaving(true);
     const perf = calcPerf(Number(editForm.prix_achat), Number(editForm.prix_actuel));
-    await storeUpdate(editingId, { label: editForm.label.trim(), isin: editForm.isin.trim().toUpperCase() || null, type: editForm.type, exposition: editForm.exposition || null, percentage: newPct, performance: perf, prix_achat: editForm.prix_achat ? Number(editForm.prix_achat) : null, prix_actuel: editForm.prix_actuel ? Number(editForm.prix_actuel) : null, nombre_parts: editForm.nombre_parts ? Number(editForm.nombre_parts) : null, broker: editForm.broker.trim() || null });
+    await storeUpdate(editingId, { label: editForm.label.trim(), isin: editForm.isin.trim().toUpperCase() || null, type: editForm.type, exposition: editForm.exposition || null, percentage: newPct, performance: perf, prix_achat: editForm.prix_achat ? Number(editForm.prix_achat) : null, prix_actuel: editForm.prix_actuel ? Number(editForm.prix_actuel) : null, nombre_parts: editForm.nombre_parts ? Number(editForm.nombre_parts) : null, broker: editForm.broker.trim() || null, ...((editForm.date_achat || "") !== (entries.find(x => x.id === editingId)?.date_achat || "") ? { date_achat: editForm.date_achat || null } : {}) });
     // Poids modifié : publié dans le fil comme un fait (« a allégé X · −20 % de la position »)
     const before = entries.find(x => x.id === editingId);
     // Toujours 100 % : les autres positions s'ajustent
@@ -359,13 +350,13 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
     if (newPct >= 100 && entries.length) return setError(t("Tes autres positions ont aussi un poids : mets moins de 100 %."));
     const perf = calcPerf(Number(form.prix_achat), Number(form.prix_actuel));
     setSaving(true);
-    const row = { user_id: session.user.id, label: form.label.trim(), isin: form.isin.trim().toUpperCase() || null, type: form.vehicule, exposition: form.exposition, percentage: newPct, performance: perf, prix_achat: form.prix_achat ? Number(form.prix_achat) : null, prix_actuel: form.prix_actuel ? Number(form.prix_actuel) : null, nombre_parts: form.nombre_parts ? Number(form.nombre_parts) : null, broker: form.broker.trim() || null };
+    const row = { user_id: session.user.id, label: form.label.trim(), isin: form.isin.trim().toUpperCase() || null, type: form.vehicule, exposition: form.exposition, percentage: newPct, performance: perf, prix_achat: form.prix_achat ? Number(form.prix_achat) : null, prix_actuel: form.prix_actuel ? Number(form.prix_actuel) : null, nombre_parts: form.nombre_parts ? Number(form.nombre_parts) : null, broker: form.broker.trim() || null, ...(form.date_achat ? { date_achat: form.date_achat } : {}) };
     const { error: err } = await insertEntry(row);
     if (err) { setError(err.code === "23503" ? t("Ton profil est incomplet : déconnecte-toi puis reconnecte-toi, ou contacte-nous.") : t("Enregistrement impossible. Réessaie.")); setSaving(false); return; }
     if (entries.length) await rescaleOthers(entries, 100 - newPct);
     await createActivity(session.user.id, "new_position", { label: form.label.trim(), vehicule: form.vehicule, exposition: form.exposition, broker: form.broker.trim() || null, percentage: newPct });
     if (form.broker.trim() && !knownBrokers.includes(form.broker.trim())) await createActivity(session.user.id, "new_broker", { broker: form.broker.trim() });
-    setForm({ label: "", isin: "", vehicule: "ETF", exposition: "Actions", percentage: "", prix_achat: "", prix_actuel: "", nombre_parts: "", broker: "" });
+    setForm({ label: "", isin: "", vehicule: "ETF", exposition: "Actions", percentage: "", prix_achat: "", prix_actuel: "", nombre_parts: "", broker: "", date_achat: "" });
     setShowForm(false); loadEntries(); setSaving(false);
     autoFollowPortfolio(session.user.id, [{ type: form.vehicule, isin: form.isin.trim().toUpperCase() || null, label: form.label.trim() }]).catch(() => {});
     // Badges et moments (premier ETF, portefeuille complet…) calculés côté serveur
@@ -385,7 +376,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
   }
 
   // Calculs
-  const avecPerf = entries.filter(e => e.performance !== null);
+  const avecPerf = entries.filter(e => e.performance != null && !isNaN(e.performance));
   const totalPctPerf = avecPerf.reduce((s, e) => s + Number(e.percentage), 0);
   const perfGlobale = totalPctPerf > 0 ? avecPerf.reduce((s, e) => s + Number(e.performance) * Number(e.percentage) / totalPctPerf, 0) : null;
   const valeurParPosition = entries.map(e => ({ ...e, valeur: e.prix_actuel && e.nombre_parts ? Number(e.prix_actuel) * Number(e.nombre_parts) : null, valeurAchat: e.prix_achat && e.nombre_parts ? Number(e.prix_achat) * Number(e.nombre_parts) : null }));
@@ -459,7 +450,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
             <Icon name="eye" size={14} />{t("Voir mon profil public")}
           </button>
         )}
-        <HistoryPlaceholder T={T} />
+        <PortfolioHistory entries={entries} T={T} />
       </div>
 
       {sharing && (
@@ -531,6 +522,8 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
               : <div style={{ ...inp, color: T.textMuted }}>{t("100 % (première position)")}</div>}
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Nombre de parts")}</label>
             <input style={inp} placeholder={t("ex: {example}", { example: "12.5" })} type="number" value={form.nombre_parts} onChange={e => setForm({ ...form, nombre_parts: e.target.value })} />
+            <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Date d'achat (facultatif)")}</label>
+            <input style={inp} type="date" max={new Date().toISOString().slice(0, 10)} value={form.date_achat} onChange={e => setForm({ ...form, date_achat: e.target.value })} />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
               <div>
                 <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Prix d'achat (€)")}</label>
@@ -583,6 +576,8 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
             <input style={inp} type="number" value={editForm.percentage} onChange={e => setEditForm({ ...editForm, percentage: e.target.value })} />
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Nombre de parts")}</label>
             <input style={inp} type="number" value={editForm.nombre_parts} onChange={e => setEditForm({ ...editForm, nombre_parts: e.target.value })} />
+            <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Date d'achat (facultatif)")}</label>
+            <input style={inp} type="date" max={new Date().toISOString().slice(0, 10)} value={editForm.date_achat || ""} onChange={e => setEditForm({ ...editForm, date_achat: e.target.value })} />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
               <div>
                 <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Prix d'achat (€)")}</label>
@@ -624,7 +619,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
               </div>
               <div style={{ textAlign: "right" }}>
                 {e.valeur !== null ? <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{formatEur(e.valeur)}</div> : <div style={{ fontSize: 13, color: T.textFaint }}>{e.percentage}%</div>}
-                {e.performance !== null && <div style={{ fontSize: 12, fontWeight: 500, color: e.performance >= 0 ? T.up : T.red }}>{e.performance >= 0 ? "+" : ""}{Number(e.performance).toFixed(2)}%</div>}
+                {e.performance != null && <div style={{ fontSize: 12, fontWeight: 500, color: e.performance >= 0 ? T.up : T.red }}>{e.performance >= 0 ? "+" : ""}{Number(e.performance).toFixed(2)}%</div>}
                 {(() => {
                   const fy = forecast.rows.find(r => r.entry.id === e.id)?.yield;
                   const y = fy > 0 ? fy : income.byEntry[e.id]?.yield;
