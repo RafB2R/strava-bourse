@@ -38,7 +38,7 @@ export default function NewsList({ query, T }) {
               <span style={{ display: "block", fontSize: 14, fontWeight: 600, color: T.text, lineHeight: 1.4 }}>{a.title}</span>
               <span style={{ display: "block", fontSize: 12, color: T.textFaint, marginTop: 4 }}>{[a.source, a.date && fmtDate(a.date)].filter(Boolean).join(" · ")}</span>
             </span>
-            <ArticleImage src={a.image} style={{ width: 88, height: 66, borderRadius: 8, flexShrink: 0 }} />
+            <ArticleImage src={a.image} site={a.site} T={T} logoSize={28} style={{ width: 88, height: 66, borderRadius: 8, flexShrink: 0 }} />
           </a>
         ))}
       </div>

@@ -6,16 +6,16 @@ import { PERIODS, DEFAULT_PERIOD, TOP5_UPDATED, INDICES, fetchChart, fmtChange, 
 import { supabase } from "../supabase";
 import { isFollowingAsset, setFollowingAsset, newsName } from "../assetFollows";
 import NewsList from "./NewsList";
-import { t, LOCALE } from "../i18n";
+import { t, LOCALE, fmtDec, fmtPct } from "../i18n";
 
 // 0 décimale au-delà de 1 000, 4 sous 10 (devises), 2 sinon
 const fmtPrice = p => (p === null || p === undefined ? "—" : p.toLocaleString(LOCALE, { maximumFractionDigits: p > 1000 ? 0 : p < 10 ? 4 : 2 }));
 // Valeur affichée selon le type : taux en %, sinon cours avec son unité ($/oz…)
 const valueFormatter = index => (index.isRate
-  ? v => (v === null || v === undefined ? "—" : `${v.toFixed(2).replace(".", ",")} %`)
+  ? v => (v === null || v === undefined ? "—" : `${fmtPct(v, 2)}`)
   : v => `${fmtPrice(v)}${index.unit && v != null ? ` ${index.unit}` : ""}`);
 // Variation d'un taux en points de pourcentage (la variation en % d'un taux n'a pas de sens)
-const fmtPoints = d => `${d >= 0 ? "+" : "−"}${Math.abs(d).toFixed(2).replace(".", ",")} pt`;
+const fmtPoints = d => `${d >= 0 ? "+" : "−"}${fmtDec(Math.abs(d), 2)} pt`;
 
 function fmtDate(ts, period) {
   const d = new Date(ts);
@@ -218,7 +218,7 @@ export default function IndexDetail({ index, onBack, T: TProp, backLabel = t("�
               [t("Plus haut 1 an"), facts.year ? fmtValue(facts.year.high) : "—", T.text],
               [t("Plus bas 1 an"), facts.year ? fmtValue(facts.year.low) : "—", T.text],
               [t("Dividende 12 mois"), facts.year?.dividends ? `${fmtPrice(facts.year.dividends)}${facts.year.currency ? ` ${facts.year.currency}` : ""}` : t("Aucun"), T.text],
-              [t("Rendement"), facts.year?.dividendYield ? `${facts.year.dividendYield.toFixed(1).replace(".", ",")} %` : "—", T.text],
+              [t("Rendement"), facts.year?.dividendYield ? `${fmtPct(facts.year.dividendYield, 1)}` : "—", T.text],
             ].map(([label, value, color]) => (
               <div key={label} style={{ background: T.bgSubtle, borderRadius: 10, padding: "10px 12px" }}>
                 <div style={{ fontSize: 11, color: T.textFaint, marginBottom: 2 }}>{label}</div>

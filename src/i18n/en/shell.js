@@ -298,4 +298,6 @@ export default {
   "S'inscrire": "Sign up",
   "Choisis des Légendes, sociétés et indices à suivre": "Pick Legends, companies and indexes to follow",
   "Choisir": "Choose",
+  "+ Se connecter": "+ Connect",
+  "Déjà connecté": "Already connected",
 };

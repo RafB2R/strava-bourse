@@ -17,7 +17,7 @@ import Medal from "./Medal";
 import { HistoryChart } from "./PortfolioHistory";
 import { fetchPublicCurve } from "../publicCurve";
 import LegendIcon from "./LegendIcon";
-import { t, LOCALE } from "../i18n";
+import { t, LOCALE, fmtPct, fmtDec } from "../i18n";
 
 const EXP_COLORS = { Actions: "#1D9E75", Obligations: "#185FA5", Immobilier: "#7F77DD", "Multi-actifs": "#854F0B", Monétaire: "#888", Crypto: "#D85A30", "Matières premières": "#F0CB7B" };
 // Colonnes visibles par les autres membres : jamais prix_achat ni nombre_parts
@@ -63,8 +63,8 @@ function PerfHistory({ userId, entries, T, card }) {
       {points && !last && <div style={{ fontSize: 12, color: T.textFaint, padding: "2rem 0", textAlign: "center" }}>{t("La courbe démarrera au premier mouvement publié.")}</div>}
       {last && <>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
-          <span style={{ fontSize: 22, fontWeight: 800, color: T.text }}>{(100 * (1 + last.perf / 100)).toFixed(1)}</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: last.perf >= 0 ? T.up : T.red }}>{last.perf >= 0 ? "+" : ""}{last.perf.toFixed(1)} %</span>
+          <span style={{ fontSize: 22, fontWeight: 800, color: T.text }}>{fmtDec(100 * (1 + last.perf / 100), 1)}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: last.perf >= 0 ? T.up : T.red }}>{last.perf >= 0 ? "+" : ""}{fmtPct(last.perf, 1)}</span>
         </div>
         <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 6 }}>{t("Base 100 au premier investissement, le {date}", { date: since(points[0].day) })}</div>
         <HistoryChart points={points} mode="base" T={T} />
@@ -333,7 +333,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
               </div>
             )
             : isPending ? <span style={{ fontSize: 12, color: T.textFaint }}>{t("En attente")}</span>
-            : <button onClick={sendRequest} style={{ ...btnSm, borderColor: T.accent, color: T.accent }}>+ {t("Suivre")}</button>
+            : <button onClick={sendRequest} style={{ ...btnSm, borderColor: T.accent, color: T.accent }}>{t("+ Se connecter")}</button>
           )}
         </div>
 
@@ -356,7 +356,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
           {[
             ["Positions", entries.length, T.text],
-            ["Perf. depuis l'achat", perfGlobale !== null ? `${perfGlobale >= 0 ? "+" : ""}${perfGlobale.toFixed(1)}%` : "—", perfGlobale !== null ? (perfGlobale >= 0 ? T.up : T.red) : T.textFaint],
+            ["Perf. depuis l'achat", perfGlobale !== null ? `${perfGlobale >= 0 ? "+" : ""}${fmtPct(perfGlobale, 1)}` : "—", perfGlobale !== null ? (perfGlobale >= 0 ? T.up : T.red) : T.textFaint],
             ["Badges", badges.length, T.text],
           ].map(([label, val, color]) => {
             // La case Badges ouvre la vitrine des badges (il n'y a plus d'onglet Badges)
@@ -431,7 +431,7 @@ export default function ProfilPublic({ userId, session, onBack, T: TProp, onComp
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 13, color: T.textMuted }}>{e.percentage}%</div>
-                  {e.performance != null && <div style={{ fontSize: 12, fontWeight: 600, color: e.performance >= 0 ? T.up : T.red }}>{e.performance >= 0 ? "+" : ""}{Number(e.performance).toFixed(1)}%</div>}
+                  {e.performance != null && <div style={{ fontSize: 12, fontWeight: 600, color: e.performance >= 0 ? T.up : T.red }}>{e.performance >= 0 ? "+" : ""}{fmtPct(Number(e.performance), 1)}</div>}
                 </div>
               </button>
               {resolving?.id === e.id && resolving.error && <div role="alert" style={{ fontSize: 12, color: T.red, paddingBottom: 8 }}>{resolving.error}</div>}

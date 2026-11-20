@@ -3,22 +3,22 @@ import { supabase } from "../supabase";
 import { photoStats, simulate, RISK_FREE } from "../compare";
 import { analyzeDiversification } from "../diversification";
 import Icon from "./Icon";
-import { t } from "../i18n";
+import { t, fmtDec, fmtPct } from "../i18n";
 
 // Comparaison « Moi / ce membre » : un bloc sur une période au choix (simulation à
 // répartition actuelle) et un bloc « photo » des positions d'aujourd'hui.
 // Affichée dans la colonne de droite sur ordinateur, et sous « Comparer » sur mobile.
 
 const PERIODS = [["1mo", "1M"], ["3mo", "3M"], ["ytd", "YTD"], ["1y", "1A"], ["5y", "5A"]];
-const pct = v => `${v >= 0 ? "+" : ""}${v.toFixed(1).replace(".", ",")} %`;
-const num = v => v.toFixed(2).replace(".", ",");
+const pct = v => `${v >= 0 ? "+" : ""}${fmtPct(v, 1)}`;
+const num = v => fmtDec(v, 2);
 
 // better : "high" (plus haut = mieux), "low" (plus bas = mieux) ou rien (pas de jugement)
 const EVOLVING = [
   { key: "perf", label: "Performance", format: pct, better: "high" },
-  { key: "vol", label: "Volatilité", format: v => `${v.toFixed(1).replace(".", ",")} %`, better: "low" },
+  { key: "vol", label: "Volatilité", format: v => `${fmtPct(v, 1)}`, better: "low" },
   { key: "sharpe", label: "Ratio de Sharpe", format: num, better: "high" },
-  { key: "drawdown", label: "Pire baisse", format: v => `${v.toFixed(1).replace(".", ",")} %`, better: "high" },
+  { key: "drawdown", label: "Pire baisse", format: v => `${fmtPct(v, 1)}`, better: "high" },
 ];
 const PHOTO = [
   { key: "diversif", label: "Diversification", format: v => `${v}/100`, better: "high" },

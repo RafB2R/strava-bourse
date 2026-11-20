@@ -2,7 +2,7 @@ export const config = { runtime: 'edge' };
 
 // Articles de presse récents sur une société, un indice ou une Légende, orientés finance,
 // dans la langue du membre.
-// GET /api/news?q="TotalEnergies"&lang=fr → [{ title, source, url, date, image }]
+// GET /api/news?q="TotalEnergies"&lang=fr → [{ title, source, url, date, image, site }]
 //   lang : fr (par défaut) ou en
 // Deux sources réunies : Bing Actualités (image de l'article, lien direct vers le journal)
 // et Google Actualités. La recherche est complétée de mots de la finance, et les articles
@@ -52,7 +52,7 @@ export function parseGoogle(xml) {
     if (source && title.endsWith(` - ${source}`)) title = title.slice(0, -(source.length + 3));
     const date = tag(it, 'pubDate');
     const image = attr(it, 'media:content', 'url') || attr(it, 'media:thumbnail', 'url') || (tag(it, 'description') || '').match(/<img[^>]+src="([^"]+)"/i)?.[1] || null;
-    return { title, source, url: tag(it, 'link'), date: date ? new Date(date).toISOString() : null, image };
+    return { title, source, url: tag(it, 'link'), date: date ? new Date(date).toISOString() : null, image, site: hostOf(attr(it, 'source', 'url')) };
   });
 }
 
@@ -68,6 +68,9 @@ export function parseBing(xml) {
     return { title: tag(it, 'title') || '', source: tag(it, 'News:Source') || null, url, date: date ? new Date(date).toISOString() : null, image };
   });
 }
+
+// Nom de domaine du journal (« lesechos.fr »), pour afficher son logo quand l'article n'a pas d'image
+export const hostOf = url => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return null; } };
 
 const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 60);
 
@@ -144,7 +147,7 @@ export default async function handler(req) {
   const fromBing = parseBing(bing), fromGoogle = parseGoogle(google);
   // Articles sans image : celle de la page du journal (en parallèle, 4 s au plus chacun)
   const articles = (await Promise.all(mergeArticles([fromBing, fromGoogle]).map(illustrate)))
-    .map(a => ({ ...a, image: a.image && /^https:\/\//.test(a.image) ? a.image : null }));
+    .map(a => ({ ...a, image: a.image && /^https:\/\//.test(a.image) ? a.image : null, site: /news\.google\.com/.test(a.url) ? a.site || null : hostOf(a.url) }));
   // Diagnostic : /api/news?q=…&debug=1 dit ce que chaque source a renvoyé
   if (params.get('debug')) {
     return Response.json({

@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { buildHistory, windowOf } from "../history";
 import Icon from "./Icon";
-import { t, LOCALE } from "../i18n";
+import { t, LOCALE, fmtPct, fmtDec } from "../i18n";
 
 // Courbe du portefeuille (privé) : valeur en € ou performance en %, jour par jour,
 // reconstruite à partir des cours depuis la date d'achat de chaque position.
 
 const WINDOWS = [["1mo", "1M"], ["3mo", "3M"], ["1y", "1A"], ["all", "Tout"]];
 const eur = v => v.toLocaleString(LOCALE, { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
-const pct = v => `${v >= 0 ? "+" : ""}${v.toFixed(2)} %`;
+const pct = v => `${v >= 0 ? "+" : ""}${fmtPct(v, 2)}`;
 const date = d => new Date(`${d}T12:00:00`).toLocaleDateString(LOCALE, { day: "numeric", month: "short", year: "numeric" });
 
 // mode : « value » (€), « perf » (%) ou « base » (base 100 au premier point)
@@ -30,7 +30,7 @@ export function HistoryChart({ points, mode, T }) {
   return (
     <div>
       <div style={{ height: 18, fontSize: 12, color: T.textMuted, marginBottom: 4 }}>
-        {h ? <><strong style={{ color: T.text }}>{mode === "value" ? eur(h.value) : mode === "base" ? (100 * (1 + h.perf / 100)).toFixed(1) : pct(h.perf)}</strong> · {date(h.day)}</> : null}
+        {h ? <><strong style={{ color: T.text }}>{mode === "value" ? eur(h.value) : mode === "base" ? fmtDec(100 * (1 + h.perf / 100), 1) : pct(h.perf)}</strong> · {date(h.day)}</> : null}
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={t("Évolution du portefeuille")}
         style={{ width: "100%", height: 160, display: "block", touchAction: "pan-y", cursor: "crosshair" }}

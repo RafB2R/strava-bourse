@@ -42,3 +42,11 @@ export function setLang(lang) {
 }
 
 if (typeof document !== "undefined") document.documentElement.lang = LANG;
+
+// Nombres décimaux selon la langue : « 12,5 » en français, « 12.5 » en anglais
+export function fmtDec(v, digits = 1) {
+  const s = Number(v).toFixed(digits);
+  return LANG === "en" ? s : s.replace(".", ",");
+}
+// Pourcentage : « 12,5 % » en français, « 12.5% » en anglais
+export const fmtPct = (v, digits = 1) => (LANG === "en" ? `${fmtDec(v, digits)}%` : `${fmtDec(v, digits)} %`);

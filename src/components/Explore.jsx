@@ -257,7 +257,7 @@ export default function Explore({ session , T: TProp, onViewProfile, initialSect
               {superIcons[u.id] ? null
                 : friendIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.accent, ...chip, gap: 4 }}><Icon name="check" size={13} />{t("Ami")}</span>
                 : pendingIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.textFaint }}>{t("En attente")}</span>
-                : <button onClick={e => { e.stopPropagation(); sendRequest(u.id); }} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>{t("+ Suivre")}</button>}
+                : <button onClick={e => { e.stopPropagation(); sendRequest(u.id); }} style={{ ...btnSm(T), borderColor: T.accent, color: T.accent }}>{t("+ Se connecter")}</button>}
             </div>
           ))}
 

@@ -12,7 +12,7 @@ import { useDetailView } from "../useDetailView";
 import Avatar from "./Avatar";
 import Icon from "./Icon";
 import Medal from "./Medal";
-import { t } from "../i18n";
+import { t, fmtPct } from "../i18n";
 
 // Prévient les membres mentionnés dans un post ou une réponse de club
 async function notifyMentions(tags, myId, data) {
@@ -256,7 +256,7 @@ function ClubRanking({ clubId, session }) {
       </div>
       {loading && <div style={{ fontSize: 13, color: T.textFaint, textAlign: "center", padding: "1rem" }}>{t("Chargement…")}</div>}
       {!loading && sorted.map((m, i) => {
-        const val = filter === "performance" ? (m.perf !== null ? `${m.perf >= 0 ? "+" : ""}${m.perf.toFixed(1)}%` : "—")
+        const val = filter === "performance" ? (m.perf !== null ? `${m.perf >= 0 ? "+" : ""}${fmtPct(m.perf, 1)}` : "—")
           : filter === "regularite" ? (m.streak > 0 ? <span style={inl}><Icon name="flame" size={14} />{t("{n} mois", { n: m.streak })}</span> : "—")
           : <span style={inl}><Icon name="award" size={14} />{m.nbBadges}</span>;
         const color = filter === "performance" ? (m.perf === null ? T.textFaint : m.perf >= 0 ? T.up : T.red) : filter === "regularite" ? T.yellow : T.gold;

@@ -8,7 +8,7 @@ import Flag from "./Flag";
 import Icon from "./Icon";
 import { supabase } from "../supabase";
 import { fetchFollowedAssets } from "../assetFollows";
-import { t, LOCALE } from "../i18n";
+import { t, LOCALE, fmtDec, fmtPct } from "../i18n";
 
 // card défini dynamiquement avec T
 // sectionLabel défini dynamiquement avec T
@@ -96,12 +96,12 @@ function QuoteCard({ item, T, onOpen }) {
       ) : (
         <>
           <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>
-            {isRate ? (data?.price ? `${data.price.toFixed(2).replace(".", ",")} %` : "—") : `${formatPrice(data?.price)}${unit && data?.price ? ` ${unit}` : ""}`}
+            {isRate ? (data?.price ? `${fmtPct(data.price, 2)}` : "—") : `${formatPrice(data?.price)}${unit && data?.price ? ` ${unit}` : ""}`}
           </div>
           {data?.change !== null && data?.change !== undefined && (
             <div style={{ fontSize: 12, fontWeight: 500, color: data.change >= 0 ? T.up : T.red, marginTop: 2 }}>
               {points != null
-                ? t("{value} pt sur un jour", { value: `${points >= 0 ? "+" : "−"}${Math.abs(points).toFixed(2).replace(".", ",")}` })
+                ? t("{value} pt sur un jour", { value: `${points >= 0 ? "+" : "−"}${fmtDec(Math.abs(points), 2)}` })
                 : fmtChange(data.change)}
             </div>
           )}
@@ -133,8 +133,8 @@ function RateTile({ country, name, rates, T, onOpen }) {
     <button onClick={() => onOpen(TAUX_EUROPE[country])} aria-label={t("Voir la fiche {name}", { name })}
       style={{ background: T.bgSubtle, border: "none", borderRadius: 12, padding: "12px 14px", textAlign: "left", cursor: "pointer", fontFamily: "inherit", width: "100%", minWidth: 0 }}>
       <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}><Flag country={country} size={12} />{name}</div>
-      <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>{r ? `${r.value.toFixed(2).replace(".", ",")} %` : rates ? "—" : "…"}</div>
-      {r?.change != null && <div style={{ fontSize: 12, color: r.change >= 0 ? T.up : T.red, marginTop: 2 }}>{t(r.frequency === "daily" ? "{value} pt sur un jour" : "{value} pt sur un mois", { value: `${r.change >= 0 ? "+" : "−"}${Math.abs(r.change).toFixed(2).replace(".", ",")}` })}</div>}
+      <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>{r ? `${fmtPct(r.value, 2)}` : rates ? "—" : "…"}</div>
+      {r?.change != null && <div style={{ fontSize: 12, color: r.change >= 0 ? T.up : T.red, marginTop: 2 }}>{t(r.frequency === "daily" ? "{value} pt sur un jour" : "{value} pt sur un mois", { value: `${r.change >= 0 ? "+" : "−"}${fmtDec(Math.abs(r.change), 2)}` })}</div>}
       {r && <div style={{ fontSize: 10, color: T.textFaint, marginTop: 2 }}>{fmtRateDate(r)}</div>}
     </button>
   );

@@ -101,7 +101,7 @@ export function FriendSuggestions({ session, T, onViewProfile, onFindFriends }) 
               {reason && <div style={{ fontSize: 11, color: T.textFaint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{reason}</div>}
               <button onClick={() => sendRequest(s.id)} disabled={!!state}
                 style={{ marginTop: 6, background: state === "sent" ? "none" : T.accentBg, border: `0.5px solid ${T.accent}`, borderRadius: 8, padding: "4px 12px", fontSize: 12, fontWeight: 700, color: T.accent, cursor: state ? "default" : "pointer", fontFamily: "inherit" }}>
-                {state === "sent" ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="check" size={13} />{t("Demande envoyée")}</span> : state === "sending" ? "…" : t("+ Ajouter")}
+                {state === "sent" ? <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="check" size={13} />{t("Demande envoyée")}</span> : state === "sending" ? "…" : t("+ Se connecter")}
               </button>
             </div>
           </div>

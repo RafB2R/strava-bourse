@@ -141,7 +141,7 @@ export default function Onboarding({ session, T: TProp, onDone }) {
                 {m.username && <div style={{ fontSize: 12, color: T.textFaint }}>@{m.username}</div>}
               </div>
               <button onClick={() => requestFriend(m)} disabled={requested.has(m.id)} style={{ ...chip(requested.has(m.id)), padding: "5px 12px", fontSize: 12 }}>
-                {requested.has(m.id) ? t("Demande envoyée") : t("+ Ajouter")}
+                {requested.has(m.id) ? t("Demande envoyée") : t("+ Se connecter")}
               </button>
             </div>
           ))}

@@ -11,7 +11,7 @@ import Avatar from "./Avatar";
 import Icon from "./Icon";
 import ProfileLabels from "./ProfileLabels";
 import { avatarUrl, uploadAvatar, removeAvatar } from "../avatars";
-import { t, LANG, setLang } from "../i18n";
+import { t, LANG, setLang, fmtPct } from "../i18n";
 
 
 
@@ -78,7 +78,7 @@ function StatsSection({ profile, session, friends, perf, T, onViewProfile }) {
             {f.name}{f.me && <span style={{ fontSize: 11, color: T.textFaint }}> · {t("moi")}</span>}
           </div>
           <div style={{ fontSize: 14, fontWeight: 600, color: f.perf === null ? T.textFaint : f.perf >= 0 ? T.up : T.red }}>
-            {f.perf === null ? "—" : `${f.perf >= 0 ? "+" : ""}${f.perf.toFixed(1)}%`}
+            {f.perf === null ? "—" : `${f.perf >= 0 ? "+" : ""}${fmtPct(f.perf, 1)}`}
           </div>
         </div>
       ))}
@@ -277,7 +277,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
           {[
             [t("Positions"), stats.positions, T.accent],
-            [t("Perf. depuis l'achat"), perf === null ? "—" : `${perf >= 0 ? "+" : ""}${perf.toFixed(2)}%`, perf === null ? T.textFaint : perf >= 0 ? T.up : T.red],
+            [t("Perf. depuis l'achat"), perf === null ? "—" : `${perf >= 0 ? "+" : ""}${fmtPct(perf, 2)}`, perf === null ? T.textFaint : perf >= 0 ? T.up : T.red],
             [t("Depuis"), profile.investing_since || "—", T.text],
           ].map(([label, val, color]) => (
             <div key={label} style={{ background: T.bgSubtle, borderRadius: 10, padding: 12 }}>
@@ -357,7 +357,7 @@ export default function Profil({ profile: initialProfile, session, T: TProp, onV
                   <div style={{ fontSize: 14, fontWeight: 600, color: T.text }}>{u.full_name}</div>
                   <div style={{ fontSize: 12, color: T.textFaint }}>@{u.username}</div>
                 </div>
-                {alreadyIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.textFaint }}>{t("Déjà ajouté")}</span> : <button style={btnGreen} onClick={() => sendRequest(u.id)}>+ {t("Ajouter")}</button>}
+                {alreadyIds.includes(u.id) ? <span style={{ fontSize: 12, color: T.textFaint }}>{t("Déjà connecté")}</span> : <button style={btnGreen} onClick={() => sendRequest(u.id)}>{t("+ Se connecter")}</button>}
               </div>
             ))}
             {search.length >= 2 && !searching && searchResults.length === 0 && <div style={{ fontSize: 13, color: T.textFaint }}>{t("Aucun résultat")}</div>}

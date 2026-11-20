@@ -19,7 +19,7 @@ import { resolveAsset } from "../attachments";
 import { detailFor } from "../indices";
 import { useDetailView } from "../useDetailView";
 import { autoFollowPortfolio } from "../assetFollows";
-import { t, LANG, LOCALE } from "../i18n";
+import { t, LANG, LOCALE, fmtPct } from "../i18n";
 
 const VEHICULES = ["ETF", "Action directe", "Fonds actif", "Obligation directe", "SCPI", "Crypto", "Autre"];
 const EXPOSITIONS = ["Actions", "Obligations", "Immobilier", "Multi-actifs", "Monétaire", "Crypto", "Matières premières"];
@@ -450,7 +450,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
           {hasValeur ? formatEur(valeurTotale) : eurRaw("—")}
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 16 }}>
-          {perfGlobale !== null && <span style={{ fontSize: 17, fontWeight: 600, color: perfGlobale >= 0 ? T.up : T.red }}>{perfGlobale >= 0 ? "+" : ""}{perfGlobale.toFixed(2)}%</span>}
+          {perfGlobale !== null && <span style={{ fontSize: 17, fontWeight: 600, color: perfGlobale >= 0 ? T.up : T.red }}>{perfGlobale >= 0 ? "+" : ""}{fmtPct(perfGlobale, 2)}</span>}
           {gainTotal !== null && <span style={{ fontSize: 14, color: gainTotal >= 0 ? T.up : T.red }}>{gainTotal >= 0 ? "+" : ""}{formatEur(gainTotal)}</span>}
           {/* Performance = évolution du cours depuis le prix d'achat de chaque position (hors dividendes) */}
           {perfGlobale !== null && <span title={t("Évolution du cours depuis ton prix d'achat, pondérée par le poids de chaque position (hors dividendes)")} style={{ fontSize: 12, color: T.textFaint }}>{t("depuis l'achat")}</span>}
@@ -551,7 +551,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
               <div style={{ background: T.accentBg, border: `0.5px solid ${T.accentBorder}`, borderRadius: 8, padding: "10px 12px", marginBottom: 10 }}>
                 <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4 }}>{t("Valeur de la position")}</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: T.accent }}>{formatEur(formValeur)}</div>
-                {formValeurAchat && (() => { const p = calcPerf(Number(form.prix_achat), Number(form.prix_actuel)); return p !== null ? <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>{t("Achat : {amount}", { amount: formatEur(formValeurAchat) })} · <span style={{ color: p >= 0 ? T.up : T.red }}>{p >= 0 ? "+" : ""}{p.toFixed(2)}%</span></div> : null; })()}
+                {formValeurAchat && (() => { const p = calcPerf(Number(form.prix_achat), Number(form.prix_actuel)); return p !== null ? <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>{t("Achat : {amount}", { amount: formatEur(formValeurAchat) })} · <span style={{ color: p >= 0 ? T.up : T.red }}>{p >= 0 ? "+" : ""}{fmtPct(p, 2)}</span></div> : null; })()}
               </div>
             )}
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Broker")}</label>
@@ -604,7 +604,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
             {editForm.prix_achat && editForm.prix_actuel && editForm.nombre_parts && (() => {
               const val = Number(editForm.prix_actuel) * Number(editForm.nombre_parts);
               const p = calcPerf(Number(editForm.prix_achat), Number(editForm.prix_actuel));
-              return <div style={{ background: T.accentBg, borderRadius: 8, padding: "10px 12px", marginBottom: 10 }}><div style={{ fontSize: 18, fontWeight: 700, color: T.accent }}>{formatEur(val)}</div>{p !== null && <div style={{ fontSize: 12, color: p >= 0 ? T.up : T.red, marginTop: 2 }}>{p >= 0 ? "+" : ""}{p.toFixed(2)}%</div>}</div>;
+              return <div style={{ background: T.accentBg, borderRadius: 8, padding: "10px 12px", marginBottom: 10 }}><div style={{ fontSize: 18, fontWeight: 700, color: T.accent }}>{formatEur(val)}</div>{p !== null && <div style={{ fontSize: 12, color: p >= 0 ? T.up : T.red, marginTop: 2 }}>{p >= 0 ? "+" : ""}{fmtPct(p, 2)}</div>}</div>;
             })()}
             <label style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, display: "block" }}>{t("Broker")}</label>
             <input style={inp} value={editForm.broker} onChange={e => setEditForm({ ...editForm, broker: e.target.value })} />
@@ -632,7 +632,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
               </div>
               <div style={{ textAlign: "right" }}>
                 {e.valeur !== null ? <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{formatEur(e.valeur)}</div> : <div style={{ fontSize: 13, color: T.textFaint }}>{e.percentage}%</div>}
-                {e.performance != null && <div style={{ fontSize: 12, fontWeight: 500, color: e.performance >= 0 ? T.up : T.red }}>{e.performance >= 0 ? "+" : ""}{Number(e.performance).toFixed(2)}%</div>}
+                {e.performance != null && <div style={{ fontSize: 12, fontWeight: 500, color: e.performance >= 0 ? T.up : T.red }}>{e.performance >= 0 ? "+" : ""}{fmtPct(Number(e.performance), 2)}</div>}
                 {(() => {
                   const fy = forecast.rows.find(r => r.entry.id === e.id)?.yield;
                   const y = fy > 0 ? fy : income.byEntry[e.id]?.yield;
@@ -702,7 +702,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
             <Icon name="chart" size={13} />{t("Projection")}
           </div>
           <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 16, lineHeight: 1.6 }}>
-            {t("Si ton portefeuille continue sur cette lancée à")} <strong style={{ color: T.accent }}>+{Math.min(perfGlobale, 30).toFixed(1)}%{t("/an")}</strong>
+            {t("Si ton portefeuille continue sur cette lancée à")} <strong style={{ color: T.accent }}>+{fmtPct(Math.min(perfGlobale, 30), 1)}{t("/an")}</strong>
             <span style={{ fontSize: 11, color: T.textFaint, marginLeft: 6 }}>{t("(plafonné à 30% pour rester réaliste)")}</span>
           </div>
 
@@ -779,7 +779,7 @@ export default function Portfolio({ session, T: TProp, onViewPublic }) {
 
           {perfGlobale !== null && (
             <div style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.7, marginBottom: 16, padding: "10px 12px", background: T.accentBg, borderRadius: 8 }}>
-              {t("Ton portefeuille a fait")} <strong style={{ color: T.accent }}>{perfGlobale >= 0 ? "+" : ""}{perfGlobale.toFixed(1)}%</strong> {t("depuis tes achats. Découvre si cette performance vient du marché, de ton allocation ou de ta prise de risque.")}
+              {t("Ton portefeuille a fait")} <strong style={{ color: T.accent }}>{perfGlobale >= 0 ? "+" : ""}{fmtPct(perfGlobale, 1)}</strong> {t("depuis tes achats. Découvre si cette performance vient du marché, de ton allocation ou de ta prise de risque.")}
             </div>
           )}
 

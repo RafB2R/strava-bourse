@@ -211,7 +211,7 @@ function NewsFeedCard({ item, T, card, onProfile, onAsset, like, onLike, btnAct,
       </div>
       <a href={article.url} target="_blank" rel="noopener noreferrer"
         style={{ display: "block", borderRadius: 10, border: `0.5px solid ${T.border}`, background: T.bgSubtle, textDecoration: "none", overflow: "hidden" }}>
-        <ArticleImage src={article.image} style={{ width: "100%", aspectRatio: "16 / 9", maxHeight: 220 }} />
+        <ArticleImage src={article.image} site={article.site} T={T} style={article.image ? { width: "100%", aspectRatio: "16 / 9", maxHeight: 220 } : { width: "100%", height: 88 }} />
         <div style={{ padding: "10px 12px" }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: T.text, lineHeight: 1.4 }}>{article.title}</div>
           {article.source && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 4 }}>{article.source}</div>}
