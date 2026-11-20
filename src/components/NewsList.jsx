@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { t, LANG, LOCALE } from "../i18n";
+import ArticleImage from "./ArticleImage";
 
-// Articles de presse récents sur un sujet (Google Actualités, via /api/news).
+// Articles de presse récents sur un sujet, orientés finance (Bing et Google Actualités, via /api/news).
 // Chaque article s'ouvre dans un nouvel onglet, sur le site du journal.
 const fmtDate = iso => {
   const d = new Date(iso);
@@ -32,13 +33,16 @@ export default function NewsList({ query, T }) {
       <div style={card}>
         {state.items.map((a, i) => (
           <a key={a.url} href={a.url} target="_blank" rel="noopener noreferrer"
-            style={{ display: "block", padding: "12px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}`, textDecoration: "none" }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: T.text, lineHeight: 1.4 }}>{a.title}</div>
-            <div style={{ fontSize: 12, color: T.textFaint, marginTop: 4 }}>{[a.source, a.date && fmtDate(a.date)].filter(Boolean).join(" · ")}</div>
+            style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 0", borderTop: i === 0 ? "none" : `0.5px solid ${T.border}`, textDecoration: "none" }}>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: "block", fontSize: 14, fontWeight: 600, color: T.text, lineHeight: 1.4 }}>{a.title}</span>
+              <span style={{ display: "block", fontSize: 12, color: T.textFaint, marginTop: 4 }}>{[a.source, a.date && fmtDate(a.date)].filter(Boolean).join(" · ")}</span>
+            </span>
+            <ArticleImage src={a.image} style={{ width: 88, height: 66, borderRadius: 8, flexShrink: 0 }} />
           </a>
         ))}
       </div>
-      <div style={{ fontSize: 11, color: T.textFaint, textAlign: "center" }}>{t("Articles récents via Google Actualités")}</div>
+      <div style={{ fontSize: 11, color: T.textFaint, textAlign: "center" }}>{t("Articles récents via Bing et Google Actualités")}</div>
     </div>
   );
 }

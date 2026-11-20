@@ -264,4 +264,5 @@ export default {
   "BPA estimé": "Est. EPS",
   "Ouvrir la fiche de {name}": "Open {name}",
   "Pointillés : clôture de la veille ({v})": "Dotted line: previous close ({v})",
+  "Articles récents via Bing et Google Actualités": "Recent articles via Bing and Google News",
 };

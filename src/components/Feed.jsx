@@ -20,6 +20,7 @@ import { fetchCompanyNews, fetchFollowedAssets, setFollowingAsset } from "../ass
 import Avatar from "./Avatar";
 import LegendIcon from "./LegendIcon";
 import Medal from "./Medal";
+import ArticleImage from "./ArticleImage";
 import Icon from "./Icon";
 import { t, LANG } from "../i18n";
 
@@ -209,9 +210,12 @@ function NewsFeedCard({ item, T, card, onProfile, onAsset, like, onLike, btnAct,
         <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: T.bgSubtle, color: T.textMuted, flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="news" size={12} />{t("Actualité")}</span>
       </div>
       <a href={article.url} target="_blank" rel="noopener noreferrer"
-        style={{ display: "block", padding: "10px 12px", borderRadius: 10, border: `0.5px solid ${T.border}`, background: T.bgSubtle, textDecoration: "none" }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: T.text, lineHeight: 1.4 }}>{article.title}</div>
-        {article.source && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 4 }}>{article.source}</div>}
+        style={{ display: "block", borderRadius: 10, border: `0.5px solid ${T.border}`, background: T.bgSubtle, textDecoration: "none", overflow: "hidden" }}>
+        <ArticleImage src={article.image} style={{ width: "100%", aspectRatio: "16 / 9", maxHeight: 220 }} />
+        <div style={{ padding: "10px 12px" }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: T.text, lineHeight: 1.4 }}>{article.title}</div>
+          {article.source && <div style={{ fontSize: 12, color: T.textFaint, marginTop: 4 }}>{article.source}</div>}
+        </div>
       </a>
       <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
         <button onClick={onLike} style={{ ...btnAct, borderColor: like.mine ? T.accent : T.border, ...(like.mine ? { color: T.accent } : {}) }}>
